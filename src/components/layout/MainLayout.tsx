@@ -1,10 +1,13 @@
+
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { UserCircleIcon } from "@heroicons/react/24/solid";
 import { ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
+import { showLoading } from "@/lib/loading";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -17,6 +20,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 ? prev.filter((id) => id !== menuId)
                 : [...prev, menuId]
         );
+    };
+
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        showLoading(true);
+        await fetch("/api/auth/logout", { method: "POST" });
+        showLoading(false);
+        router.replace("/login");
     };
 
     return (
@@ -69,7 +81,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             <NavLink href="/inspection-forms" currentPath={pathname}>แบบฟอร์มการตรวจ</NavLink>
                             <NavLink href="/inspection-types" currentPath={pathname}>ประเภทการตรวจ</NavLink>
                             <NavLink href="/teams" currentPath={pathname}>ทีม</NavLink>
-                            <NavLink href="/customers" currentPath={pathname}>ข้อมูลลูกค้า</NavLink>
+                            <NavLink href="/customer" currentPath={pathname}>ข้อมูลลูกค้า</NavLink>
                             <NavLink href="/devices" currentPath={pathname}>อุปกรณ์</NavLink>
                             <NavLink href="/holidays" currentPath={pathname}>วันหยุด</NavLink>
                             <NavLink href="/employees" currentPath={pathname}>ข้อมูลพนักงาน</NavLink>
@@ -95,7 +107,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             <div className="text-xs text-gray-400">ตำแหน่ง</div>
                         </div>
                     </div>
-                    <button className="text-red-500 hover:text-red-600 cursor-pointer">
+                    <button
+                        onClick={handleLogout}
+                        className="text-red-500 hover:text-red-600 cursor-pointer"
+                    >
                         <ArrowRightOnRectangleIcon className="w-6 h-6" />
                     </button>
                 </div>

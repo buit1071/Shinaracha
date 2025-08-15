@@ -1,9 +1,11 @@
+
 "use client";
 
 import { usePathname } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
 
 const NO_LAYOUT = [
+  "/",
   "/login",
   "/auth/forgot",
 ];
