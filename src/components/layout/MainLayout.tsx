@@ -78,15 +78,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </button>
                     {openMenus.includes("settings") && (
                         <div className="ml-4 mt-1 space-y-1">
-                            <NavLink href="/inspection-forms" currentPath={pathname}>แบบฟอร์มการตรวจ</NavLink>
-                            <NavLink href="/inspection-types" currentPath={pathname}>ประเภทการตรวจ</NavLink>
-                            <NavLink href="/teams" currentPath={pathname}>ทีม</NavLink>
+                            <NavLink href="/inspection-form" currentPath={pathname}>แบบฟอร์มการตรวจ</NavLink>
+                            <NavLink href="/inspection-type" currentPath={pathname}>ประเภทการตรวจ</NavLink>
+                            <NavLink href="/team" currentPath={pathname}>ทีม</NavLink>
                             <NavLink href="/customer" currentPath={pathname}>ข้อมูลลูกค้า</NavLink>
-                            <NavLink href="/devices" currentPath={pathname}>อุปกรณ์</NavLink>
-                            <NavLink href="/holidays" currentPath={pathname}>วันหยุด</NavLink>
-                            <NavLink href="/employees" currentPath={pathname}>ข้อมูลพนักงาน</NavLink>
-                            <NavLink href="/permissions" currentPath={pathname}>สิทธิการใช้งาน</NavLink>
-                            <NavLink href="/zones" currentPath={pathname}>พื้นที่</NavLink>
+                            <NavLink href="/device" currentPath={pathname}>อุปกรณ์</NavLink>
+                            <NavLink href="/holiday" currentPath={pathname}>วันหยุด</NavLink>
+                            <NavLink href="/employee" currentPath={pathname}>ข้อมูลพนักงาน</NavLink>
+                            <NavLink href="/permission" currentPath={pathname}>สิทธิการใช้งาน</NavLink>
+                            <NavLink href="/zone" currentPath={pathname}>พื้นที่</NavLink>
                         </div>
                     )}
 
