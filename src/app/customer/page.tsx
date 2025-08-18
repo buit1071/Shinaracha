@@ -20,38 +20,77 @@ import {
   TextField,
   Switch,
 } from "@mui/material";
+import { formatDateTime, showAlert, showConfirm } from "@/lib/fetcher";
+import { showLoading } from "@/lib/loading";
 
 interface CustomerRow {
-  id: number;
+  customer_id: string;
   customer_name: string;
+  is_active: number;
   created_by: string;
   updated_by: string;
-  status: string; // "ใช้งาน" หรือ "ปิดการใช้งาน"
+  created_date?: string;
+  updated_date?: string;
+  order?: number; // running number
 }
 
 export default function CustomersPage() {
-  const [rows, setRows] = React.useState<CustomerRow[]>([
-    { id: 1, customer_name: "บจก. เอ บี ซี", created_by: "admin", updated_by: "admin", status: "ใช้งาน" },
-    { id: 2, customer_name: "หจก. ดี อี เอฟ", created_by: "user1", updated_by: "admin", status: "ปิดการใช้งาน" },
-  ]);
-
-  // Search
+  const [rows, setRows] = React.useState<CustomerRow[]>([]);
   const [searchText, setSearchText] = React.useState("");
-
-  // Dialog
   const [open, setOpen] = React.useState(false);
   const [isEdit, setIsEdit] = React.useState(false);
+  const [error, setError] = React.useState(false);
+
   const [formData, setFormData] = React.useState<CustomerRow>({
-    id: 0,
+    customer_id: "",
     customer_name: "",
-    created_by: "",
-    updated_by: "",
-    status: "ใช้งาน",
+    is_active: 1,
+    created_by: "admin",
+    updated_by: "admin",
   });
+
+  // โหลดข้อมูลและจัดเรียงใหม่
+  const fetchCustomers = async () => {
+    showLoading(true);
+    try {
+      const res = await fetch("/api/auth/customer");
+      const data = await res.json();
+      if (data.success) {
+        updateWithOrder(data.data);
+      }
+    } catch (err) {
+      console.error("Fetch error:", err);
+    } finally {
+      showLoading(false);
+    }
+  };
+
+  // helper: เรียงใหม่ทุกครั้ง + เพิ่ม order
+  const updateWithOrder = (data: CustomerRow[]) => {
+    const sorted = [...data].sort((a, b) =>
+      new Date(b.updated_date || "").getTime() -
+      new Date(a.updated_date || "").getTime()
+    );
+    const withOrder = sorted.map((row, index) => ({
+      ...row,
+      order: index + 1,
+    }));
+    setRows(withOrder);
+  };
+
+  React.useEffect(() => {
+    fetchCustomers();
+  }, []);
 
   const handleOpenAdd = () => {
     setIsEdit(false);
-    setFormData({ id: 0, customer_name: "", created_by: "", updated_by: "", status: "ใช้งาน" });
+    setFormData({
+      customer_id: "",
+      customer_name: "",
+      is_active: 1,
+      created_by: "admin",
+      updated_by: "admin",
+    });
     setOpen(true);
   };
 
@@ -63,47 +102,115 @@ export default function CustomersPage() {
 
   const handleClose = () => setOpen(false);
 
-  const handleSave = () => {
-    if (isEdit) {
-      setRows((prev) => prev.map((r) => (r.id === formData.id ? formData : r)));
-    } else {
-      const newId = rows.length ? Math.max(...rows.map((r) => r.id)) + 1 : 1;
-      setRows((prev) => [...prev, { ...formData, id: newId }]);
+  const handleSave = async () => {
+    if (!formData.customer_name) {
+      setError(true);
+      return;
     }
-    setOpen(false);
+
+    try {
+      const res = await fetch("/api/auth/customer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await res.json();
+
+      // 👉 ปิด popup ก่อน
+      setOpen(false);
+
+      if (result.success) {
+        await showAlert("success", result.message);
+        fetchCustomers();
+      } else {
+        showAlert("error", result.message || "บันทึกล้มเหลว");
+      }
+    } catch (err) {
+      console.error("Save error:", err);
+      setOpen(false); // ปิด popup แม้ error
+      showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+    }
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm("คุณต้องการลบข้อมูลนี้หรือไม่?")) {
-      setRows((prev) => prev.filter((r) => r.id !== id));
+
+  const handleDelete = async (customer_id: string) => {
+    const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบลูกค้า");
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/auth/customer/${customer_id}`, {
+        method: "DELETE",
+      });
+      const result = await res.json();
+
+      if (result.success) {
+        await showAlert("success", result.message);
+        fetchCustomers();
+      } else {
+        showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
+      }
+    } catch (err) {
+      console.error("Delete error:", err);
+      showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
     }
   };
 
-  const toggleStatus = (id: number) => {
-    setRows((prev) =>
-      prev.map((r) =>
-        r.id === id
-          ? { ...r, status: r.status === "ใช้งาน" ? "ปิดการใช้งาน" : "ใช้งาน" }
-          : r
-      )
-    );
+  const toggleStatus = async (row: CustomerRow) => {
+    try {
+      const res = await fetch("/api/auth/customer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...row,
+          is_active: row.is_active === 1 ? 0 : 1,
+        }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        fetchCustomers();
+      }
+    } catch (err) {
+      console.error("Toggle status error:", err);
+    }
   };
 
   const columns: GridColDef<CustomerRow>[] = [
-    { field: "id", headerName: "ลำดับ", width: 90, headerAlign: "center", align: "center" },
-    { field: "customer_name", headerName: "ชื่อลูกค้า", flex: 1, headerAlign: "center", align: "left" },
-    { field: "created_by", headerName: "สร้างโดย", flex: 1, headerAlign: "center", align: "center" },
-    { field: "updated_by", headerName: "อัปเดทโดย", flex: 1, headerAlign: "center", align: "center" },
     {
-      field: "status",
+      field: "order",
+      headerName: "ลำดับ",
+      width: 90,
+      headerAlign: "center",
+      align: "center",
+    },
+    { field: "customer_id", headerName: "รหัสลูกค้า", flex: 1, headerAlign: "center", align: "center" },
+    { field: "customer_name", headerName: "ชื่อลูกค้า", flex: 1, headerAlign: "center", align: "left" },
+    {
+      field: "created_date",
+      headerName: "วันที่สร้าง",
+      flex: 1,
+      headerAlign: "center",
+      align: "center",
+      renderCell: (params) => formatDateTime(params.row.created_date),
+    },
+    {
+      field: "updated_date",
+      headerName: "อัปเดทล่าสุด",
+      flex: 1,
+      headerAlign: "center",
+      align: "center",
+      renderCell: (params) => formatDateTime(params.row.updated_date),
+    },
+    {
+      field: "is_active",
       headerName: "สถานะ",
       flex: 1,
       headerAlign: "center",
       align: "center",
       renderCell: (params: GridRenderCellParams<CustomerRow>) => (
         <Switch
-          checked={params.row.status === "ใช้งาน"}
-          onChange={() => toggleStatus(params.row.id)}
+          checked={params.row.is_active === 1}
+          onChange={() => toggleStatus(params.row)}
           color="success"
         />
       ),
@@ -120,7 +227,7 @@ export default function CustomersPage() {
           <IconButton color="primary" onClick={() => handleOpenEdit(params.row)}>
             <EditIcon />
           </IconButton>
-          <IconButton color="error" onClick={() => handleDelete(params.row.id)}>
+          <IconButton color="error" onClick={() => handleDelete(params.row.customer_id)}>
             <DeleteIcon />
           </IconButton>
         </Box>
@@ -128,12 +235,17 @@ export default function CustomersPage() {
     },
   ];
 
-  // Filter rows by search
-  const filteredRows = rows.filter((row) =>
-    Object.values(row).some((value) =>
-      String(value).toLowerCase().includes(searchText.toLowerCase())
+  // Filter + reindex ใหม่
+  const filteredRows = rows
+    .filter((row) =>
+      Object.values(row).some((value) =>
+        String(value).toLowerCase().includes(searchText.toLowerCase())
+      )
     )
-  );
+    .map((row, index) => ({
+      ...row,
+      order: index + 1,
+    }));
 
   return (
     <div className="min-h-[94.9vh] grid place-items-center bg-gray-50 w-full">
@@ -170,57 +282,60 @@ export default function CustomersPage() {
           }}
           pageSizeOptions={[5, 10]}
           disableRowSelectionOnClick
+          getRowId={(row) => row.customer_id} // ใช้ customer_id แทน id
         />
       </div>
 
       {/* Dialog Popup */}
-      <Dialog
-        open={open}
-        // ล็อคไม่ให้ปิดด้วยการกด backdrop หรือ ESC
-        onClose={(_, reason) => {
-          if (reason === "backdropClick" || reason === "escapeKeyDown") {
-            return;
-          }
-          handleClose();
-        }}
-        fullWidth
-        maxWidth="sm"
-      >
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
         <DialogTitle>{isEdit ? "แก้ไขลูกค้า" : "เพิ่มลูกค้า"}</DialogTitle>
         <DialogContent dividers>
+          {isEdit && (
+            <TextField
+              margin="normal"
+              label="รหัสลูกค้า"
+              fullWidth
+              value={formData.customer_id}
+              disabled
+            />
+          )}
+
           <TextField
             margin="normal"
             label="ชื่อลูกค้า"
             fullWidth
+            required
             value={formData.customer_name}
-            onChange={(e) =>
-              setFormData({ ...formData, customer_name: e.target.value })
-            }
+            onChange={(e) => {
+              setFormData({ ...formData, customer_name: e.target.value });
+              if (error) setError(false);
+            }}
+            error={error && !formData.customer_name}
+            helperText={error && !formData.customer_name ? "กรุณากรอกชื่อลูกค้า" : ""}
           />
 
           <Box mt={2} display="flex" alignItems="center" gap={2}>
             <span>สถานะ:</span>
             <Switch
-              checked={formData.status === "ใช้งาน"}
+              checked={formData.is_active === 1}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  status: e.target.checked ? "ใช้งาน" : "ปิดการใช้งาน",
+                  is_active: e.target.checked ? 1 : 0,
                 })
               }
               color="success"
             />
-            <span>{formData.status}</span>
+            <span>{formData.is_active === 1 ? "ใช้งาน" : "ปิดการใช้งาน"}</span>
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>ยกเลิก</Button>
-          <Button variant="contained" onClick={handleSave} color="primary">
+          <Button variant="contained" color="primary" onClick={handleSave}>
             บันทึก
           </Button>
         </DialogActions>
       </Dialog>
-
     </div>
   );
 }

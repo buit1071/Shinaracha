@@ -21,9 +21,11 @@
     "googleapis": "^156.0.0",
     "jose": "^6.0.12",
     "js-cookie": "^3.0.5",
+    "mysql2": "^3.14.3",
     "next": "15.4.6",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "sweetalert2": "^11.22.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
