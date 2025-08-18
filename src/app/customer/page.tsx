@@ -135,7 +135,7 @@ export default function CustomersPage() {
 
 
   const handleDelete = async (customer_id: string) => {
-    const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบลูกค้า");
+    const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบข้อมูล");
     if (!confirmed) return;
 
     try {
@@ -260,7 +260,7 @@ export default function CustomersPage() {
             onChange={(e) => setSearchText(e.target.value)}
           />
           <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenAdd}>
-            เพิ่มลูกค้า
+            เพิ่มข้อมูล
           </Button>
         </div>
       </div>
@@ -288,7 +288,7 @@ export default function CustomersPage() {
 
       {/* Dialog Popup */}
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-        <DialogTitle>{isEdit ? "แก้ไขลูกค้า" : "เพิ่มลูกค้า"}</DialogTitle>
+        <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
         <DialogContent dividers>
           {isEdit && (
             <TextField

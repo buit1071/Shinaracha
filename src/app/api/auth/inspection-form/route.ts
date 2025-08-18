@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib-server/db";
-import { generateCustomerId } from "@/lib/fetcher";
+import { generateServiceId } from "@/lib/fetcher";
 
 export async function GET() {
     try {
-        // ดึงข้อมูลทั้งหมดจาก master_customers
+        // ดึงข้อมูลทั้งหมดจาก master_services
         const rows = await query(`
             SELECT * 
-            FROM master_customers 
+            FROM master_services 
             ORDER BY updated_date DESC
         `);
 
@@ -21,48 +21,48 @@ export async function GET() {
     }
 }
 
-// POST เพิ่ม/แก้ไข ลูกค้า
+// POST เพิ่ม/แก้ไข 
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { customer_id, customer_name, is_active, created_by, updated_by } = body;
+        const { service_id, service_name, is_active, created_by, updated_by } = body;
 
-        if (!customer_name) {
+        if (!service_name) {
             return NextResponse.json(
-                { success: false, message: "กรุณากรอกชื่อลูกค้า" },
+                { success: false, message: "กรุณากรอกชื่อ Service" },
                 { status: 400 }
             );
         }
 
-        if (customer_id) {
-            // กรณีมี customer_id → UPDATE
+        if (service_id) {
+            // กรณีมี service_id → UPDATE
             await query(
                 `
-        UPDATE master_customers
-        SET customer_name = ?, is_active = ?, updated_by = ?, updated_date = NOW()
-        WHERE customer_id = ?
+        UPDATE master_services
+        SET service_name = ?, is_active = ?, updated_by = ?, updated_date = NOW()
+        WHERE service_id = ?
       `,
-                [customer_name, is_active ?? 1, updated_by ?? "system", customer_id]
+                [service_name, is_active ?? 1, updated_by ?? "system", service_id]
             );
 
-            return NextResponse.json({ success: true, message: "อัปเดตข้อมูลลูกค้าเรียบร้อย" });
+            return NextResponse.json({ success: true, message: "อัปเดตข้อมูลเรียบร้อย" });
         } else {
-            // กรณีไม่มี customer_id → INSERT พร้อม gen ใหม่
-            const newCustomerId = generateCustomerId();
+            // กรณีไม่มี service_id → INSERT พร้อม gen ใหม่
+            const newServiceId = generateServiceId();
 
             await query(
                 `
-        INSERT INTO master_customers 
-        (customer_id, customer_name, is_active, created_by, created_date, updated_by, updated_date) 
+        INSERT INTO master_services 
+        (service_id, service_name, is_active, created_by, created_date, updated_by, updated_date) 
         VALUES (?, ?, ?, ?, NOW(), ?, NOW())
       `,
-                [newCustomerId, customer_name, is_active ?? 1, created_by ?? "system", updated_by ?? "system"]
+                [newServiceId, service_name, is_active ?? 1, created_by ?? "system", updated_by ?? "system"]
             );
 
             return NextResponse.json({
                 success: true,
-                message: "เพิ่มลูกค้าเรียบร้อย",
-                customer_id: newCustomerId,
+                message: "เพิ่มเรียบร้อย",
+                service_id: newServiceId,
             });
         }
     } catch (err: any) {
@@ -74,27 +74,26 @@ export async function POST(req: Request) {
     }
 }
 
-// DELETE ลูกค้า
+// DELETE 
 export async function DELETE(req: Request) {
     try {
         const { pathname } = new URL(req.url);
-        // pathname เช่น /api/auth/customer/CUST-12345678
         const parts = pathname.split("/");
-        const customer_id = parts[parts.length - 1]; // ดึง id จาก path
+        const service_id = parts[parts.length - 1]; // ดึง id จาก path
 
-        if (!customer_id) {
+        if (!service_id) {
             return NextResponse.json(
-                { success: false, message: "ไม่พบรหัสลูกค้า" },
+                { success: false, message: "ไม่พบ Service ID นี้" },
                 { status: 400 }
             );
         }
 
         await query(
             `
-      DELETE FROM master_customers
-      WHERE customer_id = ?
+      DELETE FROM master_services
+      WHERE service_id = ?
     `,
-            [customer_id]
+            [service_id]
         );
 
         return NextResponse.json({
