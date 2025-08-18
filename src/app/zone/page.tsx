@@ -17,8 +17,12 @@ export default function UploadPage() {
         });
 
         const data = await res.json();
+        console.log(data);
+        const firstFile = data.data?.files?.[0];
         if (data.success) {
-            setMessage(`อัปโหลดสำเร็จ: ${data.data.webViewLink}`);
+            setMessage(
+                `อัปโหลดสำเร็จ:${firstFile?.name}`
+            );
         } else {
             setMessage(`ผิดพลาด: ${data.error}`);
         }

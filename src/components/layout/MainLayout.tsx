@@ -118,7 +118,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
             {/* Content */}
             <div className="flex-1 flex flex-col">
-                <main className="p-6 bg-gray-50 flex-1">{children}</main>
+                <main className="p-4 bg-gray-50 flex-1">{children}</main>
             </div>
         </div>
     );
