@@ -1,55 +1,73 @@
-import { Readable } from "stream";
-import FormData from "form-data";
-import fetch from "node-fetch";
-import { config } from "dotenv";
+import { NextResponse } from "next/server";
+import { query } from "@/lib-server/db";
+import { generateZoneId } from "@/lib/fetcher";
 
-config(); // โหลด .env
+export async function GET() {
+    try {
+        const rows = await query(`
+            SELECT * 
+            FROM master_zones 
+            ORDER BY updated_date DESC
+        `);
 
+        return NextResponse.json({ success: true, data: rows });
+    } catch (err: any) {
+        console.error("DB Error:", err);
+        return NextResponse.json(
+            { success: false, message: "Database error", error: err.message },
+            { status: 500 }
+        );
+    }
+}
+
+// POST เพิ่ม/แก้ไข 
 export async function POST(req: Request) {
     try {
-        const formDataReq = await req.formData();
-        const file = formDataReq.get("file") as File | null;
+        const body = await req.json();
+        const { zone_id, zone_name, is_active, created_by, updated_by } = body;
 
-        if (!file) {
-            return new Response(
-                JSON.stringify({ success: false, error: "No file uploaded" }),
+        if (!zone_name) {
+            return NextResponse.json(
+                { success: false, message: "กรุณากรอกชื่อพื้นที่" },
                 { status: 400 }
             );
         }
 
-        console.log("File name:", file.name);
-        console.log("File type:", file.type);
-        console.log("File size:", file.size);
+        if (zone_id) {
+            // กรณีมี zone_id → UPDATE
+            await query(
+                `
+        UPDATE master_zones
+        SET zone_name = ?, is_active = ?, updated_by = ?, updated_date = NOW()
+        WHERE zone_id = ?
+      `,
+                [zone_name, is_active ?? 1, updated_by ?? "system", zone_id]
+            );
 
-        // แปลงเป็น Buffer
-        const buffer = Buffer.from(await file.arrayBuffer());
+            return NextResponse.json({ success: true, message: "อัปเดตข้อมูลเรียบร้อย" });
+        } else {
+            // กรณีไม่มี zone_id → INSERT พร้อม gen ใหม่
+            const newZoneId = generateZoneId();
 
-        // ใช้ FormData ของ Node.js runtime
-        const fd = new FormData();
-        fd.append("file", Readable.from(buffer) as any, {
-            filename: file.name,
-            contentType: file.type,
-        });
+            await query(
+                `
+        INSERT INTO master_zones 
+        (zone_id, zone_name, is_active, created_by, created_date, updated_by, updated_date) 
+        VALUES (?, ?, ?, ?, NOW(), ?, NOW())
+      `,
+                [newZoneId, zone_name, is_active ?? 1, created_by ?? "system", updated_by ?? "system"]
+            );
 
-        console.log("Sending file to n8n webhook...");
-
-        const response = await fetch(process.env.N8N_UPLOAD_FILE as string, {
-            method: "POST",
-            body: fd as any,
-        });
-
-        const n8nResult = await response.json();
-
-        return new Response(
-            JSON.stringify({ success: true, data: n8nResult }),
-            { status: 200 }
-        );
-
-    } catch (error) {
-        console.error("=== UPLOAD ERROR ===");
-        console.error(error);
-        return new Response(
-            JSON.stringify({ success: false, error: (error as Error).message }),
+            return NextResponse.json({
+                success: true,
+                message: "เพิ่มเรียบร้อย",
+                zone_id: newZoneId,
+            });
+        }
+    } catch (err: any) {
+        console.error("DB Error:", err);
+        return NextResponse.json(
+            { success: false, message: "Database error", error: err.message },
             { status: 500 }
         );
     }

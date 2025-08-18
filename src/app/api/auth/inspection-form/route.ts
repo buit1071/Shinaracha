@@ -73,38 +73,3 @@ export async function POST(req: Request) {
         );
     }
 }
-
-// DELETE 
-export async function DELETE(req: Request) {
-    try {
-        const { pathname } = new URL(req.url);
-        const parts = pathname.split("/");
-        const service_id = parts[parts.length - 1]; // ดึง id จาก path
-
-        if (!service_id) {
-            return NextResponse.json(
-                { success: false, message: "ไม่พบ Service ID นี้" },
-                { status: 400 }
-            );
-        }
-
-        await query(
-            `
-      DELETE FROM master_services
-      WHERE service_id = ?
-    `,
-            [service_id]
-        );
-
-        return NextResponse.json({
-            success: true,
-            message: "ลบข้อมูลเรียบร้อย",
-        });
-    } catch (err: any) {
-        console.error("DB Error:", err);
-        return NextResponse.json(
-            { success: false, message: "Database error", error: err.message },
-            { status: 500 }
-        );
-    }
-}

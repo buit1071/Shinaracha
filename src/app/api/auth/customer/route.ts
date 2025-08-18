@@ -73,39 +73,3 @@ export async function POST(req: Request) {
         );
     }
 }
-
-// DELETE ลูกค้า
-export async function DELETE(req: Request) {
-    try {
-        const { pathname } = new URL(req.url);
-        // pathname เช่น /api/auth/customer/CUST-12345678
-        const parts = pathname.split("/");
-        const customer_id = parts[parts.length - 1]; // ดึง id จาก path
-
-        if (!customer_id) {
-            return NextResponse.json(
-                { success: false, message: "ไม่พบรหัสลูกค้า" },
-                { status: 400 }
-            );
-        }
-
-        await query(
-            `
-      DELETE FROM master_customers
-      WHERE customer_id = ?
-    `,
-            [customer_id]
-        );
-
-        return NextResponse.json({
-            success: true,
-            message: "ลบข้อมูลเรียบร้อย",
-        });
-    } catch (err: any) {
-        console.error("DB Error:", err);
-        return NextResponse.json(
-            { success: false, message: "Database error", error: err.message },
-            { status: 500 }
-        );
-    }
-}

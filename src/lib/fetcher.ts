@@ -31,6 +31,10 @@ export function generateServiceId(): string {
   const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
   return `SERV-${randomNum}`;
 }
+export function generateZoneId(): string {
+  const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
+  return `ZONE-${randomNum}`;
+}
 
 export const showAlert = (
   type: "success" | "error" | "warning" | "info" | "question",

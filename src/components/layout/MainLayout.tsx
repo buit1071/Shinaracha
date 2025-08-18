@@ -87,6 +87,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             <NavLink href="/employee" currentPath={pathname}>ข้อมูลพนักงาน</NavLink>
                             <NavLink href="/permission" currentPath={pathname}>สิทธิการใช้งาน</NavLink>
                             <NavLink href="/zone" currentPath={pathname}>พื้นที่</NavLink>
+                            <NavLink href="/upload-file" currentPath={pathname}>Upload File</NavLink>
                         </div>
                     )}
 
