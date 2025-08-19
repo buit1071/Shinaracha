@@ -10,12 +10,12 @@ export async function DELETE(
 
         if (!id) {
             return NextResponse.json(
-                { success: false, message: "ไม่พบรหัสลูกค้า" },
+                { success: false, message: "ไม่พบ Project ID" },
                 { status: 400 }
             );
         }
 
-        await query(`DELETE FROM master_customers WHERE customer_id = ?`, [id]);
+        await query(`DELETE FROM data_projects WHERE project_id = ?`, [id]);
 
         return NextResponse.json({
             success: true,

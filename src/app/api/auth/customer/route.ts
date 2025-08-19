@@ -2,14 +2,25 @@ import { NextResponse } from "next/server";
 import { query } from "@/lib-server/db";
 import { generateCustomerId } from "@/lib/fetcher";
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
-        // ดึงข้อมูลทั้งหมดจาก master_customers
-        const rows = await query(`
-            SELECT * 
-            FROM master_customers 
-            ORDER BY updated_date DESC
-        `);
+        // อ่าน query param
+        const { searchParams } = new URL(req.url);
+        const active = searchParams.get("active"); // จะเป็น string หรือ null
+
+        let sql = `
+      SELECT * 
+      FROM master_customers
+    `;
+
+        // ถ้ามี param active และค่าคือ true → กรองเฉพาะ is_active = 1
+        if (active === "true" || active === "1") {
+            sql += " WHERE is_active = 1";
+        }
+
+        sql += " ORDER BY updated_date DESC";
+
+        const rows = await query(sql);
 
         return NextResponse.json({ success: true, data: rows });
     } catch (err: any) {

@@ -22,17 +22,7 @@ import {
 } from "@mui/material";
 import { formatDateTime, showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
-
-interface ServiceRow {
-    service_id: string;
-    service_name: string;
-    is_active: number;
-    created_by: string;
-    updated_by: string;
-    created_date?: string;
-    updated_date?: string;
-    order?: number; // running number
-}
+import { ServiceRow } from "@/interfaces/master";
 
 export default function InspectionFormPage() {
     const [rows, setRows] = React.useState<ServiceRow[]>([]);
@@ -246,6 +236,7 @@ export default function InspectionFormPage() {
             ...row,
             order: index + 1,
         }));
+
     return (
         <div className="min-h-[94.9vh] grid place-items-center bg-gray-50">
             {/* Header Bar */}

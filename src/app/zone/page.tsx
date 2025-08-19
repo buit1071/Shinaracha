@@ -22,17 +22,7 @@ import {
 } from "@mui/material";
 import { formatDateTime, showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
-
-interface ZoneRow {
-    zone_id: string;
-    zone_name: string;
-    is_active: number;
-    created_by: string;
-    updated_by: string;
-    created_date?: string;
-    updated_date?: string;
-    order?: number; // running number
-}
+import { ZoneRow } from "@/interfaces/master";
 
 export default function ZonePage() {
     const [rows, setRows] = React.useState<ZoneRow[]>([]);

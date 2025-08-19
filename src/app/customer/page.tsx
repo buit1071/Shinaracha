@@ -22,17 +22,7 @@ import {
 } from "@mui/material";
 import { formatDateTime, showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
-
-interface CustomerRow {
-  customer_id: string;
-  customer_name: string;
-  is_active: number;
-  created_by: string;
-  updated_by: string;
-  created_date?: string;
-  updated_date?: string;
-  order?: number; // running number
-}
+import { CustomerRow } from "@/interfaces/master";
 
 export default function CustomersPage() {
   const [rows, setRows] = React.useState<CustomerRow[]>([]);
