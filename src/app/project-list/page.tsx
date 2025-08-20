@@ -32,6 +32,7 @@ export default function ProjectListPage() {
     const [isEdit, setIsEdit] = React.useState(false);
     const [error, setError] = React.useState(false);
     const [customers, setCustomers] = React.useState<CustomerRow[]>([]);
+    const customersRef = React.useRef<CustomerRow[]>([]);
 
     const [formData, setFormData] = React.useState<ProjectRow>({
         project_id: "",
@@ -62,11 +63,13 @@ export default function ProjectListPage() {
     };
 
     const fetchCustomers = async () => {
-        const res = await fetch("/api/auth/customer?active=true"); // ส่ง param active=true
+        const res = await fetch("/api/auth/customer?active=true");
         const data = await res.json();
-        if (data.success) setCustomers(data.data);
+        if (data.success) {
+            setCustomers(data.data);
+            customersRef.current = data.data;   // <<< สำคัญ
+        }
     };
-
     // helper: เรียงใหม่ทุกครั้ง + เพิ่ม order + map customer_name
     const updateWithOrder = (data: ProjectRow[]) => {
         const sorted = [...data].sort(
@@ -76,10 +79,10 @@ export default function ProjectListPage() {
         );
 
         const withOrder = sorted.map((row, index) => {
-            const cust = customers.find(c => c.customer_id === row.customer_id);
+            const cust = customersRef.current.find(c => c.customer_id === row.customer_id); // <<< ใช้ ref
             return {
                 ...row,
-                customer_name: cust ? cust.customer_name : "-", // ✅ เติมตรงนี้
+                customer_name: cust ? cust.customer_name : "-",
                 order: index + 1,
             };
         });
@@ -88,9 +91,17 @@ export default function ProjectListPage() {
     };
 
     React.useEffect(() => {
-        fetchProject();
-        fetchCustomers();
+        (async () => {
+            showLoading(true);
+            try {
+                await fetchCustomers();
+                await fetchProject();
+            } finally {
+                showLoading(false);
+            }
+        })();
     }, []);
+
 
     const handleOpenAdd = () => {
         setIsEdit(false);
@@ -360,51 +371,58 @@ export default function ProjectListPage() {
                         <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
                             ลูกค้า
                         </label>
+
                         <Select
-                            options={customers.map(c => ({ value: c.customer_id, label: c.customer_name }))}
-                            value={customers.map(c => ({ value: c.customer_id, label: c.customer_name }))
-                                .find(opt => opt.value === formData.customer_id) || null}
-                            onChange={(selected) => setFormData({ ...formData, customer_id: selected?.value || "" })}
+                            options={customers.map(c => ({
+                                value: c.customer_id,
+                                label: c.customer_name,
+                            }))}
+                            value={
+                                customers
+                                    .map(c => ({ value: c.customer_id, label: c.customer_name }))
+                                    .find(opt => opt.value === formData.customer_id) || null
+                            }
+                            onChange={(selected) =>
+                                setFormData({ ...formData, customer_id: selected?.value || "" })
+                            }
                             placeholder="-- เลือกลูกค้า --"
                             isClearable
-
-                            // ✅ ให้เมนูไปพอร์ทัลบน body และดัน z-index สูงกว่า MUI Dialog
                             menuPortalTarget={typeof window !== "undefined" ? document.body : null}
                             styles={{
-                                // เมนูหลัก (กล่องรายการ)
+                                control: (base, state) => ({
+                                    ...base,
+                                    backgroundColor: "#fff",
+                                    borderColor:
+                                        error && !formData.customer_id
+                                            ? "#d32f2f" // ❌ สีแดงเมื่อ error
+                                            : state.isFocused
+                                                ? "#3b82f6"
+                                                : "#d1d5db",
+                                    boxShadow: "none",
+                                    "&:hover": {
+                                        borderColor:
+                                            error && !formData.customer_id ? "#d32f2f" : "#9ca3af",
+                                    },
+                                }),
                                 menu: (base) => ({
                                     ...base,
-                                    backgroundColor: "#fff",    // ทึบ
+                                    backgroundColor: "#fff",
                                     boxShadow: "0 8px 24px rgba(0,0,0,.2)",
                                     border: "1px solid #e5e7eb",
                                 }),
-                                // ชั้นพอร์ทัล (กันโดน dialog ทับ)
                                 menuPortal: (base) => ({
                                     ...base,
                                     zIndex: 2100,
                                 }),
-                                // ตัวเลือกแต่ละแถว
                                 option: (base, state) => ({
                                     ...base,
                                     backgroundColor: state.isSelected
                                         ? "#e5f2ff"
                                         : state.isFocused
-                                            ? "#f3f4f6"               // hover
+                                            ? "#f3f4f6"
                                             : "#fff",
                                     color: "#111827",
-                                    // กันโปร่ง
-                                    backdropFilter: "none",
-                                    WebkitBackdropFilter: "none",
                                 }),
-                                // กล่อง control
-                                control: (base, state) => ({
-                                    ...base,
-                                    backgroundColor: "#fff",
-                                    borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
-                                    boxShadow: "none",
-                                    "&:hover": { borderColor: "#9ca3af" },
-                                }),
-                                // กล่องรายการภายใน
                                 menuList: (base) => ({
                                     ...base,
                                     backgroundColor: "#fff",
@@ -418,10 +436,25 @@ export default function ProjectListPage() {
                             }}
                         />
 
+                        {/* ✅ helperText */}
+                        {error && !formData.customer_id && (
+                            <span
+                                style={{
+                                    color: "#d32f2f",
+                                    fontSize: "12px",
+                                    marginTop: 4,
+                                    display: "block",
+                                }}
+                            >
+                                กรุณาเลือกลูกค้า
+                            </span>
+                        )}
                     </Box>
+
 
                     {/* Start & End Date in one row */}
                     <Box display="flex" gap={2} mt={3}>
+                        {/* Start Date */}
                         <TextField
                             size="small"
                             label="วันที่เริ่มต้น"
@@ -435,8 +468,11 @@ export default function ProjectListPage() {
                                     start_date: formatToThaiDate(e.target.value), // YYYY-MM-DD → DD/MM/YYYY
                                 })
                             }
+                            error={error && !formData.start_date}
+                            helperText={error && !formData.start_date ? "กรุณาเลือกวันที่เริ่มต้น" : ""}
                         />
 
+                        {/* End Date */}
                         <TextField
                             size="small"
                             label="วันที่สิ้นสุด"
@@ -450,6 +486,8 @@ export default function ProjectListPage() {
                                     end_date: formatToThaiDate(e.target.value),
                                 })
                             }
+                            error={error && !formData.end_date}
+                            helperText={error && !formData.end_date ? "กรุณาเลือกวันที่สิ้นสุด" : ""}
                         />
                     </Box>
 

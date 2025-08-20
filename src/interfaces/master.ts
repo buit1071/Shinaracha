@@ -46,3 +46,30 @@ export interface ZoneRow {
     updated_date?: string;
     order?: number;
 }
+export interface EmployeeRow {
+    emp_id: string;
+    first_name: string;
+    last_name: string;
+    username: string;
+    password: string;
+    confirm_password?: string;
+    permission_id: string;
+    permission_name?: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+}
+
+export interface PermissionRow {
+    permission_id: string;
+    permission_name?: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+};

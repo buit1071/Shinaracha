@@ -69,6 +69,10 @@ export function generateProjectId(): string {
   const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
   return `PROJ-${randomNum}`;
 }
+export function generateEmpId(): string {
+  const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
+  return `EMP-${randomNum}`;
+}
 
 export const toSqlDate = (thai?: string | null): string | null => {
   if (!thai) return null;
