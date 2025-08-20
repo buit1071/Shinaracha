@@ -63,6 +63,17 @@ export interface EmployeeRow {
     order?: number;
 }
 
+export interface EmpStatusRow {
+    status_id: string;
+    status_name: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+}
+
 export interface PermissionRow {
     permission_id: string;
     permission_name?: string;

@@ -80,7 +80,7 @@ export async function POST(req: Request) {
             await query(insertSql, insertParams);
 
             const [row] = await query(`SELECT * FROM data_teams WHERE team_id = ?`, [newTeamId]);
-            return NextResponse.json({ success: true, mode: "create", data: row });
+            return NextResponse.json({ success: true, message: "บันทึกข้อมูลเรียบร้อย", mode: "create", data: row });
         } else {
             // ===== UPDATE =====
             const updateSql = `
@@ -115,7 +115,7 @@ export async function POST(req: Request) {
             }
 
             const [row] = await query(`SELECT * FROM data_teams WHERE team_id = ?`, [team_id]);
-            return NextResponse.json({ success: true, mode: "update", data: row });
+            return NextResponse.json({ success: true, message: "อัปเดทข้อมูลเรียบร้อย", mode: "update", data: row });
         }
     } catch (err: any) {
         console.error("POST /teams Error:", err);

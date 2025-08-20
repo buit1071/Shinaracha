@@ -8,6 +8,8 @@ import {
 } from "@mui/x-data-grid";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
 import { IconButton, InputAdornment, TextField } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import Select from "react-select";
@@ -20,9 +22,10 @@ import {
     DialogContent,
     DialogTitle,
     Switch,
+    Table, TableBody, TableCell, TableHead, TableRow
 } from "@mui/material";
 import { showLoading } from "@/lib/loading";
-import { TeamRow, ZoneRow, EmployeeRow } from "@/interfaces/master";
+import { TeamRow, ZoneRow, EmployeeRow, EmpStatusRow } from "@/interfaces/master";
 import { showAlert, showConfirm } from "@/lib/fetcher";
 
 export default function ProjectListPage() {
@@ -32,9 +35,11 @@ export default function ProjectListPage() {
     const [isEdit, setIsEdit] = React.useState(false);
     const [error, setError] = React.useState(false);
     const [employees, setEmployees] = React.useState<EmployeeRow[]>([]);
-    const [zones, setZones] = React.useState<ZoneRow[]>([]);
+    const [empStatus, setEmpStatus] = React.useState<EmpStatusRow[]>([]);
     const employeesRef = React.useRef<EmployeeRow[]>([]);
+    const empStatussRef = React.useRef<EmpStatusRow[]>([]);
     const zonesRef = React.useRef<ZoneRow[]>([]);
+    const [zones, setZones] = React.useState<ZoneRow[]>([]);
     const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
     const [showPassword, setShowPassword] = React.useState(false);
 
@@ -76,6 +81,15 @@ export default function ProjectListPage() {
         }
     };
 
+    const fetchEmpStatus = async () => {
+        const res = await fetch("/api/auth/employee/status?active=true");
+        const data = await res.json();
+        if (data.success) {
+            setEmpStatus(data.data);
+            empStatussRef.current = data.data;   // <<< สำคัญ
+        }
+    };
+
     const fetchZones = async () => {
         const res = await fetch("/api/auth/zone?active=true");
         const data = await res.json();
@@ -110,6 +124,7 @@ export default function ProjectListPage() {
             showLoading(true);
             try {
                 await fetchEmployees();
+                await fetchEmpStatus();
                 await fetchZones();
                 await fetchTeam();
             } finally {
@@ -132,7 +147,6 @@ export default function ProjectListPage() {
             is_active: 1,
             created_by: "admin",
             updated_by: "admin",
-            // emp_list:[],
         });
         setOpen(true);
     };
@@ -179,7 +193,7 @@ export default function ProjectListPage() {
 
 
     const handleDelete = async (team_id: string) => {
-        const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบข้อมูล");
+        const confirmed = await showConfirm("หากลบแล้วจะไม่สามารถนำกลับมาได้", " คุณต้องการลบข้อมูลนี้หรือไม่?");
         if (!confirmed) return;
 
         try {
@@ -286,6 +300,219 @@ export default function ProjectListPage() {
             ...row,
             order: index + 1,
         }));
+
+    // ====== Types ======
+    type MemberRow = {
+        id: string;          // temp id ฝั่ง FE
+        dbId?: number | string; // <<< เพิ่ม
+        emp_id: string;
+        status_id: string;
+        name: string;
+        editing?: boolean;
+        isNew?: boolean;
+    };
+
+    // ====== State ตารางพนักงานในทีม ======
+    const [members, setMembers] = React.useState<MemberRow[]>([]);
+
+    // ====== options จาก employees / empStatus ======
+    const employeeOptions = React.useMemo(
+        () =>
+            (employees || []).map(e => ({
+                value: String(e.emp_id),                          // ให้เป็น string ชัดเจน
+                label: `${e.first_name ?? ""} ${e.last_name ?? ""}`.trim() || String(e.emp_id),
+            })),
+        [employees]
+    );
+
+    const empStatusOptions = React.useMemo(
+        () =>
+            (empStatus || []).map(s => ({
+                value: String(s.status_id),                       // string!
+                label: s.status_name,
+            })),
+        [empStatus]
+    );
+
+    // ====== Handlers ======
+    const handleAddEmployee = () => {
+        setMembers(prev => [
+            ...prev,
+            {
+                id: String(Date.now()),
+                emp_id: "",
+                status_id: "",
+                name: "",
+                editing: true,
+                isNew: true,
+            },
+        ]);
+    };
+
+    // ====== โหลดสมาชิกทีม ======
+    React.useEffect(() => {
+        if (!formData.team_id) return; // ยังไม่ได้เลือกทีม
+
+        const fetchMembers = async () => {
+            try {
+                showLoading(true);
+                const res = await fetch(`/api/auth/team/employee?team_id=${formData.team_id}`);
+                const result = await res.json();
+
+                if (!res.ok || !result?.success) {
+                    await showAlert("error", result.message || "โหลดข้อมูลไม่สำเร็จ");
+                    return;
+                }
+
+                // แปลงข้อมูลจาก API -> MemberRow
+                const rows: MemberRow[] = (result.data || []).map((r: any) => ({
+                    id: String(r.id),            // ใช้ id จาก DB
+                    dbId: r.id,                  // เก็บไว้เวลาอัปเดต/ลบ
+                    emp_id: String(r.emp_id),
+                    status_id: String(r.status_id),
+                    name: (() => {
+                        const emp = employees.find(e => String(e.emp_id) === String(r.emp_id));
+                        return emp ? `${emp.first_name ?? ""} ${emp.last_name ?? ""}`.trim() : "-";
+                    })(),
+                    editing: false,
+                    isNew: false,
+                }));
+
+                setMembers(rows);
+            } catch (err: any) {
+                console.error(err);
+                await showAlert("error", "เกิดข้อผิดพลาดในการโหลดข้อมูลทีม");
+            } finally {
+                showLoading(false);
+            }
+        };
+
+        fetchMembers();
+    }, [formData.team_id, employees]);
+
+
+    const handleChangeMember = (id: string, patch: Partial<MemberRow>) => {
+        setMembers((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+    };
+
+    const handleSaveMember = async (rowId: string) => {
+        const row = members.find(m => m.id === rowId);
+        if (!row) return;
+
+        if (!row.emp_id || !row.status_id) return;
+
+        const payload = {
+            id: row.dbId,
+            team_id: formData.team_id,
+            emp_id: row.emp_id,
+            status_id: row.status_id,
+            is_active: 1,
+            created_by: "admin",
+            updated_by: "admin",
+        };
+
+        try {
+            showLoading(true);
+
+            const res = await fetch("/api/auth/team/employee", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+            const result = await res.json();
+
+            if (!res.ok || !result?.success) {
+                await showAlert("error", result?.message || "บันทึกไม่สำเร็จ");
+                return;
+            }
+
+            const saved = result.data || {};
+
+            setMembers(prev =>
+                prev.map(r =>
+                    r.id === rowId
+                        ? {
+                            ...r,
+                            dbId: saved.id ?? r.dbId,
+                            name:
+                                r.name ||
+                                (() => {
+                                    const emp = employees.find(e => String(e.emp_id) === String(r.emp_id));
+                                    return emp ? `${emp.first_name ?? ""} ${emp.last_name ?? ""}`.trim() : "-";
+                                })(),
+                            editing: false,
+                            isNew: false,
+                        }
+                        : r
+                )
+            );
+
+            // success alert
+            showLoading(false);
+            await showAlert("success", result.message || "บันทึกสำเร็จ");
+        } catch (e: any) {
+            await showAlert("error", e.message || "เกิดข้อผิดพลาด");
+        } finally {
+            showLoading(false); // <<< ปิดโหลด ไม่ว่าจะ success/error
+        }
+    };
+
+    const handleCancelEdit = (id: string) => {
+        setMembers((prev) =>
+            prev
+                .map((r) =>
+                    r.id === id
+                        ? r.isNew
+                            ? null
+                            : { ...r, editing: false }
+                        : r
+                )
+                .filter(Boolean) as MemberRow[]
+        );
+    };
+
+    const handleDeleteMember = async (rowId: string) => {
+        const row = members.find(m => m.id === rowId);
+        if (!row) return;
+
+        // ✅ popup ยืนยันก่อน
+        const confirmed = await showConfirm("หากลบแล้วจะไม่สามารถนำกลับมาได้", " คุณต้องการลบข้อมูลนี้หรือไม่?");
+        if (!confirmed) return;
+
+        // ถ้ายังไม่เคย save (ไม่มี dbId) → ลบแค่ state
+        if (!row.dbId) {
+            setMembers(prev => prev.filter(r => r.id !== rowId));
+            return;
+        }
+
+        try {
+            showLoading(true);
+            const res = await fetch(`/api/auth/team/employee/${row.dbId}`, {
+                method: "DELETE",
+            });
+            const result = await res.json();
+
+            if (!res.ok || !result?.success) {
+                await showAlert("error", result.message || "ลบไม่สำเร็จ");
+                return;
+            }
+            showLoading(false);
+            setMembers(prev => prev.filter(r => r.id !== rowId));
+            await showAlert("success", result.message || "ลบข้อมูลเรียบร้อย");
+        } catch (err: any) {
+            console.error(err);
+            await showAlert("error", "เกิดข้อผิดพลาดในการลบข้อมูล");
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    // หา status_id ของ "หัวหน้า" จาก master
+    const leaderStatusId = React.useMemo(() => {
+        const found = (empStatus || []).find(s => s.status_name === "หัวหน้าทีม");
+        return found ? String(found.status_id) : "";
+    }, [empStatus]);
+
     return (
         <div className="min-h-[94.9vh] grid place-items-center bg-gray-50">
             <div className="h-[6vh] w-full bg-white shadow-md flex items-center justify-between px-4 text-black font-semibold rounded-lg">
@@ -325,7 +552,7 @@ export default function ProjectListPage() {
             </div>
 
             {/* Dialog Popup */}
-            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
+            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
                 <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
                 <DialogContent dividers>
                     {isEdit && (
@@ -546,73 +773,6 @@ export default function ProjectListPage() {
 
                     </Box>
 
-                    {/* Leader Select (react-select) */}
-                    {/* {formData.team_id && (
-                        <Box mt={2}>
-                            <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
-                                หัวหน้า
-                            </label>
-
-                            <Select
-                                options={employees.map(c => ({
-                                    value: c.emp_id,
-                                    label: c.first_name + " " + c.last_name,
-                                }))}
-                                value={
-                                    employees
-                                        .map(c => ({ value: c.emp_id, label: c.first_name + " " + c.last_name }))
-                                        .find(opt => opt.value === formData.leader_id) || null
-                                }
-                                onChange={(selected) =>
-                                    setFormData({ ...formData, leader_id: selected?.value || "" })
-                                }
-                                placeholder="-- เลือกหัวหน้า --"
-                                isClearable
-                                menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-                                styles={{
-                                    control: (base, state) => ({
-                                        ...base,
-                                        backgroundColor: "#fff",
-                                        borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
-                                        boxShadow: "none",
-                                        "&:hover": {
-                                            borderColor: "#9ca3af",
-                                        },
-                                    }),
-                                    menu: (base) => ({
-                                        ...base,
-                                        backgroundColor: "#fff",
-                                        boxShadow: "0 8px 24px rgba(0,0,0,.2)",
-                                        border: "1px solid #e5e7eb",
-                                    }),
-                                    menuPortal: (base) => ({
-                                        ...base,
-                                        zIndex: 2100,
-                                    }),
-                                    option: (base, state) => ({
-                                        ...base,
-                                        backgroundColor: state.isSelected
-                                            ? "#e5f2ff"
-                                            : state.isFocused
-                                                ? "#f3f4f6"
-                                                : "#fff",
-                                        color: "#111827",
-                                    }),
-                                    menuList: (base) => ({
-                                        ...base,
-                                        backgroundColor: "#fff",
-                                        paddingTop: 0,
-                                        paddingBottom: 0,
-                                    }),
-                                    singleValue: (base) => ({
-                                        ...base,
-                                        color: "#111827",
-                                    }),
-                                }}
-                            />
-                        </Box>
-                    )} */}
-
                     <Box mt={2} display="flex" alignItems="center" gap={2}>
                         <span>สถานะ:</span>
                         <Switch
@@ -627,6 +787,184 @@ export default function ProjectListPage() {
                         />
                         <span>{formData.is_active === 1 ? "ใช้งาน" : "ปิดการใช้งาน"}</span>
                     </Box>
+                    {/* Add Employee to team (react-select) */}
+                    {(formData.team_id && formData.is_active === 1) && (
+                        <>
+                            <div className="w-[100%] h-px bg-black mx-auto m-4"></div>
+
+                            <Box mt={2} display="flex" justifyContent="space-between" alignItems="center">
+                                <label style={{ fontSize: "16px", fontWeight: "bold" }}>พนักงาน</label>
+
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    startIcon={<AddIcon />}
+                                    onClick={handleAddEmployee}
+                                >
+                                    เพิ่มข้อมูล
+                                </Button>
+                            </Box>
+
+                            {/* ตารางพนักงาน */}
+                            <Box mt={1} sx={{ bgcolor: "#fff", border: "1px solid #e5e7eb", borderRadius: 1 }}>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell width={420}>ชื่อ</TableCell>
+                                            <TableCell align="center" width={200}>สถานะ</TableCell>
+                                            <TableCell align="center" width={160}>Action</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {members.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={3} align="center" style={{ color: "#6b7280" }}>
+                                                    ยังไม่มีข้อมูลพนักงาน
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            members.map(row => (
+                                                <TableRow key={row.id} hover>
+                                                    {/* ชื่อ */}
+                                                    <TableCell>
+                                                        {row.editing ? (
+                                                            <Select
+                                                                options={employeeOptions.filter(
+                                                                    o =>
+                                                                        // แสดง option ที่ยังไม่ถูกเลือกในแถวอื่น หรือเป็นของ row ปัจจุบันเอง
+                                                                        !members.some(m => m.emp_id === o.value && m.id !== row.id)
+                                                                )}
+                                                                value={employeeOptions.find(o => o.value === row.emp_id) || null}
+                                                                onChange={(opt: any) =>
+                                                                    handleChangeMember(row.id, {
+                                                                        emp_id: opt?.value || "",
+                                                                        name: opt?.label || "",
+                                                                    })
+                                                                }
+                                                                placeholder="-- เลือกพนักงาน --"
+                                                                isClearable
+                                                                menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                                                styles={{
+                                                                    control: (base: any, state: any) => ({
+                                                                        ...base,
+                                                                        backgroundColor: "#fff",
+                                                                        borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
+                                                                        boxShadow: "none",
+                                                                        "&:hover": { borderColor: "#9ca3af" },
+                                                                        minHeight: 36,
+                                                                    }),
+                                                                    menu: (base: any) => ({
+                                                                        ...base,
+                                                                        backgroundColor: "#fff",
+                                                                        boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                                                        border: "1px solid #e5e7eb",
+                                                                    }),
+                                                                    menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
+                                                                    menuList: (base: any) => ({ ...base, backgroundColor: "#fff", paddingTop: 0, paddingBottom: 0 }),
+                                                                    option: (base: any, state: any) => ({
+                                                                        ...base,
+                                                                        backgroundColor: state.isSelected ? "#e5f2ff" : state.isFocused ? "#f3f4f6" : "#fff",
+                                                                        color: "#000",
+                                                                    }),
+                                                                    singleValue: (base: any) => ({ ...base, color: "#000" }),
+                                                                    input: (base: any) => ({ ...base, color: "#000" }),
+                                                                    placeholder: (base: any) => ({ ...base, color: "#6b7280" }),
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <span>{row.name || "-"}</span>
+                                                        )}
+                                                    </TableCell>
+
+                                                    {/* สถานะ (ใช้ status_id) */}
+                                                    <TableCell align="center">
+                                                        {row.editing ? (
+                                                            <Select
+                                                                options={empStatusOptions.filter(o => {
+                                                                    // ซ่อนตัวเลือก "หัวหน้า" ถ้ามีคนอื่นเป็นหัวหน้าแล้ว
+                                                                    if (!leaderStatusId) return true; // เผื่อไม่มีข้อมูลใน master
+                                                                    if (o.value !== leaderStatusId) return true;
+                                                                    // แสดงหัวหน้าได้เฉพาะแถวที่เป็นหัวหน้าอยู่เอง
+                                                                    const someoneAlreadyLeader = members.some(m => m.status_id === leaderStatusId);
+                                                                    return !someoneAlreadyLeader || row.status_id === leaderStatusId;
+                                                                })}
+                                                                value={empStatusOptions.find(o => o.value === row.status_id) || null}
+                                                                onChange={(opt: any) => handleChangeMember(row.id, { status_id: opt?.value || "" })}
+                                                                placeholder="-- เลือกสถานะ --"
+                                                                isClearable={false}
+                                                                menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                                                styles={{
+                                                                    control: (base: any, state: any) => ({
+                                                                        ...base,
+                                                                        backgroundColor: "#fff",
+                                                                        borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
+                                                                        boxShadow: "none",
+                                                                        "&:hover": { borderColor: "#9ca3af" },
+                                                                        minHeight: 36,
+                                                                        width: 220,
+                                                                    }),
+                                                                    menu: (base: any) => ({
+                                                                        ...base,
+                                                                        backgroundColor: "#fff",
+                                                                        boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                                                        border: "1px solid #e5e7eb",
+                                                                    }),
+                                                                    menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
+                                                                    menuList: (base: any) => ({ ...base, backgroundColor: "#fff", paddingTop: 0, paddingBottom: 0 }),
+                                                                    option: (base: any, state: any) => ({
+                                                                        ...base,
+                                                                        backgroundColor: state.isSelected ? "#e5f2ff" : state.isFocused ? "#f3f4f6" : "#fff",
+                                                                        color: "#000",
+                                                                    }),
+                                                                    singleValue: (base: any) => ({ ...base, color: "#000" }),
+                                                                    input: (base: any) => ({ ...base, color: "#000" }),
+                                                                    placeholder: (base: any) => ({ ...base, color: "#6b7280" }),
+                                                                }}
+                                                            />
+
+                                                        ) : (
+                                                            <span>
+                                                                {empStatusOptions.find(o => o.value === row.status_id)?.label || "-"}
+                                                            </span>
+                                                        )}
+                                                    </TableCell>
+
+                                                    {/* Action */}
+                                                    <TableCell align="center">
+                                                        {row.editing ? (
+                                                            <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+                                                                <IconButton
+                                                                    color="success"
+                                                                    onClick={() => handleSaveMember(row.id)}
+                                                                    disabled={!row.emp_id || !row.status_id}  // <<< เงื่อนไขให้ชัด
+                                                                    title="บันทึก"
+                                                                >
+                                                                    <CheckIcon />
+                                                                </IconButton>
+
+                                                                <IconButton color="inherit" onClick={() => handleCancelEdit(row.id)} title="ยกเลิก">
+                                                                    <CloseIcon />
+                                                                </IconButton>
+                                                            </Box>
+                                                        ) : (
+                                                            <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+                                                                <IconButton color="primary" onClick={() => handleChangeMember(row.id, { editing: true })} title="แก้ไข">
+                                                                    <EditIcon />
+                                                                </IconButton>
+                                                                <IconButton color="error" onClick={() => handleDeleteMember(row.id)} title="ลบ">
+                                                                    <DeleteIcon />
+                                                                </IconButton>
+                                                            </Box>
+                                                        )}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </Box>
+                        </>
+                    )}
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose}>ยกเลิก</Button>
