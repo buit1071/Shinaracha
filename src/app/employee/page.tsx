@@ -326,13 +326,13 @@ export default function EmployeePage() {
             </div>
 
             {/* Dialog Popup */}
-            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
                 <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
                 <DialogContent dividers>
                     {isEdit && (
                         <TextField
                             size="small"
-                            margin="normal"
+                            margin="dense"
                             label="รหัสพนักงาน"
                             fullWidth
                             value={formData.emp_id}
@@ -342,7 +342,7 @@ export default function EmployeePage() {
                     <Box display="flex" gap={2} mt={2}>
                         <TextField
                             size="small"
-                            margin="normal"
+                            margin="dense"
                             label="ชื่อ"
                             fullWidth
                             required
@@ -356,7 +356,7 @@ export default function EmployeePage() {
                         />
                         <TextField
                             size="small"
-                            margin="normal"
+                            margin="dense"
                             label="นามสกุล"
                             fullWidth
                             required
@@ -455,7 +455,7 @@ export default function EmployeePage() {
 
                     <TextField
                         size="small"
-                        margin="normal"
+                        margin="dense"
                         label="Email"
                         fullWidth
                         required
@@ -483,7 +483,7 @@ export default function EmployeePage() {
                     {/* Password */}
                     <TextField
                         size="small"
-                        margin="normal"
+                        margin="dense"
                         label="Password"
                         type={showPassword ? "text" : "password"}
                         fullWidth
@@ -517,7 +517,7 @@ export default function EmployeePage() {
                     {!formData.emp_id && (
                         <TextField
                             size="small"
-                            margin="normal"
+                            margin="dense"
                             label="Confirm Password"
                             type={showConfirmPassword ? "text" : "password"}
                             fullWidth

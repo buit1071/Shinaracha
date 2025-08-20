@@ -276,12 +276,13 @@ export default function ZonePage() {
             </div>
 
             {/* Dialog Popup */}
-            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
                 <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
                 <DialogContent dividers>
                     {isEdit && (
                         <TextField
-                            margin="normal"
+                            size="small"
+                            margin="dense"
                             label="Zone ID"
                             fullWidth
                             value={formData.zone_id}
@@ -290,7 +291,8 @@ export default function ZonePage() {
                     )}
 
                     <TextField
-                        margin="normal"
+                        size="small"
+                        margin="dense"
                         label="พื้นที่"
                         fullWidth
                         required

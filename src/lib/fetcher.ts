@@ -73,6 +73,10 @@ export function generateEmpId(): string {
   const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
   return `EMP-${randomNum}`;
 }
+export function generateTeamId(): string {
+  const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
+  return `TEAM-${randomNum}`;
+}
 
 export const toSqlDate = (thai?: string | null): string | null => {
   if (!thai) return null;

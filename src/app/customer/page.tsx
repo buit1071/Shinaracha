@@ -277,12 +277,13 @@ export default function CustomersPage() {
       </div>
 
       {/* Dialog Popup */}
-      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
         <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
         <DialogContent dividers>
           {isEdit && (
             <TextField
-              margin="normal"
+              size="small"
+              margin="dense"
               label="รหัสลูกค้า"
               fullWidth
               value={formData.customer_id}
@@ -291,7 +292,8 @@ export default function CustomersPage() {
           )}
 
           <TextField
-            margin="normal"
+            size="small"
+            margin="dense"
             label="ชื่อลูกค้า"
             fullWidth
             required

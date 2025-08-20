@@ -120,8 +120,6 @@ export default function ProjectListPage() {
     };
 
     const handleOpenEdit = (row: ProjectRow) => {
-        console.log("RAW row dates =>", row.start_date, row.end_date);
-
         const start_th = formatToThaiDate(row.start_date);
         const end_th = formatToThaiDate(row.end_date);
 
@@ -328,7 +326,7 @@ export default function ProjectListPage() {
                     {isEdit && (
                         <TextField
                             size="small"
-                            margin="normal"
+                            margin="dense"
                             label="Project ID"
                             fullWidth
                             value={formData.project_id}
@@ -338,7 +336,7 @@ export default function ProjectListPage() {
 
                     <TextField
                         size="small"
-                        margin="normal"
+                        margin="dense"
                         label="ชื่อโครงการ"
                         fullWidth
                         required
@@ -353,7 +351,7 @@ export default function ProjectListPage() {
 
                     <TextField
                         size="small"
-                        margin="normal"
+                        margin="dense"
                         label="รายละเอียด"
                         fullWidth
                         required
@@ -367,7 +365,7 @@ export default function ProjectListPage() {
                     />
 
                     {/* Customer Select (react-select) */}
-                    <Box mt={2}>
+                    <Box>
                         <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
                             ลูกค้า
                         </label>
@@ -453,7 +451,7 @@ export default function ProjectListPage() {
 
 
                     {/* Start & End Date in one row */}
-                    <Box display="flex" gap={2} mt={3}>
+                    <Box display="flex" gap={2} mt={2}>
                         {/* Start Date */}
                         <TextField
                             size="small"

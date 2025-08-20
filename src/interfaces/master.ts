@@ -73,3 +73,21 @@ export interface PermissionRow {
     updated_date?: string;
     order?: number;
 };
+export interface TeamRow {
+    team_id: string;
+    team_name: string;
+    username: string;
+    password: string;
+    confirm_password?: string;
+    uuid: string;
+    leader_id?: string;
+    leader_name?: string;
+    zone_id: string;
+    zone_name?: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+};

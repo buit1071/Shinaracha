@@ -277,12 +277,13 @@ export default function InspectionFormPage() {
             </div>
 
             {/* Dialog Popup */}
-            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
                 <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
                 <DialogContent dividers>
                     {isEdit && (
                         <TextField
-                            margin="normal"
+                            size="small"
+                            margin="dense"
                             label="Service ID"
                             fullWidth
                             value={formData.service_id}
@@ -291,7 +292,8 @@ export default function InspectionFormPage() {
                     )}
 
                     <TextField
-                        margin="normal"
+                        size="small"
+                        margin="dense"
                         label="ชื่อ Service"
                         fullWidth
                         required
