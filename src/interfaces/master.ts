@@ -80,8 +80,6 @@ export interface TeamRow {
     password: string;
     confirm_password?: string;
     uuid: string;
-    leader_id?: string;
-    leader_name?: string;
     zone_id: string;
     zone_name?: string;
     is_active: number;

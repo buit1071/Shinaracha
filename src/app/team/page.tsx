@@ -45,7 +45,6 @@ export default function ProjectListPage() {
         password: "",
         confirm_password: "",
         uuid: "",
-        leader_id: "",
         zone_id: "",
         is_active: 1,
         created_by: "admin",
@@ -86,6 +85,9 @@ export default function ProjectListPage() {
         }
     };
 
+    const getZoneName = (zone_id?: string | null) =>
+        zonesRef.current.find(z => z.zone_id === zone_id)?.zone_name ?? "-";
+
     const updateWithOrder = (data: TeamRow[]) => {
         const sorted = [...data].sort(
             (a, b) =>
@@ -93,14 +95,11 @@ export default function ProjectListPage() {
                 new Date(a.updated_date || "").getTime()
         );
 
-        const withOrder = sorted.map((row, index) => {
-            const emp = employeesRef.current.find(c => c.emp_id === row.leader_id); // <<< ใช้ ref
-            return {
-                ...row,
-                leader_name: emp ? `${emp.first_name} ${emp.last_name}` : "-", // <<< เปลี่ยนตรงนี้
-                order: index + 1,
-            };
-        });
+        const withOrder = sorted.map((row, index) => ({
+            ...row,
+            zone_name: getZoneName(row.zone_id), // ใส่ชื่อพื้นที่จาก zone_id
+            order: index + 1,
+        }));
 
         setRows(withOrder);
     };
@@ -129,11 +128,11 @@ export default function ProjectListPage() {
             password: "",
             confirm_password: "",
             uuid: "",
-            leader_id: "",
             zone_id: "",
             is_active: 1,
             created_by: "admin",
             updated_by: "admin",
+            // emp_list:[],
         });
         setOpen(true);
     };
@@ -231,7 +230,16 @@ export default function ProjectListPage() {
         { field: "team_id", headerName: "Team ID", flex: 1, headerAlign: "center", align: "center" },
         { field: "team_name", headerName: "ชื่อ", flex: 1, headerAlign: "center", align: "left" },
         { field: "uuid", headerName: "UUID", flex: 1, headerAlign: "center", align: "center" },
-        { field: "leader_name", headerName: "หัวหน้า", flex: 1, headerAlign: "center", align: "left" },
+        {
+            field: "leader_name",
+            headerName: "หัวหน้า",
+            flex: 1,
+            headerAlign: "center",
+            align: "left",
+            renderCell: (params: GridRenderCellParams<TeamRow>) => (
+                <span>{params.row.created_by || "-"}</span>
+            ),
+        },
         { field: "zone_name", headerName: "พื้นที่", flex: 1, headerAlign: "center", align: "center" },
         {
             field: "is_active",
@@ -539,7 +547,7 @@ export default function ProjectListPage() {
                     </Box>
 
                     {/* Leader Select (react-select) */}
-                    {formData.team_id && (
+                    {/* {formData.team_id && (
                         <Box mt={2}>
                             <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
                                 หัวหน้า
@@ -603,7 +611,7 @@ export default function ProjectListPage() {
                                 }}
                             />
                         </Box>
-                    )}
+                    )} */}
 
                     <Box mt={2} display="flex" alignItems="center" gap={2}>
                         <span>สถานะ:</span>
