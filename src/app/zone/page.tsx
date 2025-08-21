@@ -97,7 +97,7 @@ export default function ZonePage() {
             setError(true);
             return;
         }
-
+        showLoading(true);
         try {
             const res = await fetch("/api/auth/zone", {
                 method: "POST",
@@ -108,6 +108,7 @@ export default function ZonePage() {
             const result = await res.json();
 
             // 👉 ปิด popup ก่อน
+            showLoading(false);
             setOpen(false);
 
             if (result.success) {
@@ -120,6 +121,8 @@ export default function ZonePage() {
             console.error("Save error:", err);
             setOpen(false); // ปิด popup แม้ error
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        } finally {
+            showLoading(false);
         }
     };
 
@@ -127,13 +130,13 @@ export default function ZonePage() {
     const handleDelete = async (zone_id: string) => {
         const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบข้อมูล");
         if (!confirmed) return;
-
+        showLoading(true);
         try {
             const res = await fetch(`/api/auth/zone/${zone_id}`, {
                 method: "DELETE",
             });
             const result = await res.json();
-
+            showLoading(false);
             if (result.success) {
                 await showAlert("success", result.message);
                 fetchZone();
@@ -143,6 +146,8 @@ export default function ZonePage() {
         } catch (err) {
             console.error("Delete error:", err);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        } finally {
+            showLoading(false);
         }
     };
 
@@ -276,7 +281,7 @@ export default function ZonePage() {
             </div>
 
             {/* Dialog Popup */}
-            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
+            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
                 <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
                 <DialogContent dividers>
                     {isEdit && (

@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserCircleIcon } from "@heroicons/react/24/solid";
 import { ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
 import { showLoading } from "@/lib/loading";
@@ -13,6 +13,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const pathname = usePathname();
     const [openMenus, setOpenMenus] = useState<string[]>([]);
     const avatarUrl = "";
+
+    useEffect(() => {
+        showLoading(false);
+    }, [pathname]);
 
     const toggleMenu = (menuId: string) => {
         setOpenMenus((prev) =>
@@ -135,9 +139,26 @@ function NavLink({
     children: React.ReactNode;
 }) {
     const active = currentPath === href;
+
+    const handleClick: React.MouseEventHandler<HTMLAnchorElement> = (e) => {
+        // ถ้ากดเปิดแท็บใหม่/ใช้ modifier key -> ไม่โชว์ loader
+        if (
+            e.metaKey || e.ctrlKey || e.shiftKey || e.altKey ||
+            e.button === 1 // middle click
+        ) {
+            return;
+        }
+
+        // ถ้าคลิกหน้าเดิม ไม่ต้องโชว์
+        if (currentPath === href) return;
+
+        showLoading(true);
+    };
+
     return (
         <Link
             href={href}
+            onClick={handleClick}
             className={`block px-3 py-2 rounded ${active ? "bg-blue-600 text-white" : "hover:bg-gray-700"
                 }`}
         >

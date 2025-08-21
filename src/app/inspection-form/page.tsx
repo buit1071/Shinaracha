@@ -98,6 +98,7 @@ export default function InspectionFormPage() {
             return;
         }
 
+        showLoading(true);
         try {
             const res = await fetch("/api/auth/inspection-form", {
                 method: "POST",
@@ -111,6 +112,7 @@ export default function InspectionFormPage() {
             setOpen(false);
 
             if (result.success) {
+                showLoading(false);
                 await showAlert("success", result.message);
                 fetchService();
             } else {
@@ -120,29 +122,38 @@ export default function InspectionFormPage() {
             console.error("Save error:", err);
             setOpen(false); // ปิด popup แม้ error
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        } finally {
+            showLoading(false);
         }
     };
 
-
     const handleDelete = async (service_id: string) => {
-        const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบข้อมูล");
+        const confirmed = await showConfirm(
+            "หากลบแล้วจะไม่สามารถนำกลับมาได้",
+            "คุณต้องการลบข้อมูลนี้หรือไม่?"
+        );
         if (!confirmed) return;
+        showLoading(true);
 
         try {
             const res = await fetch(`/api/auth/inspection-form/${service_id}`, {
                 method: "DELETE",
             });
             const result = await res.json();
-
             if (result.success) {
+                showLoading(false);
                 await showAlert("success", result.message);
                 fetchService();
             } else {
+                showLoading(false);
                 showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
             }
         } catch (err) {
             console.error("Delete error:", err);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        } finally {
+            // กันพลาดกรณี throw ระหว่าง alert
+            showLoading(false);
         }
     };
 
@@ -277,7 +288,7 @@ export default function InspectionFormPage() {
             </div>
 
             {/* Dialog Popup */}
-            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
+            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
                 <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
                 <DialogContent dividers>
                     {isEdit && (

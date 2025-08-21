@@ -102,7 +102,6 @@ export default function ProjectListPage() {
         })();
     }, []);
 
-
     const handleOpenAdd = () => {
         setIsEdit(false);
         setFormData({
@@ -132,7 +131,6 @@ export default function ProjectListPage() {
         setOpen(true);
     };
 
-
     const handleClose = () => setOpen(false);
 
     const handleSave = async () => {
@@ -140,7 +138,7 @@ export default function ProjectListPage() {
             setError(true);
             return;
         }
-
+        showLoading(true);
         try {
             const res = await fetch("/api/auth/project-list", {
                 method: "POST",
@@ -151,6 +149,7 @@ export default function ProjectListPage() {
             const result = await res.json();
 
             // 👉 ปิด popup ก่อน
+            showLoading(false);
             setOpen(false);
 
             if (result.success) {
@@ -163,20 +162,21 @@ export default function ProjectListPage() {
             console.error("Save error:", err);
             setOpen(false); // ปิด popup แม้ error
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        } finally {
+            showLoading(false);
         }
     };
-
 
     const handleDelete = async (project_id: string) => {
         const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบข้อมูล");
         if (!confirmed) return;
-
+        showLoading(true);
         try {
             const res = await fetch(`/api/auth/project-list/${project_id}`, {
                 method: "DELETE",
             });
             const result = await res.json();
-
+            showLoading(false);
             if (result.success) {
                 await showAlert("success", result.message);
                 fetchProject();
@@ -186,6 +186,8 @@ export default function ProjectListPage() {
         } catch (err) {
             console.error("Delete error:", err);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        } finally {
+            showLoading(false);
         }
     };
 
@@ -320,7 +322,7 @@ export default function ProjectListPage() {
             </div>
 
             {/* Dialog Popup */}
-            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
+            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
                 <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
                 <DialogContent dividers>
                     {isEdit && (

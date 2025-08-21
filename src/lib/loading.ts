@@ -1,21 +1,32 @@
-let loadingEl: HTMLDivElement | null = null;
+declare global {
+  interface Window { __loadingOverlayEl?: HTMLDivElement | null }
+}
 
 export function showLoading(show: boolean) {
   if (typeof window === "undefined" || typeof document === "undefined") return;
 
+  // ถ้ามี overlay ค้างจากรอบก่อน (เช่น HMR) ดึงมาใช้/ลบทิ้งได้
+  let el =
+    (window as any).__loadingOverlayEl ||
+    (document.getElementById("app-loading-overlay") as HTMLDivElement | null);
+
+  const appRoot = document.getElementById("__next") || document.body;
+
   if (show) {
-    if (!loadingEl) {
-      loadingEl = document.createElement("div");
-      loadingEl.innerHTML = `
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "app-loading-overlay";
+      el.setAttribute("data-loading-overlay", "true");
+      el.innerHTML = `
         <div style="
           position: fixed;
           inset: 0;
-          z-index: 20000;          /* ⬅️ สูงกว่า Dialog แน่นอน */
+          z-index: 20000;
           display: flex;
           align-items: center;
           justify-content: center;
           background: rgba(0,0,0,0.4);
-          pointer-events: all;      /* บล็อกคลิกทะลุ */
+          pointer-events: all;
         ">
           <div class="lds-ring" style="color:white">
             <div></div><div></div><div></div><div></div>
@@ -37,18 +48,35 @@ export function showLoading(show: boolean) {
           @keyframes lds-ring { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         </style>
       `;
-      document.body.appendChild(loadingEl);
-      document.body.style.overflow = "hidden"; // ป้องกัน scroll ระหว่างโหลด
+      document.body.appendChild(el);
     } else {
-      // ถ้าเคยสร้างแล้ว แค่โชว์
-      loadingEl.style.display = "block";
-      document.body.style.overflow = "hidden";
+      el.style.display = "block";
     }
+
+    // lock หน้าจอ/โฟกัส
+    appRoot.setAttribute("inert", "");
+    document.body.setAttribute("aria-busy", "true");
+    document.body.style.overflow = "hidden";
+
+    (window as any).__loadingOverlayEl = el;
   } else {
-    if (loadingEl) {
-      // ซ่อนแทนลบทิ้ง เพื่อลด cost การสร้างใหม่
-      loadingEl.style.display = "none";
+    // ปิดแบบ “ถอนราก” กันค้าง
+    try {
+      appRoot.removeAttribute("inert");
+      document.body.removeAttribute("aria-busy");
       document.body.style.overflow = "";
-    }
+
+      // เผื่อมีหลายตัว คุ้ยลบทั้งหมด
+      document
+        .querySelectorAll('[data-loading-overlay="true"], #app-loading-overlay')
+        .forEach((n) => n.parentElement?.removeChild(n));
+
+      (window as any).__loadingOverlayEl = null;
+    } catch { }
   }
+}
+
+// เผื่ออยากมีปุ่มปิดแบบ force
+export function forceCloseLoading() {
+  showLoading(false);
 }

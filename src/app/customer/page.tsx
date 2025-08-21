@@ -95,54 +95,77 @@ export default function CustomersPage() {
   const handleSave = async () => {
     if (!formData.customer_name) {
       setError(true);
-      return;
+      return; // ยังไม่เปิดโหลด เพราะเราเช็คก่อน
     }
 
+    showLoading(true);
     try {
       const res = await fetch("/api/auth/customer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
       const result = await res.json();
 
-      // 👉 ปิด popup ก่อน
-      setOpen(false);
-
       if (result.success) {
+        // ปิดโหลดก่อน แล้วค่อยปิด dialog และค่อยโชว์ swal
+        showLoading(false);
+        setOpen(false);
         await showAlert("success", result.message);
         fetchCustomers();
       } else {
-        showAlert("error", result.message || "บันทึกล้มเหลว");
+        showLoading(false);
+        setOpen(false);
+        await showAlert("error", result.message || "บันทึกล้มเหลว");
       }
-    } catch (err) {
-      console.error("Save error:", err);
-      setOpen(false); // ปิด popup แม้ error
-      showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+    } catch (e) {
+      console.error(e);
+      showLoading(false);
+      setOpen(false);
+      await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+    } finally {
+      // กันตกหล่น/throw จาก showAlert
+      showLoading(false);
     }
   };
-
 
   const handleDelete = async (customer_id: string) => {
     const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบข้อมูล");
     if (!confirmed) return;
 
+    showLoading(true);
     try {
-      const res = await fetch(`/api/auth/customer/${customer_id}`, {
-        method: "DELETE",
-      });
-      const result = await res.json();
+      const res = await fetch(`/api/auth/customer/${customer_id}`, { method: "DELETE" });
+
+      // บาง API ลบแล้วส่ง 204 No Content -> อ่าน json จะ error
+      let result: { success: boolean; message?: string } = { success: res.ok };
+      const hasBody =
+        res.headers.get("content-length") !== "0" &&
+        (res.headers.get("content-type") || "").includes("application/json");
+
+      if (hasBody) {
+        result = await res.json();
+      } else if (!res.ok) {
+        // สร้างข้อความผิดพลาดแบบ fallback
+        result.message = `ลบข้อมูลล้มเหลว (HTTP ${res.status})`;
+      }
+
+      // ปิดโหลดก่อน แล้วค่อยแสดง alert (กัน overlay ซ้อน)
+      showLoading(false);
 
       if (result.success) {
-        await showAlert("success", result.message);
+        await showAlert("success", result.message || "ลบข้อมูลสำเร็จ");
         fetchCustomers();
       } else {
-        showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
+        await showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
       }
     } catch (err) {
       console.error("Delete error:", err);
-      showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+      showLoading(false);
+      await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+    } finally {
+      // กันพลาดกรณี throw ตรง alert
+      showLoading(false);
     }
   };
 
@@ -277,7 +300,7 @@ export default function CustomersPage() {
       </div>
 
       {/* Dialog Popup */}
-      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
         <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
         <DialogContent dividers>
           {isEdit && (

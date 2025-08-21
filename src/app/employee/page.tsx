@@ -132,6 +132,7 @@ export default function EmployeePage() {
     const handleClose = () => setOpen(false);
 
     const handleSave = async () => {
+        // --- Validate ก่อน ยังไม่ต้องเปิดโหลด ---
         if (!formData.first_name || !formData.last_name) {
             setError(true);
             return;
@@ -140,7 +141,6 @@ export default function EmployeePage() {
             setError(true);
             return;
         }
-
         // เพิ่มเท่านั้น: password ต้องไม่ว่าง และต้องตรงกัน
         if (!formData.emp_id) {
             if (!formData.password || !formData.confirm_password) {
@@ -153,6 +153,7 @@ export default function EmployeePage() {
             }
         }
 
+        showLoading(true);
         try {
             const res = await fetch("/api/auth/employee", {
                 method: "POST",
@@ -160,44 +161,79 @@ export default function EmployeePage() {
                 body: JSON.stringify(formData),
             });
 
-            const result = await res.json();
+            let result: { success: boolean; message?: string } = { success: res.ok };
+            const ct = res.headers.get("content-type") || "";
+            if (ct.includes("application/json")) {
+                result = await res.json();
+            } else if (!res.ok) {
+                result.message = `บันทึกล้มเหลว (HTTP ${res.status})`;
+            }
 
-            // 👉 ปิด popup ก่อน
+            // ปิดโหลดก่อน แล้วค่อยปิด popup/โชว์ alert
+            showLoading(false);
             setOpen(false);
 
             if (result.success) {
-                await showAlert("success", result.message);
+                await showAlert("success", result.message || "บันทึกสำเร็จ");
                 fetchEmployees();
             } else {
-                showAlert("error", result.message || "บันทึกล้มเหลว");
+                await showAlert("error", result.message || "บันทึกล้มเหลว");
             }
         } catch (err) {
             console.error("Save error:", err);
-            setOpen(false); // ปิด popup แม้ error
-            showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+            showLoading(false);
+            setOpen(false);
+            await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        } finally {
+            // กันพลาดกรณี throw ระหว่าง alert
+            showLoading(false);
         }
     };
 
-
     const handleDelete = async (emp_id: string) => {
-        const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบข้อมูล");
+        const confirmed = await showConfirm(
+            "หากลบแล้วจะไม่สามารถนำกลับมาได้",
+            "คุณต้องการลบข้อมูลนี้หรือไม่?"
+        );
         if (!confirmed) return;
 
+        showLoading(true);
         try {
-            const res = await fetch(`/api/auth/employee/${emp_id}`, {
-                method: "DELETE",
-            });
-            const result = await res.json();
+            const res = await fetch(`/api/auth/employee/${emp_id}`, { method: "DELETE" });
+
+            // บาง API ลบแล้วตอบ 204 No Content -> ห้าม res.json()
+            let result: { success: boolean; message?: string } = { success: res.ok };
+
+            const contentType = res.headers.get("content-type") || "";
+            const contentLength = res.headers.get("content-length");
+
+            const hasJsonBody =
+                (contentLength && contentLength !== "0") || !contentLength
+                    ? contentType.includes("application/json")
+                    : false;
+
+            if (hasJsonBody) {
+                result = await res.json();
+            } else if (!res.ok) {
+                result.message = `ลบข้อมูลล้มเหลว (HTTP ${res.status})`;
+            }
+
+            // ปิดโหลดก่อน แล้วค่อยแสดง alert
+            showLoading(false);
 
             if (result.success) {
-                await showAlert("success", result.message);
+                await showAlert("success", result.message || "ลบข้อมูลสำเร็จ");
                 fetchEmployees();
             } else {
-                showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
+                await showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
             }
         } catch (err) {
             console.error("Delete error:", err);
-            showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+            showLoading(false);
+            await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        } finally {
+            // กันพลาดกรณี throw ระหว่าง alert
+            showLoading(false);
         }
     };
 
@@ -326,7 +362,7 @@ export default function EmployeePage() {
             </div>
 
             {/* Dialog Popup */}
-            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
+            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
                 <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
                 <DialogContent dividers>
                     {isEdit && (
