@@ -3,12 +3,18 @@ import "./globals.css";
 import LayoutSwitch from "./LayoutSwitch";
 
 export const metadata: Metadata = {
-  title: "Shinaracha",
+  // title: "Shinaracha",
+  title: "A&P Maintenance",
   description: "",
+  // icons: {
+  //   icon: "/images/NewLOGOSF.webp",
+  //   shortcut: "/images/NewLOGOSF.webp",
+  //   apple: "/images/NewLOGOSF.webp",
+  // },
   icons: {
-    icon: "/images/NewLOGOSF.webp",
-    shortcut: "/images/NewLOGOSF.webp",
-    apple: "/images/NewLOGOSF.webp",
+    icon: "/images/ap-Logi.png",
+    shortcut: "/images/ap-Logi.png",
+    apple: "/images/ap-Logi.png",
   },
 };
 

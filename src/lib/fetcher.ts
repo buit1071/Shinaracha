@@ -77,6 +77,10 @@ export function generateTeamId(): string {
   const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
   return `TEAM-${randomNum}`;
 }
+export function generateEquipmentId(): string {
+  const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
+  return `EQUI-${randomNum}`;
+}
 
 export const toSqlDate = (thai?: string | null): string | null => {
   if (!thai) return null;

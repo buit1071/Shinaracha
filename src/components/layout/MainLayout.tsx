@@ -41,11 +41,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <aside className="w-64 bg-gray-800 text-white flex flex-col">
                 <div className="p-4 flex items-center text-center justify-center flex-col">
                     <img
-                        src="/images/NewLOGOSF.webp"
+                        // src="/images/NewLOGOSF.webp"
+                        src="/images/ap-Logi.png"
                         alt="Logo"
                         className="w-[75px]"
                     />
-                    <span className="text-xl font-bold">Shinaracha</span>
+                    <span className="text-xl font-bold">A&P Maintenance</span>
                 </div>
                 <div className="w-[90%] h-px bg-white mx-auto"></div>
                 <nav className="flex-1 p-4 space-y-2 max-h-[739px] overflow-y-auto scrollbar-hide">
@@ -86,7 +87,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             <NavLink href="/inspection-type" currentPath={pathname}>ประเภทการตรวจ</NavLink>
                             <NavLink href="/team" currentPath={pathname}>ทีม</NavLink>
                             <NavLink href="/customer" currentPath={pathname}>ข้อมูลลูกค้า</NavLink>
-                            <NavLink href="/device" currentPath={pathname}>อุปกรณ์</NavLink>
+                            <NavLink href="/equipment" currentPath={pathname}>อุปกรณ์</NavLink>
                             <NavLink href="/holiday" currentPath={pathname}>วันหยุด</NavLink>
                             <NavLink href="/employee" currentPath={pathname}>ข้อมูลพนักงาน</NavLink>
                             <NavLink href="/permission" currentPath={pathname}>สิทธิการใช้งาน</NavLink>

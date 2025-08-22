@@ -236,14 +236,13 @@ export default function CustomersPage() {
       headerAlign: "center",
       align: "center",
       renderCell: (params: GridRenderCellParams<CustomerRow>) => (
-        <Box sx={{ display: "flex", justifyContent: "center", gap: 1, width: "100%" }}>
+        <>
           <IconButton color="primary" onClick={() => handleOpenEdit(params.row)}>
             <EditIcon />
           </IconButton>
           <IconButton color="error" onClick={() => handleDelete(params.row.customer_id)}>
             <DeleteIcon />
-          </IconButton>
-        </Box>
+          </IconButton></>
       ),
     },
   ];

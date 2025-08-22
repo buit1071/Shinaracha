@@ -260,14 +260,13 @@ export default function ProjectListPage() {
             headerAlign: "center",
             align: "center",
             renderCell: (params: GridRenderCellParams<ProjectRow>) => (
-                <Box sx={{ display: "flex", justifyContent: "center", gap: 1, width: "100%" }}>
+                <>
                     <IconButton color="primary" onClick={() => handleOpenEdit(params.row)}>
                         <EditIcon />
                     </IconButton>
                     <IconButton color="error" onClick={() => handleDelete(params.row.project_id)}>
                         <DeleteIcon />
-                    </IconButton>
-                </Box>
+                    </IconButton></>
             ),
         },
     ];

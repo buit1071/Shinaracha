@@ -299,14 +299,13 @@ export default function EmployeePage() {
             headerAlign: "center",
             align: "center",
             renderCell: (params: GridRenderCellParams<EmployeeRow>) => (
-                <Box sx={{ display: "flex", justifyContent: "center", gap: 1, width: "100%" }}>
+                <>
                     <IconButton color="primary" onClick={() => handleOpenEdit(params.row)}>
                         <EditIcon />
                     </IconButton>
                     <IconButton color="error" onClick={() => handleDelete(params.row.emp_id)}>
                         <DeleteIcon />
-                    </IconButton>
-                </Box>
+                    </IconButton></>
             ),
         },
     ];

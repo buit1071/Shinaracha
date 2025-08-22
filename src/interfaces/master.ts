@@ -100,3 +100,29 @@ export interface TeamRow {
     updated_date?: string;
     order?: number;
 };
+export interface EquipmentRow {
+    equipment_id: string;
+    equipment_name: string;
+    description: string;
+    service_id: string;
+    service_name?: string;
+    system_zone_id: string;
+    system_zone_name?: string;
+    image_limit?: number;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+};
+export interface SystemZonesRow {
+    system_zone_id: string;
+    system_zone_name: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+};

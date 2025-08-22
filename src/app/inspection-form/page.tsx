@@ -224,14 +224,13 @@ export default function InspectionFormPage() {
             headerAlign: "center",
             align: "center",
             renderCell: (params: GridRenderCellParams<ServiceRow>) => (
-                <Box sx={{ display: "flex", justifyContent: "center", gap: 1, width: "100%" }}>
+                <>
                     <IconButton color="primary" onClick={() => handleOpenEdit(params.row)}>
                         <EditIcon />
                     </IconButton>
                     <IconButton color="error" onClick={() => handleDelete(params.row.service_id)}>
                         <DeleteIcon />
-                    </IconButton>
-                </Box>
+                    </IconButton></>
             ),
         },
     ];
