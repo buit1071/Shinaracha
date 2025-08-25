@@ -139,3 +139,16 @@ export interface HolidayRow {
     updated_date?: string;
     order?: number;
 };
+export interface InspectionTypeRow {
+    in_type_id: string;
+    service_id: string;
+    name: string;
+    inspection_duration: number;
+    inspections_per_year: number;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+};

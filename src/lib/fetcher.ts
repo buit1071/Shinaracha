@@ -85,6 +85,10 @@ export function generateHolidayId(): string {
   const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
   return `HOLI-${randomNum}`;
 }
+export function generateInTypeId(): string {
+  const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
+  return `ISTT-${randomNum}`;
+}
 
 export const toSqlDate = (thai?: string | null): string | null => {
   if (!thai) return null;
