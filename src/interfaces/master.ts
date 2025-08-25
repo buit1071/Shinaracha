@@ -126,3 +126,16 @@ export interface SystemZonesRow {
     updated_date?: string;
     order?: number;
 };
+export interface HolidayRow {
+    holiday_id: string;
+    title: string;
+    description: string;
+    start_date: string;
+    end_date: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+};

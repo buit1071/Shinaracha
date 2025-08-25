@@ -33,7 +33,6 @@ const FormBuilder = dynamic(
     { ssr: false }
 );
 
-
 class LocalFormStorage implements IFormStorage {
     private last = "{}";
     private names = ["current"];

@@ -34,3 +34,87 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* ---------- พื้นหลังรวมให้ขาว ---------- */
+.calendar-shell,
+.calendar-shell .fc,
+.calendar-shell .fc .fc-view-harness,
+.calendar-shell .fc-theme-standard .fc-scrollgrid {
+  background: #ffffff;
+}
+
+/* ---------- Toolbar ติดบน สีโทนกลาง ---------- */
+.calendar-shell .fc .fc-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: #ffffff; /* พื้นหลังขาว */
+  color: #0f172a; /* ตัวอักษรเข้ม */
+  padding: 6px 8px;
+  border-bottom: 1px solid #e5e7eb; /* เส้นคั่นบาง ๆ */
+}
+.calendar-shell .fc .fc-toolbar-title {
+  color: #0f172a;
+}
+
+/* ปุ่มใน toolbar (ปกติ/hover/active = แสดงมุมมองที่ใช้อยู่) */
+.calendar-shell .fc .fc-button-primary {
+  background: #ffffff;
+  color: #334155; /* slate-700 */
+  border: 1px solid #cbd5e1; /* slate-300 */
+  box-shadow: none;
+}
+.calendar-shell .fc .fc-button-primary:hover {
+  background: #f1f5f9; /* slate-100 */
+}
+.calendar-shell .fc .fc-button-primary.fc-button-active,
+.calendar-shell .fc .fc-button-primary:active {
+  background: #334155; /* slate-700 */
+  border-color: #334155;
+  color: #ffffff; /* ✅ Active view ชัดเจน */
+}
+
+/* ---------- หัวคอลัมน์ จ–อา โทนกลาง (ต่างจาก toolbar) ---------- */
+.calendar-shell .fc .fc-col-header {
+  position: sticky;
+  top: 48px; /* ถ้าตัด toolbar ออก เปลี่ยนเป็น 0 */
+  z-index: 30;
+  background: #e2e8f0; /* slate-300 : ไม่มืด/ไม่สว่างเกิน */
+  color: #0f172a;
+  border-radius: 0;
+}
+.calendar-shell .fc .fc-col-header-cell-cushion {
+  color: #0f172a;
+}
+
+/* เลขวันให้ชัด */
+.calendar-shell .fc .fc-daygrid-day-number {
+  color: #0f172a !important;
+  font-weight: 600;
+}
+
+/* วันนี้ไฮไลต์บาง ๆ */
+.calendar-shell .fc .fc-daygrid-day.fc-day-today {
+  background: #fff7ed; /* amber-50 */
+}
+
+/* สีตอนลาก select ช่วงวัน */
+.calendar-shell .fc .fc-highlight {
+  background: rgba(59, 130, 246, 0.15); /* ฟ้าใส */
+}
+
+/* ---------- มุมมอง "รายการ" ให้ต่างจากหัวตาราง ---------- */
+/* หัวแต่ละวันใน list ใช้ฟ้าเข้มอ่านง่าย (ไม่ซ้ำหัวคอลัมน์) */
+.calendar-shell .fc .fc-list-day-cushion {
+  background: #2563eb; /* blue-600 */
+  color: #ffffff;
+}
+/* รายการแต่ละแถวพื้นขาว เส้นคั่นอ่อน + hover นิด ๆ */
+.calendar-shell .fc .fc-list-table tr > td {
+  background: #ffffff;
+  color: #111827;
+  border-color: #e5e7eb;
+}
+.calendar-shell .fc .fc-list-event:hover td {
+  background: #f8fafc; /* slate-50 */
+}
