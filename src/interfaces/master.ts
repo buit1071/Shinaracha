@@ -82,6 +82,7 @@ export interface PermissionRow {
     updated_by: string;
     created_date?: string;
     updated_date?: string;
+    menu_ids?: string[];
     order?: number;
 };
 export interface TeamRow {
@@ -145,6 +146,18 @@ export interface InspectionTypeRow {
     name: string;
     inspection_duration: number;
     inspections_per_year: number;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+};
+export interface MenuRow {
+    menu_id: string;
+    menu_name: string;
+    group_id: number;
+    seq: number;
     is_active: number;
     created_by: string;
     updated_by: string;
