@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib-server/db";
-import { generateHolidayId } from "@/lib/fetcher";
+import { generateId } from "@/lib/fetcher";
 
 export async function GET() {
     try {
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, message: "บันทึกข้อมูลเรียบร้อย" });
         } else {
             // กรณีไม่มี holiday_id → INSERT พร้อม gen ใหม่
-            const newHolidayId = generateHolidayId();
+            const newHolidayId = generateId("HLD");
 
             if (!title || !body.start_date) {
                 return NextResponse.json(

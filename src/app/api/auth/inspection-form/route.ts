@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib-server/db";
-import { generateServiceId } from "@/lib/fetcher";
+import { generateId } from "@/lib/fetcher";
 
 export async function GET() {
     try {
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, message: "อัปเดตข้อมูลเรียบร้อย" });
         } else {
             // กรณีไม่มี service_id → INSERT พร้อม gen ใหม่
-            const newServiceId = generateServiceId();
+            const newServiceId = generateId("SER");
 
             await query(
                 `

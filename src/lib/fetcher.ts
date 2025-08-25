@@ -53,41 +53,9 @@ export const formatDate = (value?: string) => {
   return dayjs(value).format("DD/MM/YYYY"); // แค่วันที่
 };
 
-export function generateCustomerId(): string {
+export function generateId(prefix: string): string {
   const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
-  return `CUST-${randomNum}`;
-}
-export function generateServiceId(): string {
-  const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
-  return `SERV-${randomNum}`;
-}
-export function generateZoneId(): string {
-  const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
-  return `ZONE-${randomNum}`;
-}
-export function generateProjectId(): string {
-  const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
-  return `PROJ-${randomNum}`;
-}
-export function generateEmpId(): string {
-  const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
-  return `EMP-${randomNum}`;
-}
-export function generateTeamId(): string {
-  const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
-  return `TEAM-${randomNum}`;
-}
-export function generateEquipmentId(): string {
-  const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
-  return `EQUI-${randomNum}`;
-}
-export function generateHolidayId(): string {
-  const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
-  return `HOLI-${randomNum}`;
-}
-export function generateInTypeId(): string {
-  const randomNum = Math.floor(10000000 + Math.random() * 90000000); // 8 หลัก
-  return `ISTT-${randomNum}`;
+  return `${prefix}-${randomNum}`;
 }
 
 export const toSqlDate = (thai?: string | null): string | null => {

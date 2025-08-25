@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib-server/db";
-import { generateInTypeId } from "@/lib/fetcher";
+import { query } from "@/lib-server/db"; 
+import { generateId } from "@/lib/fetcher";
 
 export async function GET() {
     try {
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
             );
         }
 
-        const newInTypeId = generateInTypeId();
+        const newInTypeId = generateId("IST");
 
         const insertSql = `
       INSERT INTO data_inspection_type

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib-server/db";
-import { generateProjectId, toSqlDate } from "@/lib/fetcher";
+import { generateId, toSqlDate } from "@/lib/fetcher";
 
 export async function GET(req: Request) {
     try {
@@ -133,7 +133,7 @@ export async function POST(req: Request) {
             });
         } else {
             // INSERT เหมือนเดิม
-            const newProjectId = generateProjectId();
+            const newProjectId = generateId("PJ");
 
             await query(
                 `

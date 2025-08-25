@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib-server/db";
-import { generateEmpId } from "@/lib/fetcher";
+import { generateId  } from "@/lib/fetcher";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -175,7 +175,7 @@ export async function POST(req: Request) {
         }
 
         // -------- INSERT --------
-        const newEmpId = generateEmpId();
+        const newEmpId = generateId("EMP");
 
         await query(
             `

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib-server/db";
-import { generateZoneId } from "@/lib/fetcher";
+import { generateId } from "@/lib/fetcher";
 
 export async function GET() {
     try {
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, message: "อัปเดตข้อมูลเรียบร้อย" });
         } else {
             // กรณีไม่มี zone_id → INSERT พร้อม gen ใหม่
-            const newZoneId = generateZoneId();
+            const newZoneId = generateId("ZONE");
 
             await query(
                 `

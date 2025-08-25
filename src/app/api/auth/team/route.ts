@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib-server/db";
-import { generateTeamId } from "@/lib/fetcher";
+import { generateId } from "@/lib/fetcher";
 
 export async function GET(req: Request) {
     try {
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
 
         if (!team_id) {
             // ===== CREATE =====
-            const newTeamId = await generateTeamId();
+            const newTeamId = await generateId("TEAM");
 
             const insertSql = `
         INSERT INTO data_teams

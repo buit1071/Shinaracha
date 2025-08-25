@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib-server/db";
-import { generateEquipmentId } from "@/lib/fetcher";
+import { generateId } from "@/lib/fetcher";
 
 export async function GET() {
     try {
@@ -74,7 +74,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, message: "อัปเดตข้อมูลเรียบร้อย" });
         } else {
             // ✅ INSERT อุปกรณ์ใหม่ + gen equipment_id (ไม่บันทึก service_name/system_zone_name)
-            const newEquipmentId = generateEquipmentId(); // เช่น "EQP-2508xxx"
+            const newEquipmentId = generateId("EQM");
 
             await query(
                 `

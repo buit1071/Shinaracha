@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib-server/db";
-import { generateCustomerId } from "@/lib/fetcher";
+import { generateId } from "@/lib/fetcher";
 
 export async function GET(req: Request) {
     try {
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, message: "อัปเดตข้อมูลลูกค้าเรียบร้อย" });
         } else {
             // กรณีไม่มี customer_id → INSERT พร้อม gen ใหม่
-            const newCustomerId = generateCustomerId();
+            const newCustomerId = generateId("CUST");
 
             await query(
                 `
