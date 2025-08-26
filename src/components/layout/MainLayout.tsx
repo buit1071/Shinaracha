@@ -41,12 +41,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <aside className="w-64 bg-gray-800 text-white flex flex-col">
                 <div className="p-4 flex items-center text-center justify-center flex-col">
                     <img
-                        // src="/images/NewLOGOSF.webp"
-                        src="/images/ap-Logi.png"
+                        src="/images/NewLOGOSF.webp"
                         alt="Logo"
                         className="w-[75px]"
                     />
-                    <span className="text-xl font-bold">A&P Maintenance</span>
+                    <span className="text-xl font-bold">Shinaracha</span>
                 </div>
                 <div className="w-[90%] h-px bg-white mx-auto"></div>
                 <nav className="flex-1 p-4 space-y-2 max-h-[739px] overflow-y-auto scrollbar-hide">

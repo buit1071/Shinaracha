@@ -190,11 +190,11 @@ export default function InspectionFormPage() {
         setOpenEdit(true);
     };
 
-    const handleOpenEditDetail = (row: EquipmentRow) => {
-        setFormData(row);
-        setOpenEdit(false);     // ✅ ปิดอีกตัวกันซ้อน
-        setOpenDetail(true);
-    };
+    // const handleOpenEditDetail = (row: EquipmentRow) => {
+    //     setFormData(row);
+    //     setOpenEdit(false);     // ✅ ปิดอีกตัวกันซ้อน
+    //     setOpenDetail(true);
+    // };
 
     const handleClose = () => {
         setOpenEdit(false);
@@ -332,22 +332,22 @@ export default function InspectionFormPage() {
                 />
             ),
         },
-        {
-            field: "detail",
-            headerName: "Detail",
-            sortable: false,
-            width: 150,
-            headerAlign: "center",
-            align: "center",
-            renderCell: (params: GridRenderCellParams<EquipmentRow>) => (
-                <IconButton
-                    color="primary"
-                    onClick={(e) => { e.stopPropagation(); handleOpenEditDetail(params.row); }}
-                >
-                    <EditIcon />
-                </IconButton>
-            ),
-        },
+        // {
+        //     field: "detail",
+        //     headerName: "Detail",
+        //     sortable: false,
+        //     width: 150,
+        //     headerAlign: "center",
+        //     align: "center",
+        //     renderCell: (params: GridRenderCellParams<EquipmentRow>) => (
+        //         <IconButton
+        //             color="primary"
+        //             onClick={(e) => { e.stopPropagation(); handleOpenEditDetail(params.row); }}
+        //         >
+        //             <EditIcon />
+        //         </IconButton>
+        //     ),
+        // },
         {
             field: "actions",
             headerName: "Action",
