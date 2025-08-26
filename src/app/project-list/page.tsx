@@ -256,6 +256,8 @@ export default function ProjectListPage() {
             field: "actions",
             headerName: "Action",
             sortable: false,
+            filterable: false,
+            disableColumnMenu: true,
             width: 150,
             headerAlign: "center",
             align: "center",
@@ -283,7 +285,7 @@ export default function ProjectListPage() {
             order: index + 1,
         }));
     return (
-        <div className="min-h-[94.9vh] grid place-items-center bg-gray-50">
+        <div className="min-h-[96vh] grid place-items-center bg-gray-50">
             <div className="h-[6vh] w-full bg-white shadow-md flex items-center justify-between px-4 text-black font-semibold rounded-lg">
                 โครงการ
                 <div className="flex gap-2 items-center">

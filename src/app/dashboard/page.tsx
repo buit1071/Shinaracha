@@ -15,7 +15,7 @@ export default function DashboardPage() {
   // }, [router]);
 
   return (
-    <div className="min-h-[94.9vh] grid place-items-center bg-gray-50">
+    <div className="min-h-[96vh] grid place-items-center bg-gray-50">
       
     </div>
   );

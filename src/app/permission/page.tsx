@@ -284,6 +284,8 @@ export default function PermissionPage() {
             field: "actions",
             headerName: "Action",
             sortable: false,
+            filterable: false,
+            disableColumnMenu: true,
             width: 150,
             headerAlign: "center",
             align: "center",
@@ -368,7 +370,7 @@ export default function PermissionPage() {
 
     // ---------- render ----------
     return (
-        <div className="min-h-[94.9vh] grid place-items-center bg-gray-50">
+        <div className="min-h-[96vh] grid place-items-center bg-gray-50">
             {/* Header Bar */}
             <div className="h-[6vh] w-full bg-white shadow-md flex items-center justify-between px-4 text-black font-semibold rounded-lg">
                 สิทธิ์การใช้งาน

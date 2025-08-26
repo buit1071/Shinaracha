@@ -23,8 +23,12 @@ import {
 import { formatDateTime, showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
 import { ServiceRow } from "@/interfaces/master";
+import ServiceDetail from "@/components/inspection-form/ServiceDetail";
 
 export default function InspectionFormPage() {
+    const [view, setView] = React.useState<null | { type: "detail"; id: string }>(null);
+    const openDetail = (id: string) => setView({ type: "detail", id });
+    const backToList = () => setView(null);
     const [rows, setRows] = React.useState<ServiceRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
     const [open, setOpen] = React.useState(false);
@@ -184,7 +188,22 @@ export default function InspectionFormPage() {
             headerAlign: "center",
             align: "center",
         },
-        { field: "service_id", headerName: "Service ID", flex: 1, headerAlign: "center", align: "center" },
+        {
+            field: "service_id",
+            headerName: "Service ID",
+            flex: 1,
+            headerAlign: "center",
+            align: "center",
+            renderCell: (params: GridRenderCellParams<ServiceRow>) => (
+                <button
+                    onClick={() => openDetail(params.row.service_id)}
+                    className="hover:no-underline text-blue-600 hover:opacity-80 cursor-pointer"
+                    title="เปิดรายละเอียด"
+                >
+                    {params.row.service_id}
+                </button>
+            ),
+        },
         { field: "service_name", headerName: "ชื่อ Service", flex: 1, headerAlign: "center", align: "left" },
         {
             field: "created_date",
@@ -220,6 +239,8 @@ export default function InspectionFormPage() {
             field: "actions",
             headerName: "Action",
             sortable: false,
+            filterable: false,
+            disableColumnMenu: true,
             width: 150,
             headerAlign: "center",
             align: "center",
@@ -248,96 +269,102 @@ export default function InspectionFormPage() {
         }));
 
     return (
-        <div className="min-h-[94.9vh] grid place-items-center bg-gray-50">
-            {/* Header Bar */}
-            <div className="h-[6vh] w-full bg-white shadow-md flex items-center justify-between px-4 text-black font-semibold rounded-lg">
-                Service
-                <div className="flex gap-2 items-center">
-                    <TextField
-                        size="small"
-                        placeholder="ค้นหา..."
-                        value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)}
-                    />
-                    <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenAdd}>
-                        เพิ่มข้อมูล
-                    </Button>
-                </div>
-            </div>
+        <div className="min-h-[96vh] grid place-items-center bg-gray-50">
+            {view?.type === "detail" ? (
+                <ServiceDetail serviceId={view.id} onBack={backToList} />
+            ) : (
+                <>
+                    {/* Header Bar */}
+                    <div className="h-[6vh] w-full bg-white shadow-md flex items-center justify-between px-4 text-black font-semibold rounded-lg">
+                        Service
+                        <div className="flex gap-2 items-center">
+                            <TextField
+                                size="small"
+                                placeholder="ค้นหา..."
+                                value={searchText}
+                                onChange={(e) => setSearchText(e.target.value)}
+                            />
+                            <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenAdd}>
+                                เพิ่มข้อมูล
+                            </Button>
+                        </div>
+                    </div>
 
-            {/* Table */}
-            <div className="h-[88vh] w-full bg-white">
-                <DataGrid
-                    sx={{
-                        borderRadius: "0.5rem",
-                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                        "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": {
-                            outline: "none",
-                        },
-                    }}
-                    rows={filteredRows}
-                    columns={columns.map((col) => ({ ...col, resizable: false }))}
-                    initialState={{
-                        pagination: { paginationModel: { pageSize: 5, page: 0 } },
-                    }}
-                    pageSizeOptions={[5, 10]}
-                    disableRowSelectionOnClick
-                    getRowId={(row) => row.service_id} // ใช้ service_id แทน id
-                />
-            </div>
-
-            {/* Dialog Popup */}
-            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
-                <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
-                <DialogContent dividers>
-                    {isEdit && (
-                        <TextField
-                            size="small"
-                            margin="dense"
-                            label="Service ID"
-                            fullWidth
-                            value={formData.service_id}
-                            disabled
+                    {/* Table */}
+                    <div className="h-[88vh] w-full bg-white">
+                        <DataGrid
+                            sx={{
+                                borderRadius: "0.5rem",
+                                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                                "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": {
+                                    outline: "none",
+                                },
+                            }}
+                            rows={filteredRows}
+                            columns={columns.map((col) => ({ ...col, resizable: false }))}
+                            initialState={{
+                                pagination: { paginationModel: { pageSize: 5, page: 0 } },
+                            }}
+                            pageSizeOptions={[5, 10]}
+                            disableRowSelectionOnClick
+                            getRowId={(row) => row.service_id} // ใช้ service_id แทน id
                         />
-                    )}
+                    </div>
 
-                    <TextField
-                        size="small"
-                        margin="dense"
-                        label="ชื่อ Service"
-                        fullWidth
-                        required
-                        value={formData.service_name}
-                        onChange={(e) => {
-                            setFormData({ ...formData, service_name: e.target.value });
-                            if (error) setError(false);
-                        }}
-                        error={error && !formData.service_name}
-                        helperText={error && !formData.service_name ? "กรุณากรอกชื่อ Service" : ""}
-                    />
+                    {/* Dialog Popup */}
+                    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
+                        <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
+                        <DialogContent dividers>
+                            {isEdit && (
+                                <TextField
+                                    size="small"
+                                    margin="dense"
+                                    label="Service ID"
+                                    fullWidth
+                                    value={formData.service_id}
+                                    disabled
+                                />
+                            )}
 
-                    <Box mt={2} display="flex" alignItems="center" gap={2}>
-                        <span>สถานะ:</span>
-                        <Switch
-                            checked={formData.is_active === 1}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    is_active: e.target.checked ? 1 : 0,
-                                })
-                            }
-                            color="success"
-                        />
-                        <span>{formData.is_active === 1 ? "ใช้งาน" : "ปิดการใช้งาน"}</span>
-                    </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleClose}>ยกเลิก</Button>
-                    <Button variant="contained" color="primary" onClick={handleSave}>
-                        บันทึก
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                            <TextField
+                                size="small"
+                                margin="dense"
+                                label="ชื่อ Service"
+                                fullWidth
+                                required
+                                value={formData.service_name}
+                                onChange={(e) => {
+                                    setFormData({ ...formData, service_name: e.target.value });
+                                    if (error) setError(false);
+                                }}
+                                error={error && !formData.service_name}
+                                helperText={error && !formData.service_name ? "กรุณากรอกชื่อ Service" : ""}
+                            />
+
+                            <Box mt={2} display="flex" alignItems="center" gap={2}>
+                                <span>สถานะ:</span>
+                                <Switch
+                                    checked={formData.is_active === 1}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            is_active: e.target.checked ? 1 : 0,
+                                        })
+                                    }
+                                    color="success"
+                                />
+                                <span>{formData.is_active === 1 ? "ใช้งาน" : "ปิดการใช้งาน"}</span>
+                            </Box>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={handleClose}>ยกเลิก</Button>
+                            <Button variant="contained" color="primary" onClick={handleSave}>
+                                บันทึก
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+                </>
+            )}
         </div>
     );
 }

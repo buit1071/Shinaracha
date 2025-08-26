@@ -175,6 +175,8 @@ export default function InspectionTypePage() {
                 field: "actions",
                 headerName: "Action",
                 sortable: false,
+                filterable: false,
+                disableColumnMenu: true,
                 width: 150,
                 headerAlign: "center",
                 align: "center",
@@ -285,7 +287,7 @@ export default function InspectionTypePage() {
     );
 
     return (
-        <div className="min-h-[94.9vh] bg-gray-50">
+        <div className="min-h-[96vh] bg-gray-50">
             <div className="grid gap-3 max-h-[calc(94.9vh-16px)] overflow-y-auto pr-2">
                 {services.map((s) => {
                     const rows = getFilteredRows(s.service_id);
