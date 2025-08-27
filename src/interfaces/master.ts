@@ -127,6 +127,17 @@ export interface SystemZonesRow {
     updated_date?: string;
     order?: number;
 };
+export interface DataZonesRow {
+    service_id: string;
+    zone_id: string;
+    zone_name: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+};
 export interface HolidayRow {
     holiday_id: string;
     title: string;
@@ -158,6 +169,17 @@ export interface MenuRow {
     menu_name: string;
     group_id: number;
     seq: number;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+};
+export interface InspectGroupRow {
+    zone_id: string;
+    inspect_id: string;
+    inspect_name : string;
     is_active: number;
     created_by: string;
     updated_by: string;

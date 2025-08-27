@@ -199,7 +199,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json({
             success: true,
-            message: "เพิ่มข้อมูลพนักงานเรียบร้อย",
+            message: "เพิ่มข้อมูลเรียบร้อย",
             emp_id: newEmpId,
         });
     } catch (err: any) {

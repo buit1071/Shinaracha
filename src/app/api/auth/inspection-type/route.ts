@@ -113,7 +113,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json({
             success: true,
-            message: "เพิ่มเรียบร้อย",
+            message: "เพิ่มข้อมูลเรียบร้อย",
             in_type_id: newInTypeId,
         });
     } catch (err: any) {

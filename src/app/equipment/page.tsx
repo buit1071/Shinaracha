@@ -107,10 +107,15 @@ export default function InspectionFormPage() {
 
     const fetchServices = async () => {
         try {
-            const res = await fetch("/api/auth/inspection-form");
+            const res = await fetch("/api/auth/inspection-form/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "services" }),
+            });
+
             const data = await res.json();
             if (data.success) {
-                setServices(data.data); // สมมุติ API ส่งเป็น { success, data: [...] }
+                setServices(data.data || []);
             } else {
                 console.error("โหลด services ไม่สำเร็จ:", data.message);
             }

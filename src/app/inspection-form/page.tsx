@@ -47,10 +47,18 @@ export default function InspectionFormPage() {
     const fetchService = async () => {
         showLoading(true);
         try {
-            const res = await fetch("/api/auth/inspection-form");
+            const res = await fetch("/api/auth/inspection-form/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                // ถ้าต้องการกัน cache ฝั่งเบราว์เซอร์ เพิ่ม cache: "no-store"
+                body: JSON.stringify({ function: "services" }),
+            });
+
             const data = await res.json();
             if (data.success) {
-                updateWithOrder(data.data);
+                updateWithOrder(data.data || []);
+            } else {
+                console.error("โหลด services ไม่สำเร็จ:", data.message);
             }
         } catch (err) {
             console.error("Fetch error:", err);
@@ -58,6 +66,7 @@ export default function InspectionFormPage() {
             showLoading(false);
         }
     };
+
 
     // helper: เรียงใหม่ทุกครั้ง + เพิ่ม order
     const updateWithOrder = (data: ServiceRow[]) => {
@@ -97,41 +106,52 @@ export default function InspectionFormPage() {
     const handleClose = () => setOpen(false);
 
     const handleSave = async () => {
-        if (!formData.service_name) {
+        // validate เบื้องต้น
+        if (!formData.service_name?.trim()) {
             setError(true);
             return;
         }
 
         showLoading(true);
         try {
-            const res = await fetch("/api/auth/inspection-form", {
+            const payload = {
+                entity: "service" as const,
+                data: {
+                    service_id: formData.service_id || undefined, // มี = update, ไม่มี = insert
+                    service_name: formData.service_name.trim(),
+                    is_active: formData.is_active ?? 1,
+                    created_by: formData.created_by || "admin",
+                    updated_by: formData.updated_by || "admin",
+                },
+            };
+
+            const res = await fetch("/api/auth/inspection-form/post", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                // cache: "no-store", // ถ้าต้องการกัน cache
+                body: JSON.stringify(payload),
             });
 
             const result = await res.json();
-
-            // 👉 ปิด popup ก่อน
-            setOpen(false);
-
+            showLoading(false);
+            
             if (result.success) {
-                showLoading(false);
+                setOpen(false);                 // ปิด popup เมื่อสำเร็จ
                 await showAlert("success", result.message);
-                fetchService();
+                fetchService();                 // refresh ตาราง
             } else {
-                showAlert("error", result.message || "บันทึกล้มเหลว");
+                await showAlert("error", result.message || "บันทึกล้มเหลว");
             }
         } catch (err) {
             console.error("Save error:", err);
-            setOpen(false); // ปิด popup แม้ error
-            showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+            setOpen(false);                   // ปิด popup แม้ error
+            await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
             showLoading(false);
         }
     };
 
-    const handleDelete = async (service_id: string) => {
+    const handleDelete = async (id: string) => {
         const confirmed = await showConfirm(
             "หากลบแล้วจะไม่สามารถนำกลับมาได้",
             "คุณต้องการลบข้อมูลนี้หรือไม่?"
@@ -140,9 +160,12 @@ export default function InspectionFormPage() {
         showLoading(true);
 
         try {
-            const res = await fetch(`/api/auth/inspection-form/${service_id}`, {
-                method: "DELETE",
+            const res = await fetch(`/api/auth/inspection-form/delete`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, function: "service" }),
             });
+
             const result = await res.json();
             if (result.success) {
                 showLoading(false);
@@ -156,7 +179,6 @@ export default function InspectionFormPage() {
             console.error("Delete error:", err);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
-            // กันพลาดกรณี throw ระหว่าง alert
             showLoading(false);
         }
     };

@@ -157,7 +157,7 @@ export async function POST(req: Request) {
 
             return NextResponse.json({
                 success: true,
-                message: "เพิ่มข้อมูลโครงการเรียบร้อย",
+                message: "เพิ่มข้อมูลเรียบร้อย",
                 project_id: newProjectId,
             });
         }
