@@ -46,7 +46,7 @@ export async function POST(req: Request) {
                 );
                 return NextResponse.json({
                     success: true,
-                    message: "เพิ่ม Service เรียบร้อย",
+                    message: "เพิ่มข้อมูลเรียบร้อย",
                     service_id: newServiceId,
                 });
             }
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
                 );
                 return NextResponse.json({
                     success: true,
-                    message: "เพิ่ม Zone เรียบร้อย",
+                    message: "เพิ่มข้อมูลเรียบร้อย",
                     zone_id: newZoneId,
                 });
             }
@@ -120,7 +120,7 @@ export async function POST(req: Request) {
                 );
                 return NextResponse.json({
                     success: true,
-                    message: "เพิ่ม Inspect เรียบร้อย",
+                    message: "เพิ่มข้อมูลเรียบร้อย",
                     inspect_id: newInspectId,
                 });
             }

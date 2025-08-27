@@ -14,17 +14,17 @@ export async function POST(req: Request) {
 
         if (fn === "service") {
             await query(`DELETE FROM master_services WHERE service_id=?`, [id]);
-            return NextResponse.json({ success: true, message: "ลบข้อมูลสำเร็จ" });
+            return NextResponse.json({ success: true, message: "ลบข้อมูลเรียบร้อย" });
         }
 
         if (fn === "zone") {
             await query(`DELETE FROM data_service_zone WHERE zone_id=?`, [id]);
-            return NextResponse.json({ success: true, message: "ลบข้อมูลสำเร็จ" });
+            return NextResponse.json({ success: true, message: "ลบข้อมูลเรียบร้อย" });
         }
 
         if (fn === "inspect") {
             await query(`DELETE FROM data_inspect_groups WHERE inspect_id=?`, [id]);
-            return NextResponse.json({ success: true, message: "ลบข้อมูลสำเร็จ" });
+            return NextResponse.json({ success: true, message: "ลบข้อมูลเรียบร้อย" });
         }
 
         return NextResponse.json(
