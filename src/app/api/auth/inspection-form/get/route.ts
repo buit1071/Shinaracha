@@ -5,7 +5,9 @@ import { query } from "@/lib-server/db";
 type GetBody =
     | { function: "services" }
     | { function: "zonesByService"; service_id: string }
-    | { function: "inspectsByZone"; zone_id: string };
+    | { function: "zoneById"; zone_id: string }
+    | { function: "inspectsByZone"; zone_id: string }
+    | { function: "serviceById"; service_id: string };
 
 export async function POST(req: Request) {
     try {
@@ -19,7 +21,7 @@ export async function POST(req: Request) {
             );
         }
 
-        // 1) Services
+        // Services
         if (fn === "services") {
             const rows = await query(`
         SELECT *
@@ -29,7 +31,28 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, data: rows });
         }
 
-        // 2) Zones by Service
+        if (fn === "serviceById") {
+            if (!body.service_id) {
+                return NextResponse.json(
+                    { success: false, message: "กรุณาระบุ service_id" },
+                    { status: 400 }
+                );
+            }
+
+            const rows = await query(
+                `SELECT service_id, service_name 
+     FROM master_services
+     WHERE service_id = ?`,
+                [body.service_id]
+            );
+
+            return NextResponse.json({
+                success: true,
+                data: rows[0] || null,
+            });
+        }
+
+        // Zones by Service
         if (fn === "zonesByService") {
             if (!body.service_id) {
                 return NextResponse.json(
@@ -50,7 +73,28 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, data: rows });
         }
 
-        // 3) Inspects by Zone
+        if (fn === "zoneById") {
+            if (!body.zone_id) {
+                return NextResponse.json(
+                    { success: false, message: "กรุณาระบุ service_id" },
+                    { status: 400 }
+                );
+            }
+
+            const rows = await query(
+                `SELECT zone_id, zone_name 
+     FROM data_service_zone
+     WHERE zone_id = ?`,
+                [body.zone_id]
+            );
+
+            return NextResponse.json({
+                success: true,
+                data: rows[0] || null,
+            });
+        }
+
+        // Inspects by Zone
         if (fn === "inspectsByZone") {
             if (!body.zone_id) {
                 return NextResponse.json(

@@ -30,6 +30,7 @@ type Props = {
 };
 
 export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
+  const [zoneName, setZoneName] = React.useState<string>("");
   const [rows, setRows] = React.useState<InspectGroupRow[]>([]);
   const [searchText, setSearchText] = React.useState("");
   const [open, setOpen] = React.useState(false);
@@ -70,8 +71,26 @@ export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
     }
   };
 
+  const fetchZoneName = async () => {
+    try {
+      const res = await fetch("/api/auth/inspection-form/get", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ function: "zoneById", zone_id: zoneId }),
+      });
+
+      const result = await res.json();
+      if (result.success && result.data) {
+        setZoneName(result.data.zone_name);
+      }
+    } catch (err) {
+      console.error("fetch zone name error:", err);
+    }
+  };
+
   React.useEffect(() => {
     if (!zoneId) return;
+    fetchZoneName();
     fetchInspectGroups();
   }, [zoneId]);
 
@@ -114,7 +133,7 @@ export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
 
       const result = await res.json();
       showLoading(false);
-      
+
       if (result.success) {
         await showAlert("success", result.message);
         fetchInspectGroups();                   // รีเฟรชรายการ
@@ -227,7 +246,7 @@ export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
             <ArrowBackIcon />
           </IconButton>
           <h2 className="text-xl font-bold text-gray-800 ml-5">
-            Zone : <span className="text-blue-900">{zoneId}</span>
+            Zone : <span className="text-blue-900">{zoneName}</span>
           </h2>
         </div>
         <div className="flex gap-2 items-center">

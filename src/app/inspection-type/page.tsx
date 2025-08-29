@@ -85,7 +85,6 @@ export default function InspectionTypePage() {
         }
     };
 
-
     const handleOpenAdd = (service_id: string) => {
         setIsEdit(false);
         setError(false);
@@ -198,14 +197,26 @@ export default function InspectionTypePage() {
     const fetchInspectionData = React.useCallback(async () => {
         showLoading(true);
 
-        // ✅ ปล่อยเฟรมให้ DOM วาด overlay ให้ทัน
+        // ปล่อยเฟรมให้ overlay วาดทัน
         await new Promise(requestAnimationFrame);
 
         const ctrl = new AbortController();
         try {
             const [srvRes, typeRes] = await Promise.all([
-                fetch("/api/auth/inspection-form?active=true", { cache: "no-store", signal: ctrl.signal }),
-                fetch("/api/auth/inspection-type?active=true", { cache: "no-store", signal: ctrl.signal }),
+                // ✅ เปลี่ยนเป็น POST + JSON: services
+                fetch("/api/auth/inspection-form/get", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    cache: "no-store",
+                    signal: ctrl.signal,
+                    body: JSON.stringify({ function: "services" }),
+                }),
+
+                // ✅ อันนี้ไม่เปลี่ยน (ตามที่บอก)
+                fetch("/api/auth/inspection-type?active=true", {
+                    cache: "no-store",
+                    signal: ctrl.signal,
+                }),
             ]);
 
             if (!srvRes.ok) throw new Error(`Service HTTP ${srvRes.status}`);
@@ -254,10 +265,9 @@ export default function InspectionTypePage() {
                 showAlert("error", err?.message || "โหลดข้อมูลไม่สำเร็จ");
             }
         } finally {
-            showLoading(false); // ✅ ปิดโหลดเสมอ
+            showLoading(false);
         }
 
-        // optional: return abort fn ถ้าจะใช้ร่วมกับ useEffect
         return () => ctrl.abort();
     }, [setServices, setTypesByService]);
 

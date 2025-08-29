@@ -33,6 +33,7 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
   const [view, setView] = React.useState<null | { type: "detail"; id: string }>(null);
   const openDetail = (id: string) => setView({ type: "detail", id });
   const backToList = () => setView(null);
+  const [serviceName, setServiceName] = React.useState<string>("");
   const [rows, setRows] = React.useState<DataZonesRow[]>([]);
   const [searchText, setSearchText] = React.useState("");
   const [open, setOpen] = React.useState(false);
@@ -70,8 +71,26 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
     }
   };
 
+  const fetchServiceName = async () => {
+    try {
+      const res = await fetch("/api/auth/inspection-form/get", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ function: "serviceById", service_id: serviceId }),
+      });
+
+      const result = await res.json();
+      if (result.success && result.data) {
+        setServiceName(result.data.service_name);
+      }
+    } catch (err) {
+      console.error("fetch service name error:", err);
+    }
+  };
+
   React.useEffect(() => {
     if (!serviceId) return;
+    fetchServiceName();
     fetchServiceZones();
   }, [serviceId]);
 
@@ -114,7 +133,7 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
 
       const result = await res.json();
       showLoading(false);
-      
+
       if (result.success) {
         await showAlert("success", result.message);
         fetchServiceZones(); // รีเฟรชรายการโซน
@@ -244,7 +263,7 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
                 <ArrowBackIcon />
               </IconButton>
               <h2 className="text-xl font-bold text-gray-800 ml-5">
-                Service : <span className="text-blue-900">{serviceId}</span>
+                Service : <span className="text-blue-900">{serviceName}</span>
               </h2>
             </div>
             <div className="flex gap-2 items-center">
