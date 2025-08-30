@@ -132,7 +132,7 @@ export default function InspectionFormPage() {
 
             const result = await res.json();
             showLoading(false);
-            
+
             if (result.success) {
                 setOpen(false);                 // ปิด popup เมื่อสำเร็จ
                 await showAlert("success", result.message);

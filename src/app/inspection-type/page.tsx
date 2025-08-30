@@ -8,7 +8,7 @@ import IconButton from "@mui/material/IconButton";
 import {
     DataGrid,
     GridColDef,
-    GridRenderCellParams,
+    GridRenderCellParams
 } from "@mui/x-data-grid";
 import {
     Button,
@@ -17,83 +17,73 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
+    Switch,
+    Box
 } from "@mui/material";
-import { InspectionTypeRow, ServiceRow } from "@/interfaces/master";
+import { ServiceRow } from "@/interfaces/master";
 import { showLoading } from "@/lib/loading";
 import { showAlert, showConfirm } from "@/lib/fetcher";
 
 export default function InspectionTypePage() {
-    const [services, setServices] = React.useState<ServiceRow[]>([]);
-    const [typesByService, setTypesByService] = React.useState<Record<string, InspectionTypeRow[]>>({});
-    const [searchTexts, setSearchTexts] = React.useState<Record<string, string>>({});
+    const [rows, setRows] = React.useState<ServiceRow[]>([]);
+    const [searchText, setSearchText] = React.useState("");
     const [open, setOpen] = React.useState(false);
     const [isEdit, setIsEdit] = React.useState(false);
     const [error, setError] = React.useState(false);
 
-    const [formData, setFormData] = React.useState<InspectionTypeRow>({
-        in_type_id: "",
+    const [formData, setFormData] = React.useState<ServiceRow>({
         service_id: "",
-        name: "",
-        inspection_duration: 0,
-        inspections_per_year: 0,
+        service_name: "",
         is_active: 1,
         created_by: "admin",
         updated_by: "admin",
     });
 
-    const handleSave = async () => {
-        const invalidName = !formData.name?.trim();
-        const invalidDuration =
-            !Number.isFinite(formData.inspection_duration) || formData.inspection_duration <= 0;
-        const invalidPerYear =
-            !Number.isFinite(formData.inspections_per_year) || formData.inspections_per_year <= 0;
-        const missingService = !formData.service_id?.trim(); // กันลืมผูก service
-
-        if (invalidName || invalidDuration || invalidPerYear || missingService) {
-            setError(true);
-            if (missingService) await showAlert("warning", "ไม่พบ Service ของรายการนี้");
-            else if (invalidName) await showAlert("warning", "กรุณากรอกชื่อ");
-            else if (invalidDuration) await showAlert("warning", "กรุณากรอกระยะเวลาที่ใช้ในการตรวจมากกว่า 0");
-            else if (invalidPerYear) await showAlert("warning", "กรุณากรอกจำนวนครั้งในการตรวจต่อปีมากกว่า 0");
-            return;
-        }
-
+    // โหลดข้อมูลและจัดเรียงใหม่
+    const fetchService = async () => {
         showLoading(true);
         try {
-            const res = await fetch("/api/auth/inspection-type", {
+            const res = await fetch("/api/auth/inspection-form/get", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                // ถ้าต้องการกัน cache ฝั่งเบราว์เซอร์ เพิ่ม cache: "no-store"
+                body: JSON.stringify({ function: "services" }),
             });
-            const result = await res.json();
-            showLoading(false);
-            setOpen(false);
 
-            if (result.success) {
-                await showAlert("success", result.message);
-                fetchInspectionData();
+            const data = await res.json();
+            if (data.success) {
+                updateWithOrder(data.data || []);
             } else {
-                showAlert("error", result.message || "บันทึกล้มเหลว");
+                console.error("โหลด services ไม่สำเร็จ:", data.message);
             }
         } catch (err) {
-            console.error("Save error:", err);
-            showLoading(false);
-            setOpen(false);
-            showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
     };
 
-    const handleOpenAdd = (service_id: string) => {
+    const updateWithOrder = (data: ServiceRow[]) => {
+        const sorted = [...data].sort((a, b) =>
+            new Date(b.updated_date || "").getTime() -
+            new Date(a.updated_date || "").getTime()
+        );
+        const withOrder = sorted.map((row, index) => ({
+            ...row,
+            order: index + 1,
+        }));
+        setRows(withOrder);
+    };
+
+    React.useEffect(() => {
+        fetchService();
+    }, []);
+
+    const handleOpenAdd = () => {
         setIsEdit(false);
-        setError(false);
         setFormData({
-            in_type_id: "",
-            service_id,
-            name: "",
-            inspection_duration: 0,
-            inspections_per_year: 0,
+            service_id: "",
+            service_name: "",
             is_active: 1,
             created_by: "admin",
             updated_by: "admin",
@@ -101,253 +91,137 @@ export default function InspectionTypePage() {
         setOpen(true);
     };
 
-    const handleOpenEdit = (row: InspectionTypeRow, service_id: string) => {
+    const handleOpenEdit = (row: ServiceRow) => {
         setIsEdit(true);
-        setError(false);
-        setFormData({
-            ...row,
-            service_id,
-            updated_by: "admin",
-        });
+        setFormData(row);
         setOpen(true);
     };
 
     const handleClose = () => setOpen(false);
 
-    const handleDelete = async (in_type_id: string) => {
-        const confirmed = await showConfirm(
-            "หากลบแล้วจะไม่สามารถนำกลับมาได้",
-            "คุณต้องการลบข้อมูลนี้หรือไม่?"
-        );
-        if (!confirmed) return;
-        showLoading(true);
+    const handleSave = async () => {
+        if (!formData.service_name?.trim()) {
+            setError(true);
+            return;
+        }
 
+        showLoading(true);
         try {
-            const res = await fetch(`/api/auth/inspection-type/${in_type_id}`, {
-                method: "DELETE",
+            const res = await fetch("/api/auth/inspection-form/patch", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    entity: "service",
+                    data: {
+                        service_id: formData.service_id,
+                        service_name: formData.service_name.trim(),
+                        inspection_duration: formData.inspection_duration ?? 0,
+                        inspections_per_year: formData.inspections_per_year ?? 0,
+                        updated_by: formData.updated_by || "admin",
+                    },
+                }),
             });
+
             const result = await res.json();
+
+            showLoading(false);
             if (result.success) {
-                showLoading(false);
+                setOpen(false);
                 await showAlert("success", result.message);
-                fetchInspectionData();
+                fetchService();
             } else {
-                showLoading(false);
-                showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
+                await showAlert("error", result.message || "บันทึกล้มเหลว");
             }
         } catch (err) {
-            console.error("Delete error:", err);
-            showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+            console.error("Save error:", err);
+            setOpen(false);
+            await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
-            // กันพลาดกรณี throw ระหว่าง alert
             showLoading(false);
         }
     };
 
-    const getColumns = React.useCallback(
-        (serviceId: string): GridColDef<InspectionTypeRow>[] => [
-            {
-                field: "name",
-                headerName: "ชื่อ",
-                flex: 1,
-                minWidth: 300,
-                headerAlign: "center",
-                align: "left",
-            },
-            {
-                field: "inspection_duration",
-                headerName: "ระยะเวลาที่ใช้ (วัน)",
-                minWidth: 200,
-                headerAlign: "center",
-                align: "center",
-                valueGetter: (_v, r) => r.inspection_duration ?? 0,
-            },
-            {
-                field: "inspections_per_year",
-                headerName: "จำนวนครั้งในการตรวจต่อปี (ครั้ง/ปี)",
-                minWidth: 250,
-                headerAlign: "center",
-                align: "center",
-                valueGetter: (_v, r) => r.inspections_per_year ?? 0,
-            },
-            {
-                field: "actions",
-                headerName: "Action",
-                sortable: false,
-                filterable: false,
-                disableColumnMenu: true,
-                width: 150,
-                headerAlign: "center",
-                align: "center",
-                renderCell: (params) => (
-                    <>
-                        <IconButton color="primary" onClick={() => handleOpenEdit(params.row, serviceId)}>
-                            <EditIcon />
-                        </IconButton>
-                        <IconButton color="error" onClick={() => handleDelete(params.row.in_type_id)}>
-                            <DeleteIcon />
-                        </IconButton>
-                    </>
-                ),
-            },
-        ],
-        [handleOpenEdit, handleDelete]
-    );
-
-    const fetchInspectionData = React.useCallback(async () => {
-        showLoading(true);
-
-        // ปล่อยเฟรมให้ overlay วาดทัน
-        await new Promise(requestAnimationFrame);
-
-        const ctrl = new AbortController();
-        try {
-            const [srvRes, typeRes] = await Promise.all([
-                // ✅ เปลี่ยนเป็น POST + JSON: services
-                fetch("/api/auth/inspection-form/get", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    cache: "no-store",
-                    signal: ctrl.signal,
-                    body: JSON.stringify({ function: "services" }),
-                }),
-
-                // ✅ อันนี้ไม่เปลี่ยน (ตามที่บอก)
-                fetch("/api/auth/inspection-type?active=true", {
-                    cache: "no-store",
-                    signal: ctrl.signal,
-                }),
-            ]);
-
-            if (!srvRes.ok) throw new Error(`Service HTTP ${srvRes.status}`);
-            if (!typeRes.ok) throw new Error(`Type HTTP ${typeRes.status}`);
-
-            const [srvJson, typeJson] = await Promise.all([srvRes.json(), typeRes.json()]);
-
-            const serviceRows: ServiceRow[] = Array.isArray(srvJson?.data)
-                ? srvJson.data.map((d: any) => ({
-                    service_id: d.service_id,
-                    service_name: d.service_name ?? "",
-                    is_active: Number(d.is_active ?? 0),
-                    created_by: String(d.created_by ?? ""),
-                    updated_by: String(d.updated_by ?? ""),
-                    created_date: d.created_date,
-                    updated_date: d.updated_date,
-                    order: d.order ?? undefined,
-                }))
-                : [];
-
-            const typeRows: InspectionTypeRow[] = Array.isArray(typeJson?.data)
-                ? typeJson.data.map((d: any) => ({
-                    in_type_id: d.in_type_id,
-                    service_id: d.service_id,
-                    name: d.name ?? d.inspection_type_name ?? "",
-                    inspection_duration: Number(d.inspection_duration ?? 0),
-                    inspections_per_year: Number(d.inspections_per_year ?? 0),
-                    is_active: Number(d.is_active ?? 0),
-                    created_by: String(d.created_by ?? ""),
-                    updated_by: String(d.updated_by ?? ""),
-                    created_date: d.created_date,
-                    updated_date: d.updated_date,
-                    order: d.order ?? undefined,
-                }))
-                : [];
-
-            const grouped: Record<string, InspectionTypeRow[]> = {};
-            for (const t of typeRows) {
-                (grouped[t.service_id] ||= []).push(t);
-            }
-
-            setServices(serviceRows);
-            setTypesByService(grouped);
-        } catch (err: any) {
-            if (err?.name !== "AbortError") {
-                showAlert("error", err?.message || "โหลดข้อมูลไม่สำเร็จ");
-            }
-        } finally {
-            showLoading(false);
-        }
-
-        return () => ctrl.abort();
-    }, [setServices, setTypesByService]);
-
-    React.useEffect(() => {
-        let cleanup: any;
-        (async () => {
-            cleanup = await fetchInspectionData();
-        })();
-        return () => {
-            if (typeof cleanup === "function") cleanup();
-        };
-    }, [fetchInspectionData]);
-
-    const getFilteredRows = React.useCallback(
-        (serviceId: string): InspectionTypeRow[] => {
-            const rows = typesByService[serviceId] || [];
-            const q = (searchTexts[serviceId] || "").trim().toLowerCase();  // ⬅️ ใช้ของตัวเอง
-            if (!q) return rows;
-            return rows.filter(
-                (r) =>
-                    r.name.toLowerCase().includes(q) ||
-                    String(r.inspection_duration ?? "").includes(q) ||
-                    String(r.inspections_per_year ?? "").includes(q)
-            );
+    const columns: GridColDef<ServiceRow>[] = [
+        {
+            field: "order",
+            headerName: "ลำดับ",
+            width: 90,
+            headerAlign: "center",
+            align: "center",
         },
-        [typesByService, searchTexts]
-    );
+        {
+            field: "service_id",
+            headerName: "Service ID",
+            flex: 1,
+            headerAlign: "center",
+            align: "center",
+        },
+        { field: "service_name", headerName: "ชื่อ Service", flex: 1, headerAlign: "center", align: "left" },
+        { field: "inspection_duration", headerName: "ระยะเวลาที่ใช้ในการตรวจ (วัน)", flex: 1, headerAlign: "center", align: "center" },
+        { field: "inspections_per_year", headerName: "จำนวนครั้งในการตรวจต่อปี (ครั้ง / ปี)", flex: 1, headerAlign: "center", align: "center" },
+        {
+            field: "actions",
+            headerName: "Action",
+            sortable: false,
+            filterable: false,
+            disableColumnMenu: true,
+            width: 150,
+            headerAlign: "center",
+            align: "center",
+            renderCell: (params: GridRenderCellParams<ServiceRow>) => (
+                <>
+                    <IconButton color="primary" onClick={() => handleOpenEdit(params.row)}>
+                        <EditIcon />
+                    </IconButton>
+                </>
+            ),
+        },
+    ];
 
+    // Filter + reindex ใหม่
+    const filteredRows = rows
+        .filter((row) =>
+            Object.values(row).some((value) =>
+                String(value).toLowerCase().includes(searchText.toLowerCase())
+            )
+        )
+        .map((row, index) => ({
+            ...row,
+            order: index + 1,
+        }));
     return (
-        <div className="min-h-[96vh] bg-gray-50">
-            <div className="grid gap-3 max-h-[calc(94.9vh-16px)] overflow-y-auto pr-2">
-                {services.map((s) => {
-                    const rows = getFilteredRows(s.service_id);
-                    return (
-                        <div
-                            key={s.service_id}
-                            className="bg-white rounded-lg shadow-md border border-gray-100"
-                        >
-                            <div className="h-[6vh] w-full bg-white shadow-sm flex items-center justify-between px-4 text-black font-semibold rounded-t-lg">
-                                <span>Service : {s.service_name}</span>
-                                <div className="flex gap-2 items-center">
-                                    <TextField
-                                        size="small"
-                                        placeholder="ค้นหา..."
-                                        value={searchTexts[s.service_id] ?? ""}  // ⬅️ state แยกต่อ service
-                                        onChange={(e) =>
-                                            setSearchTexts((prev) => ({ ...prev, [s.service_id]: e.target.value }))
-                                        }
-                                    />
-                                    <Button
-                                        variant="contained"
-                                        color="primary"
-                                        startIcon={<AddIcon />}
-                                        onClick={() => handleOpenAdd(s.service_id)}
-                                    >
-                                        เพิ่มข้อมูล
-                                    </Button>
-                                </div>
-                            </div>
-
-                            {/* ตารางลูกของ service นี้ */}
-                            <div className="w-full bg-white p-3">
-                                <DataGrid
-                                    autoHeight
-                                    rows={rows}
-                                    columns={getColumns(s.service_id)}
-                                    getRowId={(r) =>
-                                        `${r.in_type_id}::${r.name}::${r.inspection_duration}::${r.inspections_per_year}`
-                                    }
-                                    disableRowSelectionOnClick
-                                    density="compact"
-                                    pageSizeOptions={[5, 10, 25, 50]}
-                                    initialState={{
-                                        pagination: { paginationModel: { pageSize: 10, page: 0 } },
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    );
-                })}
+        <div className="min-h-[96vh] grid place-items-center bg-gray-50">
+            {/* Header Bar */}
+            <div className="h-[6vh] w-full bg-white shadow-md flex items-center justify-between px-4 text-black font-semibold rounded-lg">
+                ประเภทการตรวจ
+                <div className="flex gap-2 items-center">
+                    <TextField
+                        size="small"
+                        placeholder="ค้นหา..."
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                    />
+                </div>
+            </div>
+            {/* Table */}
+            <div className="h-[88vh] w-full bg-white">
+                <DataGrid
+                    sx={{
+                        borderRadius: "0.5rem",
+                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                        "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": {
+                            outline: "none",
+                        },
+                    }}
+                    rows={filteredRows}
+                    columns={columns.map((col) => ({ ...col, resizable: false }))}
+                    initialState={{
+                        pagination: { paginationModel: { pageSize: 5, page: 0 } },
+                    }}
+                    pageSizeOptions={[5, 10]}
+                    disableRowSelectionOnClick
+                    getRowId={(row) => row.service_id} // ใช้ service_id แทน id
+                />
             </div>
             {/* Dialog Popup */}
             <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
@@ -357,9 +231,9 @@ export default function InspectionTypePage() {
                         <TextField
                             size="small"
                             margin="dense"
-                            label="ID"
+                            label="Service ID"
                             fullWidth
-                            value={formData.in_type_id}
+                            value={formData.service_id}
                             disabled
                         />
                     )}
@@ -367,58 +241,64 @@ export default function InspectionTypePage() {
                     <TextField
                         size="small"
                         margin="dense"
-                        label="ชื่อ"
+                        label="ชื่อ Service"
                         fullWidth
                         required
-                        value={formData.name}
+                        value={formData.service_name}
                         onChange={(e) => {
-                            setFormData({ ...formData, name: e.target.value });
+                            setFormData({ ...formData, service_name: e.target.value });
                             if (error) setError(false);
                         }}
-                        error={error && !formData.name}
-                        helperText={error && !formData.name ? "กรุณากรอกชื่อ" : ""}
+                        error={error && !formData.service_name}
+                        helperText={error && !formData.service_name ? "กรุณากรอกชื่อ Service" : ""}
                     />
+
+                    {/* ระยะเวลาที่ใช้ในการตรวจ (วัน) */}
                     <TextField
                         size="small"
                         margin="dense"
                         label="ระยะเวลาที่ใช้ในการตรวจ (วัน)"
                         fullWidth
-                        required
                         type="number"
-                        inputProps={{ min: 1 }} // ป้องกันเลขติดลบ/ศูนย์จาก UI
-                        value={formData.inspection_duration}
+                        inputProps={{ min: 0, step: 1 }}
+                        value={formData.inspection_duration ?? 0}
                         onChange={(e) => {
-                            setFormData({ ...formData, inspection_duration: Number(e.target.value) });
+                            const v = e.target.value;
+                            const n = v === "" ? 0 : Math.max(0, parseInt(v, 10) || 0);
+                            setFormData({ ...formData, inspection_duration: n });
                             if (error) setError(false);
                         }}
-                        error={error && (!Number.isFinite(formData.inspection_duration) || formData.inspection_duration <= 0)}
+                        error={error && formData.inspection_duration == null}
                         helperText={
-                            error && (!Number.isFinite(formData.inspection_duration) || formData.inspection_duration <= 0)
-                                ? "กรุณากรอกระยะเวลาที่ใช้ในการตรวจมากกว่า 0"
+                            error && formData.inspection_duration == null
+                                ? "กรุณากรอกระยะเวลาที่ใช้ในการตรวจ"
                                 : ""
                         }
                     />
 
+                    {/* จำนวนครั้งในการตรวจต่อปี */}
                     <TextField
                         size="small"
                         margin="dense"
-                        label="จำนวนครั้งในการตรวจต่อปี (ครั้ง/ปี)"
+                        label="จำนวนครั้งในการตรวจต่อปี (ครั้ง / ปี)"
                         fullWidth
-                        required
                         type="number"
-                        inputProps={{ min: 1 }}
-                        value={formData.inspections_per_year}
+                        inputProps={{ min: 0, step: 1 }}
+                        value={formData.inspections_per_year ?? 0}
                         onChange={(e) => {
-                            setFormData({ ...formData, inspections_per_year: Number(e.target.value) });
+                            const v = e.target.value;
+                            const n = v === "" ? 0 : Math.max(0, parseInt(v, 10) || 0);
+                            setFormData({ ...formData, inspections_per_year: n });
                             if (error) setError(false);
                         }}
-                        error={error && (!Number.isFinite(formData.inspections_per_year) || formData.inspections_per_year <= 0)}
+                        error={error && formData.inspections_per_year == null}
                         helperText={
-                            error && (!Number.isFinite(formData.inspections_per_year) || formData.inspections_per_year <= 0)
-                                ? "กรุณากรอกจำนวนครั้งในการตรวจต่อปีมากกว่า 0"
+                            error && formData.inspections_per_year == null
+                                ? "กรุณากรอกจำนวนครั้งในการตรวจต่อปี"
                                 : ""
                         }
                     />
+
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose}>ยกเลิก</Button>
