@@ -65,10 +65,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     {openMenus.includes("projects") && (
                         <div className="ml-4 mt-1 space-y-1">
                             <NavLink href="/project-list" currentPath={pathname}>โครงการ</NavLink>
-                            <NavLink href="/jobs" currentPath={pathname}>งาน</NavLink>
-                            <NavLink href="/plans" currentPath={pathname}>แผนงาน</NavLink>
-                            <NavLink href="/inspections" currentPath={pathname}>ผลตรวจ</NavLink>
-                            <NavLink href="/reports" currentPath={pathname}>รายงาน</NavLink>
+                            <NavLink href="/job" currentPath={pathname}>งาน</NavLink>
+                            <NavLink href="/plan" currentPath={pathname}>แผนงาน</NavLink>
+                            <NavLink href="/inspection" currentPath={pathname}>ผลตรวจ</NavLink>
+                            <NavLink href="/report" currentPath={pathname}>รายงาน</NavLink>
                         </div>
                     )}
 

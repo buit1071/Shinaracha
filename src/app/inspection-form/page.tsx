@@ -67,8 +67,6 @@ export default function InspectionFormPage() {
         }
     };
 
-
-    // helper: เรียงใหม่ทุกครั้ง + เพิ่ม order
     const updateWithOrder = (data: ServiceRow[]) => {
         const sorted = [...data].sort((a, b) =>
             new Date(b.updated_date || "").getTime() -

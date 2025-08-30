@@ -179,7 +179,7 @@ export interface MenuRow {
 export interface InspectGroupRow {
     zone_id: string;
     inspect_id: string;
-    inspect_name : string;
+    inspect_name: string;
     is_active: number;
     created_by: string;
     updated_by: string;
@@ -187,3 +187,38 @@ export interface InspectGroupRow {
     updated_date?: string;
     order?: number;
 };
+export interface JobsRow {
+    job_id: string;
+    job_name: string;
+    project_id: string;
+    project_name?: string;
+    shift_next_jobs: number;
+    job_start_date: string;
+    job_end_date: string;
+    job_start_time: string;
+    job_end_time: string;
+    team_id: string;
+    team_name?: string;
+    service_id: string;
+    service_name?: string;
+    in_type_id: string;
+    in_type_name?: string;
+    status_id?: string;
+    status_name?: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+}
+export interface JobStatusRow {
+    status_id: string;
+    status_name: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+}
