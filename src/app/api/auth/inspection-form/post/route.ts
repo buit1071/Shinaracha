@@ -5,12 +5,12 @@ import { generateId } from "@/lib/fetcher";
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const entity = body?.entity as "service" | "zone" | "inspect" | undefined;
+        const entity = body?.entity as undefined;
         const data = body?.data ?? {};
 
         if (!entity) {
             return NextResponse.json(
-                { success: false, message: "กรุณาระบุ entity: service | zone | inspect" },
+                { success: false, message: "กรุณาระบุ entity" },
                 { status: 400 }
             );
         }
@@ -124,6 +124,55 @@ export async function POST(req: Request) {
                     inspect_id: newInspectId,
                 });
             }
+        }
+
+        // =========== INSPECT ITEMS ===========
+        if (entity === "inspectitems") {
+            const {
+                inspect_item_id,   // ไอดีของ "item" (ใช้ตอน UPDATE)
+                inspect_id,        // ไอดีของ "group" (ใช้ตอน INSERT หรือย้ายกลุ่ม)
+                inspect_item_name,
+                is_active,
+                created_by,
+                updated_by,
+            } = data;
+
+            // UPDATE (ถ้ามี inspect_item_id)
+            if (inspect_item_id) {
+                await query(
+                    `UPDATE data_inspect_items
+       SET inspect_item_name = ?,
+           inspect_id        = ?,          -- ถ้าอนุญาตให้เปลี่ยนกลุ่ม; ไม่งั้นเอาออก
+           is_active         = ?,
+           updated_by        = ?,
+           updated_date      = NOW()
+       WHERE inspect_item_id = ?`,
+                    [inspect_item_name, inspect_id ?? null, is_active ?? 1, updated_by ?? "system", inspect_item_id]
+                );
+                return NextResponse.json({ success: true, message: "อัปเดต Inspect Item เรียบร้อย" });
+            }
+
+            // INSERT (ไม่มี inspect_item_id => ต้องมี inspect_id)
+            if (!inspect_id || !inspect_item_name) {
+                return NextResponse.json(
+                    { success: false, message: "กรุณาระบุ Inspection (กลุ่ม) และ Inspection Item Name" },
+                    { status: 400 }
+                );
+            }
+
+            const newInspectItemId = generateId("ISPI");
+            await query(
+                `INSERT INTO data_inspect_items
+     (inspect_item_id, inspect_id, inspect_item_name, is_active, created_by, created_date, updated_by, updated_date)
+     VALUES (?,?,?,?,?,NOW(),?,NOW())`,
+                [newInspectItemId, inspect_id, inspect_item_name, is_active ?? 1, created_by ?? "system", updated_by ?? "system"]
+            );
+
+            return NextResponse.json({
+                success: true,
+                message: "เพิ่มข้อมูลเรียบร้อย",
+                inspect_item_id: newInspectItemId,
+            });
         }
 
         // entity ไม่ตรง

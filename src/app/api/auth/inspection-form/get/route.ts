@@ -7,6 +7,8 @@ type GetBody =
     | { function: "zonesByService"; service_id: string }
     | { function: "zoneById"; zone_id: string }
     | { function: "inspectsByZone"; zone_id: string }
+    | { function: "groupById"; inspect_id: string }
+    | { function: "inspectItems"; inspect_id: string }
     | { function: "serviceById"; service_id: string };
 
 export async function POST(req: Request) {
@@ -21,7 +23,6 @@ export async function POST(req: Request) {
             );
         }
 
-        // Services
         if (fn === "services") {
             const rows = await query(`
         SELECT *
@@ -52,7 +53,6 @@ export async function POST(req: Request) {
             });
         }
 
-        // Zones by Service
         if (fn === "zonesByService") {
             if (!body.service_id) {
                 return NextResponse.json(
@@ -94,7 +94,6 @@ export async function POST(req: Request) {
             });
         }
 
-        // Inspects by Zone
         if (fn === "inspectsByZone") {
             if (!body.zone_id) {
                 return NextResponse.json(
@@ -111,6 +110,47 @@ export async function POST(req: Request) {
         ORDER BY created_date DESC
         `,
                 [body.zone_id]
+            );
+            return NextResponse.json({ success: true, data: rows });
+        }
+
+        if (fn === "groupById") {
+            if (!body.inspect_id) {
+                return NextResponse.json(
+                    { success: false, message: "กรุณาระบุ inspect_id" },
+                    { status: 400 }
+                );
+            }
+
+            const rows = await query(
+                `SELECT inspect_id, inspect_name 
+     FROM data_inspect_groups
+     WHERE inspect_id = ?`,
+                [body.inspect_id]
+            );
+
+            return NextResponse.json({
+                success: true,
+                data: rows[0] || null,
+            });
+        }
+
+        if (fn === "inspectItems") {
+            if (!body.inspect_id) {
+                return NextResponse.json(
+                    { success: false, message: "กรุณาระบุ inspect_id" },
+                    { status: 400 }
+                );
+            }
+            const rows = await query(
+                `
+        SELECT inspect_item_id, inspect_id, inspect_item_name, is_active,
+               created_by, created_date, updated_by, updated_date
+        FROM data_inspect_items
+        WHERE inspect_id = ?
+        ORDER BY created_date DESC
+        `,
+                [body.inspect_id]
             );
             return NextResponse.json({ success: true, data: rows });
         }

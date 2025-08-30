@@ -27,6 +27,11 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, message: "ลบข้อมูลเรียบร้อย" });
         }
 
+        if (fn === "inspectitems") {
+            await query(`DELETE FROM data_inspect_items WHERE inspect_item_id=?`, [id]);
+            return NextResponse.json({ success: true, message: "ลบข้อมูลเรียบร้อย" });
+        }
+
         return NextResponse.json(
             { success: false, message: "ไม่รู้จัก function ที่ส่งมา" },
             { status: 400 }

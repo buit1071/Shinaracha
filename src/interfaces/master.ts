@@ -187,6 +187,17 @@ export interface InspectGroupRow {
     updated_date?: string;
     order?: number;
 };
+export interface InspectItemsRow {
+    inspect_id: string;
+    inspect_item_id: string;
+    inspect_item_name: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+};
 export interface JobsRow {
     job_id: string;
     job_name: string;

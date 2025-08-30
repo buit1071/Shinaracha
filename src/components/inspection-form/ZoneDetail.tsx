@@ -22,6 +22,7 @@ import {
   TextField,
 } from "@mui/material";
 import { InspectGroupRow } from "@/interfaces/master";
+import InspectDetail from "@/components/inspection-form/InspectDetail";
 
 type Props = {
   serviceId: string;
@@ -30,6 +31,9 @@ type Props = {
 };
 
 export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
+  const [view, setView] = React.useState<null | { type: "detail"; id: string }>(null);
+  const openDetail = (id: string) => setView({ type: "detail", id });
+  const backToList = () => setView(null);
   const [zoneName, setZoneName] = React.useState<string>("");
   const [rows, setRows] = React.useState<InspectGroupRow[]>([]);
   const [searchText, setSearchText] = React.useState("");
@@ -206,7 +210,18 @@ export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
       headerAlign: "center",
       align: "center",
     },
-    { field: "inspect_name", headerName: "Inspect Group Name", flex: 1, headerAlign: "center", align: "left" },
+    {
+      field: "inspect_name", headerName: "Inspect Group Name", flex: 1, headerAlign: "center", align: "left",
+      renderCell: (params: GridRenderCellParams<InspectGroupRow>) => (
+        <button
+          onClick={() => openDetail(params.row.inspect_id)}
+          className="hover:no-underline text-blue-900 hover:opacity-80 cursor-pointer"
+          title="เปิดรายละเอียด"
+        >
+          {params.row.inspect_name}
+        </button>
+      ),
+    },
     {
       field: "actions",
       headerName: "Action",
@@ -239,93 +254,99 @@ export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
     }));
   return (
     <div className="w-full h-[96vh] flex flex-col bg-gray-50">
-      {/* Header */}
-      <div className="h-[6vh] flex items-center justify-between px-4 py-2 bg-white shadow-md mb-2 rounded-lg">
-        <div className="flex items-center">
-          <IconButton onClick={onBack} color="primary">
-            <ArrowBackIcon />
-          </IconButton>
-          <h2 className="text-xl font-bold text-gray-800 ml-5">
-            Zone : <span className="text-blue-900">{zoneName}</span>
-          </h2>
-        </div>
-        <div className="flex gap-2 items-center">
-          <TextField
-            size="small"
-            placeholder="ค้นหา..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-          />
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={handleOpenAdd}
-          >
-            เพิ่มข้อมูล
-          </Button>
-        </div>
-      </div>
+      {view?.type === "detail" ? (
+        <InspectDetail InspectId={view.id} onBack={backToList} />
+      ) : (
+        <>
+          {/* Header */}
+          <div className="h-[6vh] flex items-center justify-between px-4 py-2 bg-white shadow-md mb-2 rounded-lg">
+            <div className="flex items-center">
+              <IconButton onClick={onBack} color="primary">
+                <ArrowBackIcon />
+              </IconButton>
+              <h2 className="text-xl font-bold text-gray-800 ml-5">
+                Zone : <span className="text-blue-900">{zoneName}</span>
+              </h2>
+            </div>
+            <div className="flex gap-2 items-center">
+              <TextField
+                size="small"
+                placeholder="ค้นหา..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<AddIcon />}
+                onClick={handleOpenAdd}
+              >
+                เพิ่มข้อมูล
+              </Button>
+            </div>
+          </div>
 
-      {/* Content */}
-      <div className="flex-1">
-        <DataGrid
-          sx={{
-            width: "100%",
-            height: "100%",
-            borderRadius: "0.5rem",
-            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-            "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": {
-              outline: "none",
-            },
-          }}
-          rows={filteredRows}
-          columns={columns.map((col) => ({ ...col, resizable: false }))}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 10, page: 0 } },
-          }}
-          pageSizeOptions={[5, 10, 25]}
-          disableRowSelectionOnClick
-          getRowId={(row) => row.inspect_id}
-        />
-      </div>
-      {/* Dialog Popup */}
-      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
-        <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
-        <DialogContent dividers>
-          {isEdit && (
-            <TextField
-              size="small"
-              margin="dense"
-              label="Inspect ID"
-              fullWidth
-              value={formData.inspect_id}
-              disabled
+          {/* Content */}
+          <div className="flex-1">
+            <DataGrid
+              sx={{
+                width: "100%",
+                height: "100%",
+                borderRadius: "0.5rem",
+                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": {
+                  outline: "none",
+                },
+              }}
+              rows={filteredRows}
+              columns={columns.map((col) => ({ ...col, resizable: false }))}
+              initialState={{
+                pagination: { paginationModel: { pageSize: 10, page: 0 } },
+              }}
+              pageSizeOptions={[5, 10, 25]}
+              disableRowSelectionOnClick
+              getRowId={(row) => row.inspect_id}
             />
-          )}
+          </div>
+          {/* Dialog Popup */}
+          <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
+            <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
+            <DialogContent dividers>
+              {isEdit && (
+                <TextField
+                  size="small"
+                  margin="dense"
+                  label="Inspect ID"
+                  fullWidth
+                  value={formData.inspect_id}
+                  disabled
+                />
+              )}
 
-          <TextField
-            size="small"
-            margin="dense"
-            label="Inspect Group Name"
-            fullWidth
-            required
-            value={formData.inspect_name}
-            onChange={(e) => {
-              setFormData({ ...formData, inspect_name: e.target.value });
-              if (error) setError(false);
-            }}
-            error={error && !formData.inspect_name}
-            helperText={error && !formData.inspect_name ? "กรุณากรอก Inspect Group Name" : ""}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>ยกเลิก</Button>
-          <Button variant="contained" color="primary" onClick={handleSave}>
-            บันทึก
-          </Button>
-        </DialogActions>
-      </Dialog>
+              <TextField
+                size="small"
+                margin="dense"
+                label="Inspect Group Name"
+                fullWidth
+                required
+                value={formData.inspect_name}
+                onChange={(e) => {
+                  setFormData({ ...formData, inspect_name: e.target.value });
+                  if (error) setError(false);
+                }}
+                error={error && !formData.inspect_name}
+                helperText={error && !formData.inspect_name ? "กรุณากรอก Inspect Group Name" : ""}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleClose}>ยกเลิก</Button>
+              <Button variant="contained" color="primary" onClick={handleSave}>
+                บันทึก
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      )}
     </div>
   );
 }
