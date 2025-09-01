@@ -28,6 +28,8 @@ export interface CustomerRow {
 export interface ServiceRow {
     service_id: string;
     service_name: string;
+    inspection_duration?: number;
+    inspections_per_year?: number;
     is_active: number;
     created_by: string;
     updated_by: string;
@@ -151,19 +153,7 @@ export interface HolidayRow {
     updated_date?: string;
     order?: number;
 };
-export interface InspectionTypeRow {
-    in_type_id: string;
-    service_id: string;
-    name: string;
-    inspection_duration: number;
-    inspections_per_year: number;
-    is_active: number;
-    created_by: string;
-    updated_by: string;
-    created_date?: string;
-    updated_date?: string;
-    order?: number;
-};
+
 export interface MenuRow {
     menu_id: string;
     menu_name: string;
@@ -212,8 +202,8 @@ export interface JobsRow {
     team_name?: string;
     service_id: string;
     service_name?: string;
-    in_type_id: string;
-    in_type_name?: string;
+    zone_id: string,
+    zone_name?: string,
     status_id?: string;
     status_name?: string;
     is_active: number;

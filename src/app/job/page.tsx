@@ -35,10 +35,10 @@ import {
     TeamRow,
     ServiceRow,
     ProjectRow,
-    InspectionTypeRow,
     JobStatusRow,
     ZoneRow,
-    InspectGroupRow
+    InspectGroupRow,
+    InspectItemsRow
 } from "@/interfaces/master";
 import { showLoading } from "@/lib/loading";
 import { formatToThaiDate, parseToInputDate, showAlert, showConfirm } from "@/lib/fetcher";
@@ -48,7 +48,6 @@ export default function InspectionTypePage() {
     const [teams, setTeams] = React.useState<TeamRow[]>([]);
     const [services, setServices] = React.useState<ServiceRow[]>([]);
     const [projects, setProjects] = React.useState<ProjectRow[]>([]);
-    const [inspectionTypes, setInspectionTypes] = React.useState<InspectionTypeRow[]>([]);
     const [status, setStatus] = React.useState<JobStatusRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
     const [open, setOpen] = React.useState(false);
@@ -60,8 +59,64 @@ export default function InspectionTypePage() {
     const [zoneInspects, setZoneInspects] = React.useState<
         Record<string, { loading: boolean; items: InspectGroupRow[] }>
     >({});
+    const [expandedInspects, setExpandedInspects] = React.useState<Set<string>>(new Set());
     const [expandedZones, setExpandedZones] = React.useState<Set<string>>(new Set());
     const [selectedInspectsByZone, setSelectedInspectsByZone] = React.useState<Record<string, string[]>>({});
+
+    const [groupItems, setGroupItems] = React.useState<
+        Record<string, { loading: boolean; items: InspectItemsRow[] }>
+    >({});
+
+    const [selectedItemsByGroup, setSelectedItemsByGroup] = React.useState<
+        Record<string, string[]>
+    >({});
+
+    const loadInspectsByZone = async (zoneId: string) => {
+        if (!zoneId) return;
+
+        // กันยิงซ้ำ: ถ้ามี cache แล้ว ไม่ต้องโหลดใหม่ (ถ้าอยาก force refresh ก็ลบ if นี้)
+        if (zoneInspects[zoneId]?.items?.length) return;
+
+        setZoneInspects(prev => ({ ...prev, [zoneId]: { loading: true, items: [], error: null } }));
+        try {
+            const res = await fetch("/api/auth/inspection-form/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "inspectsByZone", zone_id: zoneId }),
+            });
+            const result = await res.json();
+            const items: InspectGroupRow[] = result?.success ? (result.data || []) : [];
+            setZoneInspects(prev => ({ ...prev, [zoneId]: { loading: false, items, error: null } }));
+        } catch (err: any) {
+            setZoneInspects(prev => ({
+                ...prev,
+                [zoneId]: { loading: false, items: [], error: err?.message || "fetch error" },
+            }));
+        }
+    };
+
+    const fetchItemsByInspect = async (inspectId: string) => {
+        if (!inspectId) return [];
+        // ถ้ามีแล้วไม่ต้องโหลดซ้ำ
+        if (groupItems[inspectId]?.items?.length) return groupItems[inspectId].items;
+
+        setGroupItems(prev => ({ ...prev, [inspectId]: { loading: true, items: [] } }));
+        try {
+            const res = await fetch("/api/auth/inspection-form/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "inspectItems", inspect_id: inspectId }),
+            });
+            const result = await res.json();
+            const items: InspectItemsRow[] = result?.success ? (result.data || []) : [];
+            setGroupItems(prev => ({ ...prev, [inspectId]: { loading: false, items } }));
+            return items;                       // ✅ คืนค่า
+        } catch (err) {
+            console.error("inspectItems fetch error:", err);
+            setGroupItems(prev => ({ ...prev, [inspectId]: { loading: false, items: [] } }));
+            return [];                          // ✅ คืนค่า
+        }
+    };
 
     const fetchZonesByService = async (serviceId: string) => {
         if (zonesAbortRef.current) zonesAbortRef.current.abort();
@@ -102,8 +157,9 @@ export default function InspectionTypePage() {
     };
 
     const fetchInspectsByZone = async (zoneId: string) => {
-        // ถ้ามีแล้วไม่ต้องโหลดซ้ำ
-        if (zoneInspects[zoneId]?.items?.length) return;
+        if (!zoneId) return [];
+        // กันยิงซ้ำถ้ามีแล้ว
+        if (zoneInspects[zoneId]?.items?.length) return zoneInspects[zoneId].items;
 
         setZoneInspects(prev => ({ ...prev, [zoneId]: { loading: true, items: [] } }));
         try {
@@ -112,21 +168,72 @@ export default function InspectionTypePage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ function: "inspectsByZone", zone_id: zoneId }),
             });
-            const data = await res.json();
-            const items: InspectGroupRow[] = data?.success ? (data.data || []) : [];
+            const result = await res.json();
+            const items = result?.success ? (result.data || []) : [];
             setZoneInspects(prev => ({ ...prev, [zoneId]: { loading: false, items } }));
+            return items;
         } catch (err) {
             console.error("inspectsByZone error:", err);
             setZoneInspects(prev => ({ ...prev, [zoneId]: { loading: false, items: [] } }));
+            return [];
         }
     };
 
-    const toggleInspect = (zoneId: string, inspectId: string) => {
-        setSelectedInspectsByZone(prev => {
-            const cur = new Set(prev[zoneId] || []);
-            if (cur.has(inspectId)) cur.delete(inspectId);
-            else cur.add(inspectId);
-            return { ...prev, [zoneId]: Array.from(cur) };
+    const toggleInspect = async (zoneId: string, inspectId: string) => {
+        // สถานะเดิมของกรุ๊ปในโซนนี้
+        const prevArr = selectedInspectsByZone[zoneId] || [];
+        const isChecked = prevArr.includes(inspectId);
+
+        if (isChecked) {
+            // 🔻 ยกเลิกกรุ๊ป -> เอาออกจาก selectedInspectsByZone และเคลียร์ items ของกรุ๊ปนี้
+            setSelectedInspectsByZone(prev => ({
+                ...prev,
+                [zoneId]: prevArr.filter(id => id !== inspectId),
+            }));
+            setSelectedItemsByGroup(prev => ({ ...prev, [inspectId]: [] }));
+        } else {
+            // 🔺 เลือกกรุ๊ป -> เติมลง selectedInspectsByZone และเลือก "ทุก item" ในกรุ๊ปนี้
+            // ensure ว่ามีรายการ items แล้ว
+            const items =
+                groupItems[inspectId]?.items?.length
+                    ? groupItems[inspectId].items
+                    : await fetchItemsByInspect(inspectId);
+
+            const allIds = items.map(it => it.inspect_item_id);
+
+            setSelectedInspectsByZone(prev => ({
+                ...prev,
+                [zoneId]: [...prevArr, inspectId],
+            }));
+
+            setSelectedItemsByGroup(prev => ({
+                ...prev,
+                [inspectId]: allIds,   // ✅ เลือกทุก item
+            }));
+        }
+    };
+
+    const toggleInspectItem = (inspectId: string, itemId: string) => {
+        setSelectedItemsByGroup(prev => {
+            const cur = new Set(prev[inspectId] || []);
+            cur.has(itemId) ? cur.delete(itemId) : cur.add(itemId);
+            const next = { ...prev, [inspectId]: Array.from(cur) };
+
+            // ⤵️ sync group checkbox: ถ้าเลือกครบทุก item -> ติ๊กกรุ๊ป, ถ้าน้อยกว่า -> เอาออก
+            const total = groupItems[inspectId]?.items?.length ?? 0;
+            if (total > 0) {
+                const zoneIdOfThisGroup = formData.zone_id; // หรือ map ย้อน inspectId -> zoneId ถ้ามีหลายโซนพร้อมกัน
+                const checkedAll = cur.size === total;
+
+                setSelectedInspectsByZone(prevZone => {
+                    const arr = new Set(prevZone[zoneIdOfThisGroup] || []);
+                    if (checkedAll) arr.add(inspectId);
+                    else arr.delete(inspectId);
+                    return { ...prevZone, [zoneIdOfThisGroup]: Array.from(arr) };
+                });
+            }
+
+            return next;
         });
     };
 
@@ -145,8 +252,8 @@ export default function InspectionTypePage() {
         team_name: "",
         service_id: "",
         service_name: "",
-        in_type_id: "",
-        in_type_name: "",
+        zone_id: "",
+        zone_name: "",
         status_id: "",
         status_name: "",
         is_active: 1,
@@ -219,16 +326,6 @@ export default function InspectionTypePage() {
         }
     };
 
-    const fetchInspectionTypes = async () => {
-        try {
-            const res = await fetch("/api/auth/inspection-type?active=true", { cache: "no-store" });
-            const data = await res.json();
-            if (data.success) setInspectionTypes(data.data || []);
-        } catch (err) {
-            console.error("Fetch error:", err);
-        }
-    };
-
     React.useEffect(() => {
         (async () => {
             showLoading(true);
@@ -236,7 +333,6 @@ export default function InspectionTypePage() {
                 await fetchProject();
                 await fetchTeam();
                 await fetchServices();
-                await fetchInspectionTypes();
                 await fetchStatus();
                 await fetchJobs();
             } finally {
@@ -261,8 +357,8 @@ export default function InspectionTypePage() {
             team_name: "",
             service_id: "",
             service_name: "",
-            in_type_id: "",
-            in_type_name: "",
+            zone_id: "",
+            zone_name: "",
             status_id: "",
             status_name: "",
             is_active: 1,
@@ -271,30 +367,6 @@ export default function InspectionTypePage() {
         });
         setOpen(true);
     };
-
-    // ฟิลเตอร์การตรวจตาม service ที่เลือก
-    const filteredInspectionTypes = React.useMemo(
-        () => (!formData.service_id ? [] : inspectionTypes.filter(i => i.service_id === formData.service_id)),
-        [inspectionTypes, formData.service_id]
-    );
-
-    // map เป็น options ให้ react-select
-    const inspectionOptions = React.useMemo(
-        () => filteredInspectionTypes.map(i => ({ value: i.in_type_id, label: i.name })),
-        [filteredInspectionTypes]
-    );
-
-    // กันค่า in_type_id ค้างเมื่อเปลี่ยน service แล้วไม่ตรงกลุ่ม
-    React.useEffect(() => {
-        if (!formData.service_id && formData.in_type_id) {
-            setFormData(prev => ({ ...prev, in_type_id: "" }));
-            return;
-        }
-        const stillValid = filteredInspectionTypes.some(i => i.in_type_id === formData.in_type_id);
-        if (!stillValid && formData.in_type_id) {
-            setFormData(prev => ({ ...prev, in_type_id: "" }));
-        }
-    }, [formData.service_id, filteredInspectionTypes]);
 
     const handleOpenEdit = (row: JobsRow) => {
         const start_th = formatToThaiDate(row.job_start_date);
@@ -323,8 +395,8 @@ export default function InspectionTypePage() {
             service_id: row.service_id ?? "",
             service_name: row.service_name ?? "",
 
-            in_type_id: row.in_type_id ?? (row as any).inspect_id ?? "",
-            in_type_name: row.in_type_name ?? (row as any).inspect_name ?? "",
+            in_type_id: row.zone_id ?? (row as any).zone_id ?? "",
+            in_type_name: row.zone_name ?? (row as any).zone_name ?? "",
 
             status_id: row.status_id ?? "",
             status_name: row.status_name ?? "",
@@ -885,14 +957,9 @@ export default function InspectionTypePage() {
                                 onChange={async (selected) => {
                                     const service_id = selected?.value || "";
 
-                                    // (ถ้าอยากคง auto-select in_type เมื่อมีรายการเดียว)
-                                    const nextInspections = inspectionTypes.filter(i => i.service_id === service_id);
-                                    const autoInTypeId = nextInspections.length === 1 ? nextInspections[0].in_type_id : "";
-
                                     setFormData({
                                         ...formData,
                                         service_id,
-                                        in_type_id: autoInTypeId,
                                     });
 
                                     // โหลดโซนของบริการ
@@ -969,22 +1036,28 @@ export default function InspectionTypePage() {
                                 การตรวจ
                             </label>
                             <Select
-                                options={inspectionOptions}
-                                value={inspectionOptions.find(opt => opt.value === formData.in_type_id) || null}
-                                onChange={(selected) =>
-                                    setFormData({ ...formData, in_type_id: selected?.value || "" })
-                                }
+                                options={zones.map(c => ({ value: c.zone_id, label: c.zone_name }))}
+                                value={zones.map(c => ({ value: c.zone_id, label: c.zone_name }))
+                                    .find(opt => opt.value === formData.zone_id) || null}
+                                onChange={async (selected) => {
+                                    const zone_id = selected?.value || "";
+                                    // reset selections เมื่อเปลี่ยนโซน
+                                    setExpandedInspects(new Set());
+                                    setSelectedInspectsByZone(prev => ({ ...prev, [zone_id]: [] }));
+                                    setSelectedItemsByGroup({});
+                                    // ตั้งค่า formData แล้วโหลด inspects
+                                    setFormData(prev => ({ ...prev, zone_id }));
+                                    if (zone_id) await loadInspectsByZone(zone_id);
+                                }}
                                 placeholder="-- เลือกการตรวจ --"
                                 isClearable
-                                isDisabled={!formData.service_id || inspectionOptions.length === 0}
-                                // noOptionsMessage={() => (formData.service_id ? "ไม่มีรายการการตรวจสำหรับบริการนี้" : "กรุณาเลือกการบริการก่อน")}
                                 menuPortalTarget={typeof window !== "undefined" ? document.body : null}
                                 styles={{
                                     control: (base, state) => ({
                                         ...base,
                                         backgroundColor: "#fff",
                                         borderColor:
-                                            error && !formData.in_type_id
+                                            error && !formData.zone_id
                                                 ? "#d32f2f" // ❌ สีแดงเมื่อ error
                                                 : state.isFocused
                                                     ? "#3b82f6"
@@ -992,7 +1065,7 @@ export default function InspectionTypePage() {
                                         boxShadow: "none",
                                         "&:hover": {
                                             borderColor:
-                                                error && !formData.in_type_id ? "#d32f2f" : "#9ca3af",
+                                                error && !formData.zone_id ? "#d32f2f" : "#9ca3af",
                                         },
                                     }),
                                     menu: (base) => ({
@@ -1028,7 +1101,7 @@ export default function InspectionTypePage() {
                             />
 
                             {/* ✅ helperText */}
-                            {error && !formData.in_type_id && (
+                            {error && !formData.zone_id && (
                                 <span
                                     style={{
                                         color: "#d32f2f",
@@ -1047,73 +1120,142 @@ export default function InspectionTypePage() {
                             Service
                         </label>
 
-                        {zones.map((z) => {
-                            const expanded = expandedZones.has(z.zone_id);
-                            const zi = zoneInspects[z.zone_id];
+                        {/* ถ้ายังไม่เลือกโซน */}
+                        {!formData.zone_id && !formData.service_id ? (
+                            <Typography variant="body2" color="text.secondary">โปรดเลือกการตรวจ</Typography>
+                        ) : (
+                            // เมื่อเลือกโซนแล้ว: เรนเดอร์กรุ๊ปของโซนนั้น
+                            (() => {
+                                const zi = zoneInspects[formData.zone_id];
 
-                            return (
-                                <Accordion
-                                    key={z.zone_id}
-                                    expanded={expanded}
-                                    onChange={(_, isExpanded) => {
-                                        setExpandedZones(prev => {
-                                            const next = new Set(prev);
-                                            if (isExpanded) next.add(z.zone_id);
-                                            else next.delete(z.zone_id);
-                                            return next;
-                                        });
-                                        if (isExpanded) fetchInspectsByZone(z.zone_id); // โหลดเมื่อเปิด
-                                    }}
-                                    sx={{
-                                        mt: 0.5,
-                                        border: '1px solid',
-                                        borderColor: 'divider',
-                                        boxShadow: 2,
-                                        borderRadius: 2,
-                                        overflow: 'hidden',
-                                        '&:before': { display: 'none' },
-                                    }}
-                                >
-                                    <AccordionSummary expandIcon={<ExpandMoreIcon />}
-                                        sx={{
-                                            minHeight: 20,
-                                            '&.Mui-expanded': { minHeight: 36 },
-                                            '& .MuiAccordionSummary-content': {
-                                                my: 0,
-                                            },
-                                            py: 0.5,
-                                        }}>
-                                        <Typography fontWeight={600}>Zone : {z.zone_name}</Typography>
-                                    </AccordionSummary>
+                                // ถ้ายังไม่มี cache ให้ยิงโหลดครั้งแรกตรงนี้ (lazy load)
+                                if (!zi) {
+                                    fetchInspectsByZone(formData.zone_id);
+                                    return <Typography variant="body2" color="text.secondary">กำลังโหลดรายการ...</Typography>;
+                                }
 
-                                    <AccordionDetails>
-                                        {zi?.loading ? (
-                                            <Typography variant="body2" color="text.secondary">กำลังโหลดรายการตรวจ...</Typography>
-                                        ) : (zi?.items?.length ?? 0) === 0 ? (
-                                            <Typography variant="body2" color="text.secondary">ไม่มีรายการตรวจในโซนนี้</Typography>
-                                        ) : (
-                                            <FormGroup>
-                                                {zi!.items.map((it) => {
-                                                    const checked = (selectedInspectsByZone[z.zone_id] || []).includes(it.inspect_id);
-                                                    return (
+                                if (zi.loading) {
+                                    return <Typography variant="body2" color="text.secondary">กำลังโหลดรายการ...</Typography>;
+                                }
+
+                                if ((zi.items?.length ?? 0) === 0) {
+                                    return <Typography variant="body2" color="text.secondary">ไม่มีรายการ</Typography>;
+                                }
+
+                                const selectedGroups = selectedInspectsByZone[formData.zone_id] || [];
+
+                                return (
+                                    <FormGroup sx={{ gap: 1 }}>
+                                        {zi.items.map((grp: any) => {
+                                            const isExpanded = expandedZones.has(grp.inspect_id); // ✅ ตอนนี้เก็บ inspect_id
+                                            const groupChecked = selectedGroups.includes(grp.inspect_id);
+                                            const itemsPack = groupItems[grp.inspect_id];
+                                            const selectedItems = selectedItemsByGroup[grp.inspect_id] || [];
+
+                                            return (
+                                                <Accordion
+                                                    key={grp.inspect_id}
+                                                    expanded={isExpanded}
+                                                    onChange={async (_, expand) => {
+                                                        setExpandedZones(prev => {
+                                                            const next = new Set(prev);
+                                                            if (expand) next.add(grp.inspect_id);
+                                                            else next.delete(grp.inspect_id);
+                                                            return next;
+                                                        });
+
+                                                        if (expand) {
+                                                            // พอขยายค่อยพรีโหลด items ของกรุ๊ปนี้
+                                                            await fetchItemsByInspect(grp.inspect_id);
+                                                        }
+                                                    }}
+                                                    sx={{
+                                                        mt: 0.5,
+                                                        border: '1px solid',
+                                                        borderColor: 'divider',
+                                                        boxShadow: 2,
+                                                        borderRadius: 2,
+                                                        overflow: 'hidden',
+                                                        '&:before': { display: 'none' },
+                                                    }}
+                                                >
+                                                    <AccordionSummary
+                                                        expandIcon={<ExpandMoreIcon />}
+                                                        sx={{
+                                                            minHeight: 28,
+                                                            px: 1,
+                                                            py: 0.5,
+                                                            alignItems: "center",
+                                                            '&.Mui-expanded': { minHeight: 28 },
+                                                            '& .MuiAccordionSummary-content': {
+                                                                margin: '5px 0',   // ✅ ลด margin-top / margin-bottom เหลือ 5px
+                                                            },
+                                                            '& .MuiAccordionSummary-content.Mui-expanded': {
+                                                                margin: '5px 0',   // ✅ ตอน expanded ก็ให้เท่าเดิม
+                                                            },
+                                                        }}
+                                                    >
                                                         <FormControlLabel
-                                                            key={it.inspect_id}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            onFocus={(e) => e.stopPropagation()}
                                                             control={
                                                                 <Checkbox
-                                                                    checked={checked}
-                                                                    onChange={() => toggleInspect(z.zone_id, it.inspect_id)}
+                                                                    checked={groupChecked}
+                                                                    onChange={() => toggleInspect(formData.zone_id, grp.inspect_id)}
+                                                                    size="small"
+                                                                    sx={{
+                                                                        p: 0.25,      // ลด padding ของกล่องเช็ค
+                                                                        mr: 0.5,      // ระยะขวาของ checkbox (0.5 = ~4px)
+                                                                    }}
                                                                 />
                                                             }
-                                                            label={"Inspection Group : " + it.inspect_name}
+                                                            label={
+                                                                <Typography variant="subtitle2" fontWeight={600} sx={{ m: 0, lineHeight: 1 }}>
+                                                                    Inspection Group : {grp.inspect_name}
+                                                                </Typography>
+                                                            }
+                                                            sx={{
+                                                                m: 0,
+                                                                // ลดช่องว่างที่ MUI ใส่ให้ label (จาก ~8px เหลือ ~4px)
+                                                                '& .MuiFormControlLabel-label': { ml: 0.5 },
+                                                            }}
                                                         />
-                                                    );
-                                                })}
-                                            </FormGroup>
-                                        )}
-                                    </AccordionDetails>
-                                </Accordion>
-                            );
-                        })}
+                                                    </AccordionSummary>
+
+                                                    <AccordionDetails>
+                                                        {!itemsPack ? (
+                                                            <Typography variant="body2" color="text.secondary">กำลังโหลดรายการ...</Typography>
+                                                        ) : itemsPack.loading ? (
+                                                            <Typography variant="body2" color="text.secondary">กำลังโหลดรายการ...</Typography>
+                                                        ) : (itemsPack.items?.length ?? 0) === 0 ? (
+                                                            <Typography variant="body2" color="text.secondary">ไม่มี Inspection Item</Typography>
+                                                        ) : (
+                                                            <Box sx={{ pl: 4, mt: -1 }}>
+                                                                <FormGroup sx={{ gap: 0 }}>
+                                                                    {itemsPack.items.map((itRow: any) => (
+                                                                        <FormControlLabel
+                                                                            key={itRow.inspect_item_id}
+                                                                            control={
+                                                                                <Checkbox
+                                                                                    checked={selectedItems.includes(itRow.inspect_item_id)}
+                                                                                    onChange={() => toggleInspectItem(grp.inspect_id, itRow.inspect_item_id)}
+                                                                                    size="small"
+                                                                                />
+                                                                            }
+                                                                            label={`Inspection Item : ${itRow.inspect_item_name}`}
+                                                                        />
+                                                                    ))}
+                                                                </FormGroup>
+                                                            </Box>
+                                                        )}
+                                                    </AccordionDetails>
+                                                </Accordion>
+                                            );
+                                        })}
+                                    </FormGroup>
+                                );
+                            })()
+                        )}
                     </Box>
                 </DialogContent>
                 <DialogActions>
