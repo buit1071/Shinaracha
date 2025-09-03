@@ -26,19 +26,13 @@ import {
     DialogTitle,
     FormControlLabel,
     Checkbox,
-    Accordion, AccordionSummary, AccordionDetails, Typography, FormGroup
 } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import Select from "react-select";
 import {
     JobsRow,
     TeamRow,
-    ServiceRow,
     ProjectRow,
     JobStatusRow,
-    ZoneRow,
-    InspectGroupRow,
-    InspectItemsRow
 } from "@/interfaces/master";
 import { showLoading } from "@/lib/loading";
 import { formatToThaiDate, parseToInputDate, showAlert, showConfirm } from "@/lib/fetcher";
@@ -46,196 +40,12 @@ import { formatToThaiDate, parseToInputDate, showAlert, showConfirm } from "@/li
 export default function InspectionTypePage() {
     const [rows, setRows] = React.useState<JobsRow[]>([]);
     const [teams, setTeams] = React.useState<TeamRow[]>([]);
-    const [services, setServices] = React.useState<ServiceRow[]>([]);
     const [projects, setProjects] = React.useState<ProjectRow[]>([]);
     const [status, setStatus] = React.useState<JobStatusRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
     const [open, setOpen] = React.useState(false);
     const [isEdit, setIsEdit] = React.useState(false);
     const [error, setError] = React.useState(false);
-
-    const [zones, setZones] = React.useState<ZoneRow[]>([]);
-    const zonesAbortRef = React.useRef<AbortController | null>(null);
-    const [zoneInspects, setZoneInspects] = React.useState<
-        Record<string, { loading: boolean; items: InspectGroupRow[] }>
-    >({});
-    const [expandedInspects, setExpandedInspects] = React.useState<Set<string>>(new Set());
-    const [expandedZones, setExpandedZones] = React.useState<Set<string>>(new Set());
-    const [selectedInspectsByZone, setSelectedInspectsByZone] = React.useState<Record<string, string[]>>({});
-
-    const [groupItems, setGroupItems] = React.useState<
-        Record<string, { loading: boolean; items: InspectItemsRow[] }>
-    >({});
-
-    const [selectedItemsByGroup, setSelectedItemsByGroup] = React.useState<
-        Record<string, string[]>
-    >({});
-
-    const loadInspectsByZone = async (zoneId: string) => {
-        if (!zoneId) return;
-
-        // กันยิงซ้ำ: ถ้ามี cache แล้ว ไม่ต้องโหลดใหม่ (ถ้าอยาก force refresh ก็ลบ if นี้)
-        if (zoneInspects[zoneId]?.items?.length) return;
-
-        setZoneInspects(prev => ({ ...prev, [zoneId]: { loading: true, items: [], error: null } }));
-        try {
-            const res = await fetch("/api/auth/inspection-form/get", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "inspectsByZone", zone_id: zoneId }),
-            });
-            const result = await res.json();
-            const items: InspectGroupRow[] = result?.success ? (result.data || []) : [];
-            setZoneInspects(prev => ({ ...prev, [zoneId]: { loading: false, items, error: null } }));
-        } catch (err: any) {
-            setZoneInspects(prev => ({
-                ...prev,
-                [zoneId]: { loading: false, items: [], error: err?.message || "fetch error" },
-            }));
-        }
-    };
-
-    const fetchItemsByInspect = async (inspectId: string) => {
-        if (!inspectId) return [];
-        // ถ้ามีแล้วไม่ต้องโหลดซ้ำ
-        if (groupItems[inspectId]?.items?.length) return groupItems[inspectId].items;
-
-        setGroupItems(prev => ({ ...prev, [inspectId]: { loading: true, items: [] } }));
-        try {
-            const res = await fetch("/api/auth/inspection-form/get", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "inspectItems", inspect_id: inspectId }),
-            });
-            const result = await res.json();
-            const items: InspectItemsRow[] = result?.success ? (result.data || []) : [];
-            setGroupItems(prev => ({ ...prev, [inspectId]: { loading: false, items } }));
-            return items;                       // ✅ คืนค่า
-        } catch (err) {
-            console.error("inspectItems fetch error:", err);
-            setGroupItems(prev => ({ ...prev, [inspectId]: { loading: false, items: [] } }));
-            return [];                          // ✅ คืนค่า
-        }
-    };
-
-    const fetchZonesByService = async (serviceId: string) => {
-        if (zonesAbortRef.current) zonesAbortRef.current.abort();
-
-        // เคลียร์ข้อมูลเก่าเมื่อ service เปลี่ยน
-        setZones([]);
-        setZoneInspects({});
-        setSelectedInspectsByZone({});
-        setExpandedZones(new Set());
-
-        if (!serviceId) return;
-
-        const ctrl = new AbortController();
-        zonesAbortRef.current = ctrl;
-        showLoading(true);
-        try {
-            const res = await fetch("/api/auth/inspection-form/get", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "zonesByService", service_id: serviceId }),
-                signal: ctrl.signal,
-            });
-            const data = await res.json();
-            if (data?.success) {
-                setZones(data.data || []);
-            } else {
-                setZones([]);
-                console.error("zonesByService error:", data?.message);
-            }
-        } catch (err) {
-            if ((err as any).name !== "AbortError") {
-                console.error("zonesByService fetch error:", err);
-                setZones([]);
-            }
-        } finally {
-            showLoading(false);
-        }
-    };
-
-    const fetchInspectsByZone = async (zoneId: string) => {
-        if (!zoneId) return [];
-        // กันยิงซ้ำถ้ามีแล้ว
-        if (zoneInspects[zoneId]?.items?.length) return zoneInspects[zoneId].items;
-
-        setZoneInspects(prev => ({ ...prev, [zoneId]: { loading: true, items: [] } }));
-        try {
-            const res = await fetch("/api/auth/inspection-form/get", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "inspectsByZone", zone_id: zoneId }),
-            });
-            const result = await res.json();
-            const items = result?.success ? (result.data || []) : [];
-            setZoneInspects(prev => ({ ...prev, [zoneId]: { loading: false, items } }));
-            return items;
-        } catch (err) {
-            console.error("inspectsByZone error:", err);
-            setZoneInspects(prev => ({ ...prev, [zoneId]: { loading: false, items: [] } }));
-            return [];
-        }
-    };
-
-    const toggleInspect = async (zoneId: string, inspectId: string) => {
-        // สถานะเดิมของกรุ๊ปในโซนนี้
-        const prevArr = selectedInspectsByZone[zoneId] || [];
-        const isChecked = prevArr.includes(inspectId);
-
-        if (isChecked) {
-            // 🔻 ยกเลิกกรุ๊ป -> เอาออกจาก selectedInspectsByZone และเคลียร์ items ของกรุ๊ปนี้
-            setSelectedInspectsByZone(prev => ({
-                ...prev,
-                [zoneId]: prevArr.filter(id => id !== inspectId),
-            }));
-            setSelectedItemsByGroup(prev => ({ ...prev, [inspectId]: [] }));
-        } else {
-            // 🔺 เลือกกรุ๊ป -> เติมลง selectedInspectsByZone และเลือก "ทุก item" ในกรุ๊ปนี้
-            // ensure ว่ามีรายการ items แล้ว
-            const items =
-                groupItems[inspectId]?.items?.length
-                    ? groupItems[inspectId].items
-                    : await fetchItemsByInspect(inspectId);
-
-            const allIds = items.map(it => it.inspect_item_id);
-
-            setSelectedInspectsByZone(prev => ({
-                ...prev,
-                [zoneId]: [...prevArr, inspectId],
-            }));
-
-            setSelectedItemsByGroup(prev => ({
-                ...prev,
-                [inspectId]: allIds,   // ✅ เลือกทุก item
-            }));
-        }
-    };
-
-    const toggleInspectItem = (inspectId: string, itemId: string) => {
-        setSelectedItemsByGroup(prev => {
-            const cur = new Set(prev[inspectId] || []);
-            cur.has(itemId) ? cur.delete(itemId) : cur.add(itemId);
-            const next = { ...prev, [inspectId]: Array.from(cur) };
-
-            // ⤵️ sync group checkbox: ถ้าเลือกครบทุก item -> ติ๊กกรุ๊ป, ถ้าน้อยกว่า -> เอาออก
-            const total = groupItems[inspectId]?.items?.length ?? 0;
-            if (total > 0) {
-                const zoneIdOfThisGroup = formData.zone_id; // หรือ map ย้อน inspectId -> zoneId ถ้ามีหลายโซนพร้อมกัน
-                const checkedAll = cur.size === total;
-
-                setSelectedInspectsByZone(prevZone => {
-                    const arr = new Set(prevZone[zoneIdOfThisGroup] || []);
-                    if (checkedAll) arr.add(inspectId);
-                    else arr.delete(inspectId);
-                    return { ...prevZone, [zoneIdOfThisGroup]: Array.from(arr) };
-                });
-            }
-
-            return next;
-        });
-    };
 
     // form
     const [formData, setFormData] = React.useState({
@@ -250,10 +60,6 @@ export default function InspectionTypePage() {
         job_end_time: "",
         team_id: "",
         team_name: "",
-        service_id: "",
-        service_name: "",
-        zone_id: "",
-        zone_name: "",
         status_id: "",
         status_name: "",
         is_active: 1,
@@ -287,25 +93,6 @@ export default function InspectionTypePage() {
         }
     };
 
-    const fetchServices = async () => {
-        try {
-            const res = await fetch("/api/auth/inspection-form/get", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "services" }),
-            });
-
-            const data = await res.json();
-            if (data.success) {
-                setServices(data.data || []);
-            } else {
-                console.error("โหลด services ไม่สำเร็จ:", data.message);
-            }
-        } catch (err) {
-            console.error("fetch error:", err);
-        }
-    };
-
     const fetchProject = async () => {
         try {
             const res = await fetch("/api/auth/project-list");
@@ -332,7 +119,6 @@ export default function InspectionTypePage() {
             try {
                 await fetchProject();
                 await fetchTeam();
-                await fetchServices();
                 await fetchStatus();
                 await fetchJobs();
             } finally {
@@ -355,10 +141,6 @@ export default function InspectionTypePage() {
             job_end_time: "",
             team_id: "",
             team_name: "",
-            service_id: "",
-            service_name: "",
-            zone_id: "",
-            zone_name: "",
             status_id: "",
             status_name: "",
             is_active: 1,
@@ -945,318 +727,8 @@ export default function InspectionTypePage() {
                                 </span>
                             )}
                         </Box>
-
-                        <Box>
-                            <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
-                                การบริการ
-                            </label>
-                            <Select
-                                options={services.map(c => ({ value: c.service_id, label: c.service_name }))}
-                                value={services.map(c => ({ value: c.service_id, label: c.service_name }))
-                                    .find(opt => opt.value === formData.service_id) || null}
-                                onChange={async (selected) => {
-                                    const service_id = selected?.value || "";
-
-                                    setFormData({
-                                        ...formData,
-                                        service_id,
-                                    });
-
-                                    // โหลดโซนของบริการ
-                                    await fetchZonesByService(service_id);
-                                }}
-                                placeholder="-- เลือกการบริการ --"
-                                isClearable
-                                menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-                                styles={{
-                                    control: (base, state) => ({
-                                        ...base,
-                                        backgroundColor: "#fff",
-                                        borderColor:
-                                            error && !formData.service_id
-                                                ? "#d32f2f" // ❌ สีแดงเมื่อ error
-                                                : state.isFocused
-                                                    ? "#3b82f6"
-                                                    : "#d1d5db",
-                                        boxShadow: "none",
-                                        "&:hover": {
-                                            borderColor:
-                                                error && !formData.service_id ? "#d32f2f" : "#9ca3af",
-                                        },
-                                    }),
-                                    menu: (base) => ({
-                                        ...base,
-                                        backgroundColor: "#fff",
-                                        boxShadow: "0 8px 24px rgba(0,0,0,.2)",
-                                        border: "1px solid #e5e7eb",
-                                    }),
-                                    menuPortal: (base) => ({
-                                        ...base,
-                                        zIndex: 2100,
-                                    }),
-                                    option: (base, state) => ({
-                                        ...base,
-                                        backgroundColor: state.isSelected
-                                            ? "#e5f2ff"
-                                            : state.isFocused
-                                                ? "#f3f4f6"
-                                                : "#fff",
-                                        color: "#111827",
-                                    }),
-                                    menuList: (base) => ({
-                                        ...base,
-                                        backgroundColor: "#fff",
-                                        paddingTop: 0,
-                                        paddingBottom: 0,
-                                    }),
-                                    singleValue: (base) => ({
-                                        ...base,
-                                        color: "#111827",
-                                    }),
-                                }}
-                            />
-
-                            {/* ✅ helperText */}
-                            {error && !formData.service_id && (
-                                <span
-                                    style={{
-                                        color: "#d32f2f",
-                                        fontSize: "12px",
-                                        marginTop: 4,
-                                        display: "block",
-                                    }}
-                                >
-                                    กรุณาเลือกการบริการ
-                                </span>
-                            )}
-                        </Box>
-
-                        <Box>
-                            <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
-                                การตรวจ
-                            </label>
-                            <Select
-                                options={zones.map(c => ({ value: c.zone_id, label: c.zone_name }))}
-                                value={zones.map(c => ({ value: c.zone_id, label: c.zone_name }))
-                                    .find(opt => opt.value === formData.zone_id) || null}
-                                onChange={async (selected) => {
-                                    const zone_id = selected?.value || "";
-                                    // reset selections เมื่อเปลี่ยนโซน
-                                    setExpandedInspects(new Set());
-                                    setSelectedInspectsByZone(prev => ({ ...prev, [zone_id]: [] }));
-                                    setSelectedItemsByGroup({});
-                                    // ตั้งค่า formData แล้วโหลด inspects
-                                    setFormData(prev => ({ ...prev, zone_id }));
-                                    if (zone_id) await loadInspectsByZone(zone_id);
-                                }}
-                                placeholder="-- เลือกการตรวจ --"
-                                isClearable
-                                menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-                                styles={{
-                                    control: (base, state) => ({
-                                        ...base,
-                                        backgroundColor: "#fff",
-                                        borderColor:
-                                            error && !formData.zone_id
-                                                ? "#d32f2f" // ❌ สีแดงเมื่อ error
-                                                : state.isFocused
-                                                    ? "#3b82f6"
-                                                    : "#d1d5db",
-                                        boxShadow: "none",
-                                        "&:hover": {
-                                            borderColor:
-                                                error && !formData.zone_id ? "#d32f2f" : "#9ca3af",
-                                        },
-                                    }),
-                                    menu: (base) => ({
-                                        ...base,
-                                        backgroundColor: "#fff",
-                                        boxShadow: "0 8px 24px rgba(0,0,0,.2)",
-                                        border: "1px solid #e5e7eb",
-                                    }),
-                                    menuPortal: (base) => ({
-                                        ...base,
-                                        zIndex: 2100,
-                                    }),
-                                    option: (base, state) => ({
-                                        ...base,
-                                        backgroundColor: state.isSelected
-                                            ? "#e5f2ff"
-                                            : state.isFocused
-                                                ? "#f3f4f6"
-                                                : "#fff",
-                                        color: "#111827",
-                                    }),
-                                    menuList: (base) => ({
-                                        ...base,
-                                        backgroundColor: "#fff",
-                                        paddingTop: 0,
-                                        paddingBottom: 0,
-                                    }),
-                                    singleValue: (base) => ({
-                                        ...base,
-                                        color: "#111827",
-                                    }),
-                                }}
-                            />
-
-                            {/* ✅ helperText */}
-                            {error && !formData.zone_id && (
-                                <span
-                                    style={{
-                                        color: "#d32f2f",
-                                        fontSize: "12px",
-                                        marginTop: 4,
-                                        display: "block",
-                                    }}
-                                >
-                                    กรุณาเลือกการตรวจ
-                                </span>
-                            )}
-                        </Box>
                     </Box>
-                    <Box>
-                        <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
-                            Service
-                        </label>
 
-                        {/* ถ้ายังไม่เลือกโซน */}
-                        {!formData.zone_id && !formData.service_id ? (
-                            <Typography variant="body2" color="text.secondary">โปรดเลือกการตรวจ</Typography>
-                        ) : (
-                            // เมื่อเลือกโซนแล้ว: เรนเดอร์กรุ๊ปของโซนนั้น
-                            (() => {
-                                const zi = zoneInspects[formData.zone_id];
-
-                                // ถ้ายังไม่มี cache ให้ยิงโหลดครั้งแรกตรงนี้ (lazy load)
-                                if (!zi) {
-                                    fetchInspectsByZone(formData.zone_id);
-                                    return <Typography variant="body2" color="text.secondary">กำลังโหลดรายการ...</Typography>;
-                                }
-
-                                if (zi.loading) {
-                                    return <Typography variant="body2" color="text.secondary">กำลังโหลดรายการ...</Typography>;
-                                }
-
-                                if ((zi.items?.length ?? 0) === 0) {
-                                    return <Typography variant="body2" color="text.secondary">ไม่มีรายการ</Typography>;
-                                }
-
-                                const selectedGroups = selectedInspectsByZone[formData.zone_id] || [];
-
-                                return (
-                                    <FormGroup sx={{ gap: 1 }}>
-                                        {zi.items.map((grp: any) => {
-                                            const isExpanded = expandedZones.has(grp.inspect_id); // ✅ ตอนนี้เก็บ inspect_id
-                                            const groupChecked = selectedGroups.includes(grp.inspect_id);
-                                            const itemsPack = groupItems[grp.inspect_id];
-                                            const selectedItems = selectedItemsByGroup[grp.inspect_id] || [];
-
-                                            return (
-                                                <Accordion
-                                                    key={grp.inspect_id}
-                                                    expanded={isExpanded}
-                                                    onChange={async (_, expand) => {
-                                                        setExpandedZones(prev => {
-                                                            const next = new Set(prev);
-                                                            if (expand) next.add(grp.inspect_id);
-                                                            else next.delete(grp.inspect_id);
-                                                            return next;
-                                                        });
-
-                                                        if (expand) {
-                                                            // พอขยายค่อยพรีโหลด items ของกรุ๊ปนี้
-                                                            await fetchItemsByInspect(grp.inspect_id);
-                                                        }
-                                                    }}
-                                                    sx={{
-                                                        mt: 0.5,
-                                                        border: '1px solid',
-                                                        borderColor: 'divider',
-                                                        boxShadow: 2,
-                                                        borderRadius: 2,
-                                                        overflow: 'hidden',
-                                                        '&:before': { display: 'none' },
-                                                    }}
-                                                >
-                                                    <AccordionSummary
-                                                        expandIcon={<ExpandMoreIcon />}
-                                                        sx={{
-                                                            minHeight: 28,
-                                                            px: 1,
-                                                            py: 0.5,
-                                                            alignItems: "center",
-                                                            '&.Mui-expanded': { minHeight: 28 },
-                                                            '& .MuiAccordionSummary-content': {
-                                                                margin: '5px 0',   // ✅ ลด margin-top / margin-bottom เหลือ 5px
-                                                            },
-                                                            '& .MuiAccordionSummary-content.Mui-expanded': {
-                                                                margin: '5px 0',   // ✅ ตอน expanded ก็ให้เท่าเดิม
-                                                            },
-                                                        }}
-                                                    >
-                                                        <FormControlLabel
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            onFocus={(e) => e.stopPropagation()}
-                                                            control={
-                                                                <Checkbox
-                                                                    checked={groupChecked}
-                                                                    onChange={() => toggleInspect(formData.zone_id, grp.inspect_id)}
-                                                                    size="small"
-                                                                    sx={{
-                                                                        p: 0.25,      // ลด padding ของกล่องเช็ค
-                                                                        mr: 0.5,      // ระยะขวาของ checkbox (0.5 = ~4px)
-                                                                    }}
-                                                                />
-                                                            }
-                                                            label={
-                                                                <Typography variant="subtitle2" fontWeight={600} sx={{ m: 0, lineHeight: 1 }}>
-                                                                    Inspection Group : {grp.inspect_name}
-                                                                </Typography>
-                                                            }
-                                                            sx={{
-                                                                m: 0,
-                                                                // ลดช่องว่างที่ MUI ใส่ให้ label (จาก ~8px เหลือ ~4px)
-                                                                '& .MuiFormControlLabel-label': { ml: 0.5 },
-                                                            }}
-                                                        />
-                                                    </AccordionSummary>
-
-                                                    <AccordionDetails>
-                                                        {!itemsPack ? (
-                                                            <Typography variant="body2" color="text.secondary">กำลังโหลดรายการ...</Typography>
-                                                        ) : itemsPack.loading ? (
-                                                            <Typography variant="body2" color="text.secondary">กำลังโหลดรายการ...</Typography>
-                                                        ) : (itemsPack.items?.length ?? 0) === 0 ? (
-                                                            <Typography variant="body2" color="text.secondary">ไม่มี Inspection Item</Typography>
-                                                        ) : (
-                                                            <Box sx={{ pl: 4, mt: -1 }}>
-                                                                <FormGroup sx={{ gap: 0 }}>
-                                                                    {itemsPack.items.map((itRow: any) => (
-                                                                        <FormControlLabel
-                                                                            key={itRow.inspect_item_id}
-                                                                            control={
-                                                                                <Checkbox
-                                                                                    checked={selectedItems.includes(itRow.inspect_item_id)}
-                                                                                    onChange={() => toggleInspectItem(grp.inspect_id, itRow.inspect_item_id)}
-                                                                                    size="small"
-                                                                                />
-                                                                            }
-                                                                            label={`Inspection Item : ${itRow.inspect_item_name}`}
-                                                                        />
-                                                                    ))}
-                                                                </FormGroup>
-                                                            </Box>
-                                                        )}
-                                                    </AccordionDetails>
-                                                </Accordion>
-                                            );
-                                        })}
-                                    </FormGroup>
-                                );
-                            })()
-                        )}
-                    </Box>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose}>ยกเลิก</Button>

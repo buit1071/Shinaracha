@@ -316,7 +316,7 @@ export default function CustomerBranch({ customerId, onBack }: Props) {
     return (
         <div className="w-full h-[96vh] flex flex-col bg-gray-50">
             {!view && (
-                <div className="h-[6vh] flex items-center justify-between px-4 py-2 bg-white shadow-md mb-2 rounded-lg">
+                <div className="h-[6vh] flex items-center justify-between px-4 py-2 bg-white shadow-md rounded-lg">
                     <div className="flex items-center">
                         <IconButton onClick={onBack} color="primary">
                             <ArrowBackIcon />
@@ -345,7 +345,7 @@ export default function CustomerBranch({ customerId, onBack }: Props) {
             )}
 
             {/* Content */}
-            <div className="flex-1 min-h-0 overflow-auto mb-2 rounded-lg">
+            <div className="flex-1 min-h-0 mb-2 rounded-lg">
                 {view?.type !== "detail" ? (
                     <div className="w-full min-w-0 space-y-6">
                         <div>
@@ -418,6 +418,7 @@ export default function CustomerBranch({ customerId, onBack }: Props) {
                     <CustomerBranchDetail customerId={customerId} branchId={view.id} onBack={backToList} />
                 )}
             </div>
+            
             {/* Dialog Popup */}
             <Dialog open={openGroup} onClose={handleCloseGroup} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
                 <DialogTitle>{isEditGroup ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>

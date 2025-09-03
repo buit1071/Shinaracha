@@ -17,6 +17,10 @@ export interface ProjectRow {
 export interface CustomerRow {
     customer_id: string;
     customer_name: string;
+    service_id: string,
+    service_name?: string,
+    zone_id: string,
+    zone_name?: string,
     is_active: number;
     created_by: string;
     updated_by: string;
@@ -216,6 +220,59 @@ export interface JobsRow {
 export interface JobStatusRow {
     status_id: string;
     status_name: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+}
+export interface CustomerBranchRow {
+    customer_id: string;
+    branch_id: string;
+    branch_name: string;
+    cus_cost_centre: string;
+    store_no: string;
+    customer_format: string;
+    customer_area: string;
+    customer_hub: string;
+    branch_tel: string;
+    contact_person_id: string;
+    contact_tel_id: string;
+    address: string;
+    customer_regional: string;
+    customer_province: string;
+    customer_email_id: string;
+    group_id: string;
+    latitude: string;
+    longitude: string;
+    service_id: string;
+    zone_id: string;
+    equipment_group_id: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+}
+export interface CustomerGroupRow {
+    customer_id: string;
+    group_id: string;
+    group_name: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+}
+export interface ServiceEquipmentRow {
+    service_id: string;
+    service_name?: string;
+    branch_id: string;
+    zone_id: string;
+    zone_name?: string;
     is_active: number;
     created_by: string;
     updated_by: string;
