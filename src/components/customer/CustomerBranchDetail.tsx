@@ -235,6 +235,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         { id: 1, name: "สมชาย ใจดี", email: "123@a123.com", tel: "12345679" },
         { id: 2, name: "สมหญิง แก้วใส", email: "46@456.com", tel: "987654321" },
     ]);
+
     const [editingId, setEditingId] = React.useState<number | null>(null);
     const [draft, setDraft] = React.useState<Partial<ContactRow>>({});
 
@@ -618,16 +619,15 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         fetchService();
     }, [customerId]);
 
-    const filteredEquipmentRows = equipments
-        .filter((row) =>
+    const filteredEquipmentRows = equipments.filter((row) =>
             Object.values(row).some((value) =>
                 String(value).toLowerCase().includes(searchTextEquipment.toLowerCase())
             )
-        )
-        .map((row, index) => ({
+        ).map((row, index) => ({
             ...row,
             order: index + 1,
         }));
+
     return (
         <div className="w-full h-[96vh] flex flex-col bg-gray-50">
             <div className="h-[6vh] flex items-center justify-between px-4 py-2 bg-white shadow-md mb-2 rounded-lg">
@@ -640,7 +640,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                     </h2>
                 </div>
             </div>
-            <div className="flex-1 items-center justify-between px-4 py-2 bg-white shadow-md mb-2 rounded-lg">
+            <div className="flex-1 items-center justify-between px-4 py-2 bg-white shadow-md mb-2 rounded-lg overflow-auto">
                 <span className="text-black">ข้อมูลสาขา</span>
                 <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
                     <TextField
@@ -807,8 +807,10 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
 
                 <Box mt={2}>
                     <div className="w-full">
-                        <div className="flex items-center justify-between">
-                            <span className="text-black">ผู้ติดต่อ</span>
+                        <div className="flex items-center justify-between mb-1">
+                            <h3 className="text-xl font-bold text-gray-800">
+                                ผู้ติดต่อ
+                            </h3>
                             <Button className=" mb-10" variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleAdd}>
                                 เพิ่มผู้ติดต่อ
                             </Button>
