@@ -280,3 +280,16 @@ export interface ServiceEquipmentRow {
     updated_date?: string;
     order?: number;
 }
+export interface ContactRow {
+    branch_id: string;
+    contact_id: string;
+    name: string;
+    email: string;
+    tel: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+}

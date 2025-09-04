@@ -27,7 +27,8 @@ import {
 } from "@mui/material";
 import Select from "react-select";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { CustomerBranchRow, CustomerGroupRow, ServiceEquipmentRow, ServiceRow, ZoneRow, InspectGroupRow, InspectItemsRow } from "@/interfaces/master";
+import { CustomerBranchRow, CustomerGroupRow, ServiceEquipmentRow, ServiceRow, ZoneRow, InspectGroupRow, InspectItemsRow, ContactRow } from "@/interfaces/master";
+import { generateId } from "@/lib/fetcher";
 
 type Props = {
     customerId: string;
@@ -35,25 +36,13 @@ type Props = {
     onBack: () => void;
 };
 
-type ContactRow = {
-    id: number;
-    name: string;
-    email: string;
-    tel: string;
-};
-
 export default function CustomerBranchDetail({ customerId, branchId, onBack }: Props) {
     const [view, setView] = React.useState<null | { type: "detail"; id: string }>(null);
-    const openDetail = (id: string) => setView({ type: "detail", id });
-    const backToList = () => setView(null);
     const [services, setServices] = React.useState<ServiceRow[]>([]);
-    const [rows, setRows] = React.useState<CustomerBranchRow[]>([]);
     const [groups, setGroups] = React.useState<CustomerGroupRow[]>([]);
     const [equipments, setEquipments] = React.useState<ServiceEquipmentRow[]>([]);
-    const [searchText, setSearchText] = React.useState("");
-    const [open, setOpen] = React.useState(false);
-    const [isEdit, setIsEdit] = React.useState(false);
     const [error, setError] = React.useState(false);
+    const [errorContact, setErrorContact] = React.useState(false);
     const [errorEquipment, setErrorEquipment] = React.useState(false);
     const [errorGroup, setErrorGroup] = React.useState(false);
     const [searchTextEquipment, setSearchTextEquipment] = React.useState("");
@@ -104,6 +93,17 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         branch_id: branchId || "123",
         service_id: "",
         zone_id: "",
+        is_active: 1,
+        created_by: "admin",
+        updated_by: "admin",
+    });
+
+    const [formContactData, setFormContactData] = React.useState<ContactRow>({
+        branch_id: branchId || "123",
+        contact_id: "",
+        name: "",
+        email: "",
+        tel: "",
         is_active: 1,
         created_by: "admin",
         updated_by: "admin",
@@ -231,50 +231,172 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         },
     ];
 
-    const [contactRows, setContactRows] = React.useState<ContactRow[]>([
-        { id: 1, name: "สมชาย ใจดี", email: "123@a123.com", tel: "12345679" },
-        { id: 2, name: "สมหญิง แก้วใส", email: "46@456.com", tel: "987654321" },
-    ]);
+    const [contactRows, setContactRows] = React.useState<ContactRow[]>([]);
 
-    const [editingId, setEditingId] = React.useState<number | null>(null);
+    const [editingId, setEditingId] = React.useState<string | null>(null);
     const [draft, setDraft] = React.useState<Partial<ContactRow>>({});
 
     const startEdit = (row: ContactRow) => {
-        setEditingId(row.id);
+        setEditingId(row.contact_id);
         setDraft({ ...row });
     };
+
+    const fetchContactByBranchId = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/customer/contact/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "contact", branch_id: "123" }),
+            });
+
+            const result = await res.json();
+            if (result.success && result.data) {
+                setContactRows(result.data || []);
+                showLoading(false);
+            }
+        } catch (err) {
+            showLoading(false);
+            console.error("fetch customer name error:", err);
+        }
+    };
+
+    React.useEffect(() => {
+        fetchContactByBranchId();
+    }, []);
 
     const handleFieldChange = <K extends keyof ContactRow>(key: K, value: ContactRow[K]) => {
         setDraft((p) => ({ ...p, [key]: value }));
     };
 
     const handleAdd = () => {
-        const nextId = contactRows.length ? Math.max(...contactRows.map((r) => r.id)) + 1 : 1;
-        const newRow: ContactRow = { id: nextId, name: "", email: "", tel: "" };
+        const nextId = generateId("CT");
+        const newRow: ContactRow = {
+            branch_id: branchId || "123",
+            contact_id: nextId,
+            name: "",
+            email: "",
+            tel: "",
+            is_active: 1,
+            created_by: "admin",
+            updated_by: "admin",
+        };
         setContactRows((prev) => [...prev, newRow]);
         startEdit(newRow);
     };
 
-    const handleDelete = (id: number) => {
-        setContactRows((prev) => prev.filter((r) => r.id !== id));
-        if (editingId === id) {
-            setEditingId(null);
-            setDraft({});
+    const handleDeleteContact = async (contact_id: string) => {
+        const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบข้อมูล");
+        if (!confirmed) return;
+
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/customer/contact/delete", {
+                method: "POST", // หรือ DELETE ถ้าเซิร์ฟเวอร์รองรับ
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ entity: "contact", contact_id }), // ✅ ใช้ contact_id จริง
+            });
+
+            showLoading(false);
+            const result = await res.json();
+            if (!res.ok || !result.success) {
+                throw new Error(result.message || `ลบข้อมูลล้มเหลว (HTTP ${res.status})`);
+            }
+
+            // ✅ ลบออกจากตารางใน FE
+            setContactRows((prev) => prev.filter((r) => r.contact_id !== contact_id));
+
+            // ถ้ากำลังแก้ไขแถวนี้อยู่ ให้เคลียร์สถานะด้วย
+            if (editingId === contact_id) {
+                setEditingId(null);
+                setDraft({});
+            }
+
+            await showAlert("success", result.message || "ลบข้อมูลเรียบร้อย");
+        } catch (err: any) {
+            showLoading(false);
+            console.error("Delete error:", err);
+            await showAlert("error", err?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        } finally {
+            showLoading(false);
         }
     };
 
-    const handleSave = (id: number) => {
-        setContactRows((prev) =>
-            prev.map((r) => (r.id === id ? { ...r, ...draft } as ContactRow : r))
-        );
-        setEditingId(null);
-        setDraft({});
+    const handleSaveContact = async (contact_id: string) => {
+        const name = (draft.name ?? formContactData.name)?.trim() ?? "";
+        if (!name) {
+            setErrorContact(true);
+            return;
+        }
+
+        const email = (draft.email ?? formContactData.email)?.trim() ?? "";
+        const tel = (draft.tel ?? formContactData.tel)?.trim() ?? "";
+
+        showLoading(true);
+        try {
+            const id = contact_id || formContactData.contact_id; // ใช้ id ที่ส่งมาเป็นหลัก
+
+            const payload = {
+                entity: "contact" as const,
+                data: {
+                    branch_id: branchId || "123",
+                    contact_id: id,
+                    name,                 // ✅ แก้จาก 'ame'
+                    email,
+                    tel,
+                    is_active: formContactData.is_active ?? 1,
+                    created_by: formContactData.created_by || "admin",
+                    updated_by: formContactData.updated_by || "admin",
+                },
+            };
+
+            const res = await fetch("/api/auth/customer/contact/post", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            showLoading(false);
+            const result = await res.json();
+            if (!res.ok || !result.success) {
+                throw new Error(result.message || `บันทึกล้มเหลว (HTTP ${res.status})`);
+            }
+
+            // อัปเดตแถวในตารางให้ตรงกับที่บันทึกสำเร็จ
+            setContactRows(prev => {
+                const idx = prev.findIndex(r => r.contact_id === id);
+                const updated: ContactRow = {
+                    branch_id: branchId || "123",
+                    contact_id: id,
+                    name, email, tel,
+                    is_active: formContactData.is_active ?? 1,
+                    created_by: formContactData.created_by || "admin",
+                    updated_by: formContactData.updated_by || "admin",
+                };
+                if (idx >= 0) {
+                    const next = [...prev];
+                    next[idx] = { ...prev[idx], ...updated };
+                    return next;
+                }
+                return [...prev, updated];
+            });
+
+            await showAlert("success", result.message ?? "บันทึกสำเร็จ");
+            setEditingId(null);
+            setDraft({});
+            setErrorContact(false);
+        } catch (e: any) {
+            console.error(e);
+            await showAlert("error", e?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        } finally {
+            showLoading(false);
+        }
     };
 
     const editableCell =
         (field: keyof ContactRow, autoFocus = false) =>
             (params: GridRenderCellParams<ContactRow>) => {
-                const isEditing = editingId === params.row.id;
+                const isEditing = editingId === params.row.contact_id;    // <-- เปลี่ยนมาเทียบ contact_id
                 if (!isEditing) {
                     const v = params.row[field] as string | number | undefined;
                     return <span className="w-full text-center">{v || "—"}</span>;
@@ -288,7 +410,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                             value={value}
                             onChange={(e) => handleFieldChange(field, e.target.value)}
                             autoFocus={autoFocus}
-                            inputProps={{ style: { textAlign: "center" } }}   // ข้อความในช่องอยู่กลาง
+                            inputProps={{ style: { textAlign: "center" } }}
                         />
                     </Box>
                 );
@@ -303,7 +425,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             align: "center",
             sortable: false,
             renderCell: (params) =>
-                params.api.getRowIndexRelativeToVisibleRows(params.id) + 1
+                params.api.getRowIndexRelativeToVisibleRows(params.id) + 1,
         },
         {
             field: "name",
@@ -311,7 +433,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             flex: 1,
             headerAlign: "center",
             align: "center",
-            renderCell: editableCell("name", true), // โฟกัสคอลัมน์แรกเวลาเริ่มแก้ไข
+            renderCell: editableCell("name", true),
         },
         {
             field: "email",
@@ -339,11 +461,11 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             align: "center",
             headerAlign: "center",
             renderCell: (params: GridRenderCellParams<ContactRow>) => {
-                const isEditing = editingId === params.row.id;
+                const isEditing = editingId === params.row.contact_id;
                 return (
                     <>
                         {isEditing ? (
-                            <IconButton onClick={() => handleSave(params.row.id)} color="primary">
+                            <IconButton onClick={() => handleSaveContact(params.row.contact_id)} color="primary">
                                 <SaveIcon />
                             </IconButton>
                         ) : (
@@ -351,7 +473,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                                 <EditIcon />
                             </IconButton>
                         )}
-                        <IconButton onClick={() => handleDelete(params.row.id)} color="error">
+                        <IconButton onClick={() => handleDeleteContact(params.row.contact_id)} color="error">
                             <DeleteIcon />
                         </IconButton>
                     </>
@@ -360,36 +482,36 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         },
     ];
 
-    const handleOpenAdd = () => {
-        setIsEdit(false);
-        setFormData({
-            customer_id: customerId,
-            branch_id: branchId,
-            branch_name: "",
-            cus_cost_centre: "",
-            store_no: "",
-            customer_format: "",
-            customer_area: "",
-            customer_hub: "",
-            branch_tel: "",
-            contact_person_id: "",
-            contact_tel_id: "",
-            address: "",
-            customer_regional: "",
-            customer_province: "",
-            customer_email_id: "",
-            group_id: "",
-            latitude: "",
-            longitude: "",
-            service_id: "",
-            zone_id: "",
-            equipment_group_id: "",
-            is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
-        });
-        setOpen(true);
-    };
+    // const handleOpenAdd = () => {
+    //     setIsEdit(false);
+    //     setFormData({
+    //         customer_id: customerId,
+    //         branch_id: branchId,
+    //         branch_name: "",
+    //         cus_cost_centre: "",
+    //         store_no: "",
+    //         customer_format: "",
+    //         customer_area: "",
+    //         customer_hub: "",
+    //         branch_tel: "",
+    //         contact_person_id: "",
+    //         contact_tel_id: "",
+    //         address: "",
+    //         customer_regional: "",
+    //         customer_province: "",
+    //         customer_email_id: "",
+    //         group_id: "",
+    //         latitude: "",
+    //         longitude: "",
+    //         service_id: "",
+    //         zone_id: "",
+    //         equipment_group_id: "",
+    //         is_active: 1,
+    //         created_by: "admin",
+    //         updated_by: "admin",
+    //     });
+    //     setOpen(true);
+    // };
 
     const handleOpenAddEquipment = () => {
         setIsEditEquipment(false);
@@ -620,13 +742,13 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
     }, [customerId]);
 
     const filteredEquipmentRows = equipments.filter((row) =>
-            Object.values(row).some((value) =>
-                String(value).toLowerCase().includes(searchTextEquipment.toLowerCase())
-            )
-        ).map((row, index) => ({
-            ...row,
-            order: index + 1,
-        }));
+        Object.values(row).some((value) =>
+            String(value).toLowerCase().includes(searchTextEquipment.toLowerCase())
+        )
+    ).map((row, index) => ({
+        ...row,
+        order: index + 1,
+    }));
 
     return (
         <div className="w-full h-[96vh] flex flex-col bg-gray-50">
@@ -805,38 +927,39 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                     )}
                 </Box>
 
-                <Box mt={2}>
-                    <div className="w-full">
-                        <div className="flex items-center justify-between mb-1">
-                            <h3 className="text-xl font-bold text-gray-800">
-                                ผู้ติดต่อ
-                            </h3>
-                            <Button className=" mb-10" variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleAdd}>
-                                เพิ่มผู้ติดต่อ
-                            </Button>
+                {branchId && (
+                    <Box mt={2}>
+                        <div className="w-full">
+                            <div className="flex items-center justify-between mb-1">
+                                <h3 className="text-xl font-bold text-gray-800">
+                                    ผู้ติดต่อ
+                                </h3>
+                                <Button className=" mb-10" variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleAdd}>
+                                    เพิ่มผู้ติดต่อ
+                                </Button>
+                            </div>
+                            <DataGrid
+                                rows={contactRows}
+                                columns={columns}
+                                getRowId={(row) => row.contact_id}
+                                disableRowSelectionOnClick
+                                pagination
+                                hideFooter
+                                autoHeight
+                                sx={{
+                                    "& .MuiDataGrid-cell": { display: "flex", alignItems: "center" },
+                                    "& .MuiDataGrid-cell > div": { width: "100%" },
+                                    "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": { outline: "none" },
+                                    "& .MuiDataGrid-virtualScroller": {
+                                        maxHeight: "200px !important",
+                                        overflowY: "auto !important",
+                                        overflowX: "hidden",
+                                    },
+                                }}
+                            />
                         </div>
-                        <DataGrid
-                            rows={contactRows}
-                            columns={columns}
-                            disableRowSelectionOnClick
-                            pagination
-                            hideFooter
-                            autoHeight
-                            sx={{
-                                "& .MuiDataGrid-cell": { display: "flex", alignItems: "center" },
-                                "& .MuiDataGrid-cell > div": { width: "100%" },
-                                "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": { outline: "none" },
-
-                                // ✅ เลื่อนเฉพาะบอดี้เมื่อเกิน 400px
-                                "& .MuiDataGrid-virtualScroller": {
-                                    maxHeight: "200px !important",
-                                    overflowY: "auto !important",
-                                    overflowX: "hidden",
-                                },
-                            }}
-                        />
-                    </div>
-                </Box>
+                    </Box>
+                )}
 
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 1 }}>
                     <span className="text-black">พิกัดร้าน :</span>
@@ -856,7 +979,8 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                     />
                 </Box>
 
-                <Box mt={2}>
+                {branchId && (
+                    <Box mt={2}>
                     <div className="h-[6vh] flex items-center justify-between">
                         <div className="flex items-center">
                             <h3 className="text-xl font-bold text-gray-800">
@@ -896,6 +1020,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                         }}
                     />
                 </Box>
+                )}
 
                 {/* Dialog Popup */}
                 <Dialog open={openEquipment} onClose={handleCloseEquipment} fullWidth maxWidth="xl" sx={{ zIndex: 1000 }}>
