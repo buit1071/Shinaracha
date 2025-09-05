@@ -4,10 +4,10 @@ import { generateId } from "@/lib/fetcher";
 
 export async function GET() {
     try {
-        // ดึงข้อมูลทั้งหมดจาก data_equipments
+        // ดึงข้อมูลทั้งหมดจาก master_equipments
         const rows = await query(`
             SELECT * 
-            FROM data_equipments 
+            FROM master_equipments 
             ORDER BY updated_date DESC
         `);
 
@@ -31,8 +31,6 @@ export async function POST(req: Request) {
             equipment_id,
             equipment_name,
             description = "",
-            service_id,
-            system_zone_id,
             image_limit = 0,
             is_active = 1,
             created_by = "system",
@@ -47,12 +45,10 @@ export async function POST(req: Request) {
             // ✅ UPDATE อัปเดตเฉพาะฟิลด์ของ equipment (ไม่แตะ service_name/system_zone_name)
             await query(
                 `
-          UPDATE data_equipments
+          UPDATE master_equipments
           SET
             equipment_name = ?,
             description = ?,
-            service_id = ?,
-            system_zone_id = ?,
             image_limit = ?,
             is_active = ?,
             updated_by = ?,
@@ -62,8 +58,6 @@ export async function POST(req: Request) {
                 [
                     equipment_name,
                     description,
-                    service_id,
-                    system_zone_id,
                     imageLimitInt,
                     is_active ?? 1,
                     updated_by,
@@ -78,18 +72,16 @@ export async function POST(req: Request) {
 
             await query(
                 `
-          INSERT INTO data_equipments
-            (equipment_id, equipment_name, description, service_id, system_zone_id, image_limit,
+          INSERT INTO master_equipments
+            (equipment_id, equipment_name, description, image_limit,
              is_active, created_by, created_date, updated_by, updated_date)
           VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, NOW())
+            (?, ?, ?, ?, ?, ?, NOW(), ?, NOW())
         `,
                 [
                     newEquipmentId,
                     equipment_name,
                     description,
-                    service_id,
-                    system_zone_id,
                     imageLimitInt,
                     is_active ?? 1,
                     created_by,

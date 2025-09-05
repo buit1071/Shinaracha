@@ -13,7 +13,6 @@ export interface ProjectRow {
     updated_date?: string;
     order?: number;
 }
-
 export interface CustomerRow {
     customer_id: string;
     customer_name: string;
@@ -28,7 +27,6 @@ export interface CustomerRow {
     updated_date?: string;
     order?: number;
 }
-
 export interface ServiceRow {
     service_id: string;
     service_name: string;
@@ -41,7 +39,6 @@ export interface ServiceRow {
     updated_date?: string;
     order?: number;
 }
-
 export interface ZoneRow {
     zone_id: string;
     zone_name: string;
@@ -68,7 +65,6 @@ export interface EmployeeRow {
     updated_date?: string;
     order?: number;
 }
-
 export interface EmpStatusRow {
     status_id: string;
     status_name: string;
@@ -79,7 +75,6 @@ export interface EmpStatusRow {
     updated_date?: string;
     order?: number;
 }
-
 export interface PermissionRow {
     permission_id: string;
     permission_name?: string;
@@ -111,21 +106,7 @@ export interface EquipmentRow {
     equipment_id: string;
     equipment_name: string;
     description: string;
-    service_id: string;
-    service_name?: string;
-    system_zone_id: string;
-    system_zone_name?: string;
     image_limit?: number;
-    is_active: number;
-    created_by: string;
-    updated_by: string;
-    created_date?: string;
-    updated_date?: string;
-    order?: number;
-};
-export interface SystemZonesRow {
-    system_zone_id: string;
-    system_zone_name: string;
     is_active: number;
     created_by: string;
     updated_by: string;
@@ -157,7 +138,6 @@ export interface HolidayRow {
     updated_date?: string;
     order?: number;
 };
-
 export interface MenuRow {
     menu_id: string;
     menu_name: string;

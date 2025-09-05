@@ -24,7 +24,7 @@ import {
 } from "@mui/material";
 import { showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
-import { EquipmentRow, ServiceRow, SystemZonesRow } from "@/interfaces/master";
+import { EquipmentRow } from "@/interfaces/master";
 import { builderViewWithCss } from "@react-form-builder/components-rsuite";
 import type { IFormStorage } from "@react-form-builder/designer";
 
@@ -78,65 +78,17 @@ export default function InspectionFormPage() {
     const [openEdit, setOpenEdit] = React.useState(false);
     const [openDetail, setOpenDetail] = React.useState(false);
     const [error, setError] = React.useState(false);
-    const [services, setServices] = React.useState<ServiceRow[]>([]);
-    const [systemZones, setSystemZones] = React.useState<SystemZonesRow[]>([]);
 
     const [formData, setFormData] = React.useState<EquipmentRow>({
         equipment_id: "",
         equipment_name: "",
         description: "",
-        service_id: "",
-        service_name: "",
-        system_zone_id: "",
-        system_zone_name: "",
         image_limit: 0,
         is_active: 1,
         created_by: "admin",
         updated_by: "admin",
     });
 
-    // สร้าง map ไว้ครั้งเดียวต่อการเปลี่ยน state
-    const serviceMap = React.useMemo(
-        () => new Map(services.map(s => [s.service_id, s.service_name])),
-        [services]
-    );
-    const zoneMap = React.useMemo(
-        () => new Map(systemZones.map(z => [z.system_zone_id, z.system_zone_name])),
-        [systemZones]
-    );
-
-    const fetchServices = async () => {
-        try {
-            const res = await fetch("/api/auth/inspection-form/get", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "services" }),
-            });
-
-            const data = await res.json();
-            if (data.success) {
-                setServices(data.data || []);
-            } else {
-                console.error("โหลด services ไม่สำเร็จ:", data.message);
-            }
-        } catch (err) {
-            console.error("fetch error:", err);
-        }
-    };
-
-    const fetchSystemZones = async () => {
-        try {
-            const res = await fetch("/api/auth/system-zone");
-            const data = await res.json();
-            if (data.success) {
-                setSystemZones(data.data); // สมมุติ API ส่งเป็น { success, data: [...] }
-            } else {
-                console.error("โหลด system zone ไม่สำเร็จ:", data.message);
-            }
-        } catch (err) {
-            console.error("fetch error:", err);
-        }
-    };
     // โหลดข้อมูลและจัดเรียงใหม่
     const fecthEquipment = async () => {
         showLoading(true);
@@ -167,8 +119,6 @@ export default function InspectionFormPage() {
     };
 
     React.useEffect(() => {
-        fetchServices();
-        fetchSystemZones();
         fecthEquipment();
     }, []);
 
@@ -177,10 +127,6 @@ export default function InspectionFormPage() {
             equipment_id: "",
             equipment_name: "",
             description: "",
-            service_id: "",
-            service_name: "",
-            system_zone_id: "",
-            system_zone_name: "",
             image_limit: 0,
             is_active: 1,
             created_by: "admin",
@@ -209,8 +155,6 @@ export default function InspectionFormPage() {
     const handleSave = async () => {
         if (
             !formData.equipment_name ||
-            !formData.service_id ||
-            !formData.system_zone_id ||
             !formData.image_limit
         ) {
             setError(true);
@@ -304,24 +248,7 @@ export default function InspectionFormPage() {
             headerAlign: "center",
             align: "center",
         },
-        { field: "equipment_id", headerName: "ID", flex: 1, headerAlign: "center", align: "center" },
-        { field: "equipment_name", headerName: "อุปกรณ์", flex: 1, headerAlign: "center", align: "left" },
-        {
-            field: "service_name",
-            headerName: "บริการ",
-            flex: 1,
-            headerAlign: "center",
-            align: "left",
-            valueGetter: (_value, row) => serviceMap.get(row.service_id) ?? "-",
-        },
-        {
-            field: "system_zone_name",
-            headerName: "Zone",
-            flex: 1,
-            headerAlign: "center",
-            align: "left",
-            valueGetter: (_value, row) => zoneMap.get(row.system_zone_id) ?? "-",
-        },
+        { field: "equipment_name", headerName: "อุปกนณ์", flex: 1, headerAlign: "center", align: "center" },
         { field: "image_limit", headerName: "จำนวนรูป", flex: 1, headerAlign: "center", align: "center" },
         {
             field: "is_active",
@@ -441,7 +368,7 @@ export default function InspectionFormPage() {
                         <TextField
                             size="small"
                             margin="dense"
-                            label="Service ID"
+                            label="ID"
                             fullWidth
                             value={formData.equipment_id}
                             disabled
@@ -482,172 +409,6 @@ export default function InspectionFormPage() {
                             },
                         }}
                     />
-
-                    <Box mt={1}>
-                        <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
-                            การบริการ
-                        </label>
-
-                        <Select
-                            options={services.map((p) => ({
-                                value: p.service_id,
-                                label: p.service_name,
-                            }))}
-                            value={
-                                services
-                                    .map(p => ({
-                                        value: p.service_id,
-                                        label: p.service_name,
-                                    }))
-                                    .find(opt => opt.value === formData.service_id) || null
-                            }
-                            onChange={(selected) =>
-                                setFormData({
-                                    ...formData,
-                                    service_id: selected?.value || "",
-                                    service_name: selected?.label || undefined,
-                                })
-                            }
-                            placeholder="-- เลือกบริการ --"
-                            isClearable
-                            menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-                            styles={{
-                                control: (base, state) => ({
-                                    ...base,
-                                    backgroundColor: "#fff",
-                                    borderColor:
-                                        error && !formData.service_id
-                                            ? "#d32f2f" // 🔴 สีแดงเมื่อ error
-                                            : state.isFocused
-                                                ? "#3b82f6"
-                                                : "#d1d5db",
-                                    boxShadow: "none",
-                                    "&:hover": {
-                                        borderColor: error && !formData.service_id ? "#d32f2f" : "#9ca3af",
-                                    },
-                                }),
-                                menu: (base) => ({
-                                    ...base,
-                                    backgroundColor: "#fff",
-                                    boxShadow: "0 8px 24px rgba(0,0,0,.2)",
-                                    border: "1px solid #e5e7eb",
-                                }),
-                                menuPortal: (base) => ({
-                                    ...base,
-                                    zIndex: 2100,
-                                }),
-                                option: (base, state) => ({
-                                    ...base,
-                                    backgroundColor: state.isSelected
-                                        ? "#e5f2ff"
-                                        : state.isFocused
-                                            ? "#f3f4f6"
-                                            : "#fff",
-                                    color: "#111827",
-                                }),
-                                menuList: (base) => ({
-                                    ...base,
-                                    backgroundColor: "#fff",
-                                    paddingTop: 0,
-                                    paddingBottom: 0,
-                                }),
-                                singleValue: (base) => ({
-                                    ...base,
-                                    color: "#111827",
-                                }),
-                            }}
-                        />
-
-                        {/* ✅ helperText */}
-                        {error && !formData.service_id && (
-                            <span style={{ color: "#d32f2f", fontSize: "12px", marginTop: 4, display: "block" }}>
-                                กรุณาเลือกบริการ
-                            </span>
-                        )}
-                    </Box>
-
-                    <Box mt={1}>
-                        <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
-                            Zone
-                        </label>
-
-                        <Select
-                            options={systemZones.map((p) => ({
-                                value: p.system_zone_id,
-                                label: p.system_zone_name,
-                            }))}
-                            value={
-                                systemZones
-                                    .map(p => ({
-                                        value: p.system_zone_id,
-                                        label: p.system_zone_name,
-                                    }))
-                                    .find(opt => opt.value === formData.system_zone_id) || null
-                            }
-                            onChange={(selected) =>
-                                setFormData({
-                                    ...formData,
-                                    system_zone_id: selected?.value || "",
-                                    system_zone_name: selected?.label || undefined,
-                                })
-                            }
-                            placeholder="-- เลือก Zone --"
-                            isClearable
-                            menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-                            styles={{
-                                control: (base, state) => ({
-                                    ...base,
-                                    backgroundColor: "#fff",
-                                    borderColor:
-                                        error && !formData.system_zone_id
-                                            ? "#d32f2f" // 🔴 สีแดงเมื่อ error
-                                            : state.isFocused
-                                                ? "#3b82f6"
-                                                : "#d1d5db",
-                                    boxShadow: "none",
-                                    "&:hover": {
-                                        borderColor: error && !formData.system_zone_id ? "#d32f2f" : "#9ca3af",
-                                    },
-                                }),
-                                menu: (base) => ({
-                                    ...base,
-                                    backgroundColor: "#fff",
-                                    boxShadow: "0 8px 24px rgba(0,0,0,.2)",
-                                    border: "1px solid #e5e7eb",
-                                }),
-                                menuPortal: (base) => ({
-                                    ...base,
-                                    zIndex: 2100,
-                                }),
-                                option: (base, state) => ({
-                                    ...base,
-                                    backgroundColor: state.isSelected
-                                        ? "#e5f2ff"
-                                        : state.isFocused
-                                            ? "#f3f4f6"
-                                            : "#fff",
-                                    color: "#111827",
-                                }),
-                                menuList: (base) => ({
-                                    ...base,
-                                    backgroundColor: "#fff",
-                                    paddingTop: 0,
-                                    paddingBottom: 0,
-                                }),
-                                singleValue: (base) => ({
-                                    ...base,
-                                    color: "#111827",
-                                }),
-                            }}
-                        />
-
-                        {/* ✅ helperText */}
-                        {error && !formData.system_zone_id && (
-                            <span style={{ color: "#d32f2f", fontSize: "12px", marginTop: 4, display: "block" }}>
-                                กรุณาเลือก Zone
-                            </span>
-                        )}
-                    </Box>
 
                     <Box mt={1}>
                         <TextField
@@ -694,7 +455,6 @@ export default function InspectionFormPage() {
                 open={openDetail}
                 onClose={handleClose}
                 fullWidth
-                // maxWidth="xl"   // ← ไม่ต้องใช้แล้ว
                 sx={{ zIndex: 1000 }}
                 PaperProps={{
                     sx: {

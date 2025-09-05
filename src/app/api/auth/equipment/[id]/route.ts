@@ -15,7 +15,7 @@ export async function DELETE(
             );
         }
 
-        await query(`DELETE FROM data_equipments WHERE equipment_id = ?`, [id]);
+        await query(`DELETE FROM master_equipments WHERE equipment_id = ?`, [id]);
 
         return NextResponse.json({
             success: true,
