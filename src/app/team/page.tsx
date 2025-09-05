@@ -576,7 +576,6 @@ export default function ProjectListPage() {
                         value={formData.team_name}
                         onChange={(e) => {
                             setFormData({ ...formData, team_name: e.target.value });
-                            if (error) setError(false);
                         }}
                         error={error && !formData.team_name}
                         helperText={error && !formData.team_name ? "กรุณากรอกชื่อ" : ""}
@@ -591,7 +590,6 @@ export default function ProjectListPage() {
                         value={formData.username}
                         onChange={(e) => {
                             setFormData({ ...formData, username: e.target.value });
-                            if (error) setError(false);
                         }}
                         error={error && !formData.username}
                         helperText={error && !formData.username ? "กรุณากรอก Username" : ""}
@@ -609,7 +607,6 @@ export default function ProjectListPage() {
                             value={formData.password}
                             onChange={(e) => {
                                 setFormData({ ...formData, password: e.target.value });
-                                if (error) setError(false);
                             }}
                             error={error && !formData.password && !formData.team_id}
                             helperText={
@@ -643,7 +640,6 @@ export default function ProjectListPage() {
                                 value={formData.confirm_password}
                                 onChange={(e) => {
                                     setFormData({ ...formData, confirm_password: e.target.value });
-                                    if (error) setError(false);
                                 }}
                                 error={
                                     error &&
@@ -684,7 +680,6 @@ export default function ProjectListPage() {
                         value={formData.uuid}
                         onChange={(e) => {
                             setFormData({ ...formData, uuid: e.target.value });
-                            if (error) setError(false);
                         }}
                         error={error && !formData.uuid}
                         helperText={error && !formData.uuid ? "กรุณากรอก UUID" : ""}

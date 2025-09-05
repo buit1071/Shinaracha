@@ -457,7 +457,6 @@ export default function InspectionFormPage() {
                         value={formData.equipment_name}
                         onChange={(e) => {
                             setFormData({ ...formData, equipment_name: e.target.value });
-                            if (error) setError(false);
                         }}
                         error={error && !formData.equipment_name}
                         helperText={error && !formData.equipment_name ? "กรุณากรอกชื่ออุปกรณ์" : ""}
@@ -662,7 +661,6 @@ export default function InspectionFormPage() {
                             onChange={(e) => {
                                 const value = e.target.value === "" ? 0 : parseInt(e.target.value, 10);
                                 setFormData({ ...formData, image_limit: value });
-                                if (error) setError(false);
                             }}
                             error={error && !formData.image_limit}
                             helperText={error && !formData.image_limit ? "กรุณาระบุจำนวนรูป" : ""}

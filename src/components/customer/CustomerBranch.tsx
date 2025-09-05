@@ -42,36 +42,8 @@ export default function CustomerBranch({ customerId, onBack }: Props) {
     const [searchText, setSearchText] = React.useState("");
     const [searchTextGroup, setSearchTextGroup] = React.useState("");
     const [openGroup, setOpenGroup] = React.useState(false);
-    const [isDetailGroup, setDetailGroup] = React.useState(false);
     const [isEditGroup, setIsEditGroup] = React.useState(false);
     const [errorGroup, setErrorGroup] = React.useState(false);
-
-    const [formData, setFormData] = React.useState<CustomerBranchRow>({
-        customer_id: customerId,
-        branch_id: "",
-        branch_name: "",
-        cus_cost_centre: "",
-        store_no: "",
-        customer_format: "",
-        customer_area: "",
-        customer_hub: "",
-        branch_tel: "",
-        contact_person_id: "",
-        contact_tel_id: "",
-        address: "",
-        customer_regional: "",
-        customer_province: "",
-        customer_email_id: "",
-        group_id: "",
-        latitude: "",
-        longitude: "",
-        service_id: "",
-        zone_id: "",
-        equipment_group_id: "",
-        is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
-    });
 
     const [formGroupData, setFormGroupData] = React.useState<CustomerGroupRow>({
         customer_id: customerId,
@@ -81,6 +53,31 @@ export default function CustomerBranch({ customerId, onBack }: Props) {
         created_by: "admin",
         updated_by: "admin",
     });
+
+    const fetchCustomerBranch = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/customer/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "customerBranch", customer_id: customerId }),
+            });
+
+            const result = await res.json();
+            if (result.success && result.data) {
+                showLoading(false);
+                setRows(result.data || []);
+            }
+        } catch (err) {
+            showLoading(false);
+            console.error("fetch customer name error:", err);
+        }
+    };
+
+    const handleBack = async () => {
+        await fetchCustomerBranch();
+        backToList();
+    };
 
     const fetchCustomerById = async () => {
         try {
@@ -121,8 +118,14 @@ export default function CustomerBranch({ customerId, onBack }: Props) {
 
     React.useEffect(() => {
         if (!customerId) return;
-        fetchCustomerById();
-        fetchGroupByCustomerId();
+
+        const fetchAll = async () => {
+            await fetchCustomerById();
+            await fetchCustomerBranch();
+            await fetchGroupByCustomerId();
+        };
+
+        fetchAll();
     }, [customerId]);
 
     const columns: GridColDef<CustomerBranchRow>[] = [
@@ -415,10 +418,10 @@ export default function CustomerBranch({ customerId, onBack }: Props) {
                         </div>
                     </div>
                 ) : (
-                    <CustomerBranchDetail customerId={customerId} branchId={view.id} onBack={backToList} />
+                    <CustomerBranchDetail customerId={customerId} branchId={view.id} onBack={handleBack} />
                 )}
             </div>
-            
+
             {/* Dialog Popup */}
             <Dialog open={openGroup} onClose={handleCloseGroup} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
                 <DialogTitle>{isEditGroup ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>

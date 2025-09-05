@@ -247,7 +247,6 @@ export default function InspectionTypePage() {
                         value={formData.service_name}
                         onChange={(e) => {
                             setFormData({ ...formData, service_name: e.target.value });
-                            if (error) setError(false);
                         }}
                         error={error && !formData.service_name}
                         helperText={error && !formData.service_name ? "กรุณากรอกชื่อ Service" : ""}
@@ -266,7 +265,6 @@ export default function InspectionTypePage() {
                             const v = e.target.value;
                             const n = v === "" ? 0 : Math.max(0, parseInt(v, 10) || 0);
                             setFormData({ ...formData, inspection_duration: n });
-                            if (error) setError(false);
                         }}
                         error={error && formData.inspection_duration == null}
                         helperText={
@@ -289,7 +287,6 @@ export default function InspectionTypePage() {
                             const v = e.target.value;
                             const n = v === "" ? 0 : Math.max(0, parseInt(v, 10) || 0);
                             setFormData({ ...formData, inspections_per_year: n });
-                            if (error) setError(false);
                         }}
                         error={error && formData.inspections_per_year == null}
                         helperText={

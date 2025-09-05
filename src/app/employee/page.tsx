@@ -386,7 +386,6 @@ export default function EmployeePage() {
                             value={formData.first_name}
                             onChange={(e) => {
                                 setFormData({ ...formData, first_name: e.target.value });
-                                if (error) setError(false);
                             }}
                             error={error && !formData.first_name}
                             helperText={error && !formData.first_name ? "กรุณากรอกชื่อ" : ""}
@@ -400,7 +399,6 @@ export default function EmployeePage() {
                             value={formData.last_name}
                             onChange={(e) => {
                                 setFormData({ ...formData, last_name: e.target.value });
-                                if (error) setError(false);
                             }}
                             error={error && !formData.last_name}
                             helperText={error && !formData.last_name ? "กรุณากรอกนามสกุล" : ""}
@@ -499,7 +497,6 @@ export default function EmployeePage() {
                         value={formData.username}
                         onChange={(e) => {
                             setFormData({ ...formData, username: e.target.value });
-                            if (error) setError(false);
                         }}
                         error={
                             error &&
@@ -528,7 +525,6 @@ export default function EmployeePage() {
                         value={formData.password}
                         onChange={(e) => {
                             setFormData({ ...formData, password: e.target.value });
-                            if (error) setError(false);
                         }}
                         error={error && !formData.password && !formData.emp_id}
                         helperText={
@@ -562,7 +558,6 @@ export default function EmployeePage() {
                             value={formData.confirm_password}
                             onChange={(e) => {
                                 setFormData({ ...formData, confirm_password: e.target.value });
-                                if (error) setError(false);
                             }}
                             error={
                                 error &&

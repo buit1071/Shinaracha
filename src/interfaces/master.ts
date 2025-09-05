@@ -238,17 +238,12 @@ export interface CustomerBranchRow {
     customer_hub: string;
     branch_tel: string;
     contact_person_id: string;
-    contact_tel_id: string;
     address: string;
     customer_regional: string;
     customer_province: string;
-    customer_email_id: string;
     group_id: string;
     latitude: string;
     longitude: string;
-    service_id: string;
-    zone_id: string;
-    equipment_group_id: string;
     is_active: number;
     created_by: string;
     updated_by: string;

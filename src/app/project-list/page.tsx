@@ -346,7 +346,6 @@ export default function ProjectListPage() {
                         value={formData.project_name}
                         onChange={(e) => {
                             setFormData({ ...formData, project_name: e.target.value });
-                            if (error) setError(false);
                         }}
                         error={error && !formData.project_name}
                         helperText={error && !formData.project_name ? "กรุณากรอกชื่อโครงการ" : ""}
@@ -361,7 +360,6 @@ export default function ProjectListPage() {
                         value={formData.project_description}
                         onChange={(e) => {
                             setFormData({ ...formData, project_description: e.target.value });
-                            if (error) setError(false);
                         }}
                         error={error && !formData.project_description}
                         helperText={error && !formData.project_description ? "กรุณากรอกรายละเอียด" : ""}

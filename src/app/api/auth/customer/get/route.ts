@@ -3,6 +3,8 @@ import { query } from "@/lib-server/db";
 
 type GetBody =
     | { function: "customerById"; customer_id: string }
+    | { function: "customerBranch"; customer_id: string }
+    | { function: "customerBranchDetail"; branch_id: string }
     | { function: "groupByCustomerId"; customer_id: string }
     ;
 
@@ -31,6 +33,86 @@ export async function POST(req: Request) {
      FROM master_customers
      WHERE customer_id = ?`,
                 [body.customer_id]
+            );
+
+            return NextResponse.json({
+                success: true,
+                data: rows[0] || null,
+            });
+        }
+
+        if (fn === "customerBranch") {
+            if (!body.customer_id) {
+                return NextResponse.json(
+                    { success: false, message: "กรุณาระบุ customer_id" },
+                    { status: 400 }
+                );
+            }
+
+            const rows = await query(
+                `SELECT customer_id,
+                    branch_id,
+                    cus_cost_centre,
+                    store_no,
+                    customer_format,
+                    customer_area,
+                    customer_hub,
+                    branch_name,
+                    branch_tel,
+                    address,
+                    customer_regional,
+                    customer_province,
+                    group_id,
+                    latitude,
+                    longitude,
+                    is_active,
+                    created_by,
+                    created_date,
+                    updated_by,
+                    updated_date
+                FROM data_customer_branchs
+                WHERE customer_id = ?`,
+                [body.customer_id]
+            );
+
+            return NextResponse.json({
+                success: true,
+                data: rows || [],
+            });
+        }
+
+        if (fn === "customerBranchDetail") {
+            if (!body.branch_id) {
+                return NextResponse.json(
+                    { success: false, message: "กรุณาระบุ branch_id" },
+                    { status: 400 }
+                );
+            }
+
+            const rows = await query(
+                `SELECT branch_id,
+                    customer_id,
+                    cus_cost_centre,
+                    store_no,
+                    customer_format,
+                    customer_area,
+                    customer_hub,
+                    branch_name,
+                    branch_tel,
+                    address,
+                    customer_regional,
+                    customer_province,
+                    group_id,
+                    latitude,
+                    longitude,
+                    is_active,
+                    created_by,
+                    created_date,
+                    updated_by,
+                    updated_date
+                FROM data_customer_branchs
+                WHERE branch_id = ?`,
+                [body.branch_id]
             );
 
             return NextResponse.json({
