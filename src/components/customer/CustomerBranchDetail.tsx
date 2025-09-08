@@ -23,11 +23,11 @@ import {
     DialogTitle,
     TextField,
     Typography,
-    FormGroup, Accordion, AccordionSummary, FormControlLabel, Checkbox, AccordionDetails
+    FormGroup, Accordion, AccordionSummary, FormControlLabel, Checkbox, AccordionDetails, Autocomplete
 } from "@mui/material";
 import Select from "react-select";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { CustomerBranchRow, CustomerGroupRow, ServiceEquipmentRow, ServiceRow, ZoneRow, InspectGroupRow, InspectItemsRow, ContactRow } from "@/interfaces/master";
+import { CustomerBranchRow, CustomerGroupRow, ServiceEquipmentRow, ServiceRow, ZoneRow, InspectGroupRow, InspectItemsRow, ContactRow, EquipmentBranchRow, EquipmentRow } from "@/interfaces/master";
 import { generateId } from "@/lib/fetcher";
 
 type Props = {
@@ -103,6 +103,51 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         updated_by: "admin",
     });
 
+    const [equipmentOptions, setEquipmentOptions] = React.useState<EquipmentRow[]>([]);
+    const [formEquipmentBranchData, setFormEquipmentBranchData] = React.useState<EquipmentBranchRow>({
+        branch_id: branchId || "",
+        equipment_id: "",
+        equipment_name: "",
+        is_active: 1,
+        created_by: "admin",
+        updated_by: "admin",
+    });
+
+    const fetchEquipment = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/equipment");
+            const data = await res.json();
+            if (data.success) {
+                setEquipmentOptions(data.data);
+            }
+        } catch (err) {
+            console.error("Fetch error:", err);
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    const fetchEquipmentByBranchId = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/customer/equipment/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "equipment", branch_id: branchId }),
+            });
+
+            const result = await res.json();
+            if (result.success && result.data) {
+                setEquipmentRows(result.data || []);
+                showLoading(false);
+            }
+        } catch (err) {
+            showLoading(false);
+            console.error("fetch error:", err);
+        }
+    };
+
     const handleOpenEditService = (row: ServiceEquipmentRow) => {
         setIsEditEquipment(true);
         setFormEquipmentData(row);
@@ -130,6 +175,44 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                 showLoading(false);
                 showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
             }
+        } catch (err) {
+            console.error("Delete error:", err);
+            showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    const handleDeleteEquipment = async (id: string, branch_id: string) => {
+        const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบข้อมูล");
+        if (!confirmed) return;
+
+        showLoading(true);
+        try {
+            const res = await fetch(`/api/auth/customer/equipment/delete`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, branch_id, function: "equipment" }),
+            });
+
+            const result = await res.json();
+            showLoading(false);
+
+            // ถ้าไม่เจอใน DB -> ถือว่าสำเร็จ (ลบออกจาก UI เหมือนกัน)
+            if (res.status === 400) {
+                await showAlert("success", "ลบข้อมูลเรียบร้อย");
+                // รีเฟรชรายการ
+                fetchEquipmentByBranchId();
+                return;
+            }
+
+            if (!res.ok || !result.success) {
+                showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
+                return;
+            }
+
+            await showAlert("success", result.message);
+            fetchEquipmentByBranchId();
         } catch (err) {
             console.error("Delete error:", err);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
@@ -226,13 +309,20 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
     ];
 
     const [contactRows, setContactRows] = React.useState<ContactRow[]>([]);
+    const [equipmentRows, setEquipmentRows] = React.useState<EquipmentBranchRow[]>([]);
 
     const [editingId, setEditingId] = React.useState<string | null>(null);
     const [draft, setDraft] = React.useState<Partial<ContactRow>>({});
+    const [draftEquipment, setDraftEquipment] = React.useState<Partial<EquipmentBranchRow>>({});
 
     const startEdit = (row: ContactRow) => {
         setEditingId(row.contact_id);
         setDraft({ ...row });
+    };
+
+    const startEditEquipment = (row: EquipmentBranchRow) => {
+        setEditingId(row.equipment_id);
+        setDraftEquipment({ ...row });
     };
 
     const fetchContactByBranchId = async () => {
@@ -251,7 +341,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             }
         } catch (err) {
             showLoading(false);
-            console.error("fetch customer name error:", err);
+            console.error("fetch error:", err);
         }
     };
 
@@ -272,12 +362,14 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             }
         } catch (err) {
             showLoading(false);
-            console.error("fetch customer name error:", err);
+            console.error("fetch error:", err);
         }
     };
 
     React.useEffect(() => {
         fetchBranchDetail();
+        fetchEquipment();
+        fetchEquipmentByBranchId();
         fetchContactByBranchId();
     }, [branchId]);
 
@@ -301,6 +393,20 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         startEdit(newRow);
     };
 
+    const handleAddEquipment = () => {
+        const newRow: EquipmentBranchRow = {
+            branch_id: branchId || "",
+            equipment_id: "",
+            equipment_name: "",
+            is_active: 1,
+            created_by: "admin",
+            updated_by: "admin",
+        } as any;
+
+        setEquipmentRows((prev) => [...prev, newRow]);
+        startEditEquipment(newRow);
+    };
+
     const handleDeleteContact = async (contact_id: string) => {
         const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบข้อมูล");
         if (!confirmed) return;
@@ -308,21 +414,31 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         showLoading(true);
         try {
             const res = await fetch("/api/auth/customer/contact/delete", {
-                method: "POST", // หรือ DELETE ถ้าเซิร์ฟเวอร์รองรับ
+                method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ entity: "contact", contact_id }), // ✅ ใช้ contact_id จริง
+                body: JSON.stringify({ function: "contact", id: contact_id }),
             });
 
-            showLoading(false);
             const result = await res.json();
+            showLoading(false);
+
+            // ✅ ถ้า API ตอบ 400 → ถือว่าข้อมูลไม่เจอ แต่ลบออกจาก FE แล้วแจ้ง success
+            if (res.status === 400) {
+                setContactRows(prev => prev.filter(r => r.contact_id !== contact_id));
+                if (editingId === contact_id) {
+                    setEditingId(null);
+                    setDraft({});
+                }
+                await showAlert("success", "ลบข้อมูลเรียบร้อย");
+                return;
+            }
+
             if (!res.ok || !result.success) {
                 throw new Error(result.message || `ลบข้อมูลล้มเหลว (HTTP ${res.status})`);
             }
 
-            // ✅ ลบออกจากตารางใน FE
-            setContactRows((prev) => prev.filter((r) => r.contact_id !== contact_id));
-
-            // ถ้ากำลังแก้ไขแถวนี้อยู่ ให้เคลียร์สถานะด้วย
+            // ✅ ลบออกจากตารางใน FE ปกติ
+            setContactRows(prev => prev.filter(r => r.contact_id !== contact_id));
             if (editingId === contact_id) {
                 setEditingId(null);
                 setDraft({});
@@ -401,6 +517,66 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             setEditingId(null);
             setDraft({});
             setErrorContact(false);
+        } catch (e: any) {
+            console.error(e);
+            await showAlert("error", e?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    const handleSaveEquipmentBranch = async (equipment_id: string) => {
+        showLoading(true);
+        try {
+            const id =
+                equipment_id ||
+                draftEquipment.equipment_id ||      // ✅ เอาจาก draft ถ้า param ว่าง
+                formEquipmentBranchData.equipment_id;
+            const name =
+                equipment_id ||
+                draftEquipment.equipment_name ||      // ✅ เอาจาก draft ถ้า param ว่าง
+                formEquipmentBranchData.equipment_name;
+
+            const payload = {
+                entity: "equipment" as const,
+                data: {
+                    branch_id: branchId || "",
+                    equipment_id: id,
+                    equipment_name: name,
+                    is_active: formEquipmentBranchData.is_active ?? 1,
+                    created_by: formEquipmentBranchData.created_by || "admin",
+                    updated_by: formEquipmentBranchData.updated_by || "admin",
+                },
+            };
+
+            const res = await fetch("/api/auth/customer/equipment/post", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            showLoading(false);
+            const result = await res.json();
+            if (!res.ok || !result.success) {
+                throw new Error(result.message || `บันทึกล้มเหลว (HTTP ${res.status})`);
+            }
+
+            setEquipmentRows(prev =>
+                prev.map(r =>
+                    r.equipment_id === equipment_id
+                        ? {
+                            ...r,
+                            equipment_id: id,
+                            equipment_name:
+                                draftEquipment.equipment_name ?? r.equipment_name,
+                        }
+                        : r
+                )
+            );
+
+            setEditingId(null);
+
+            await showAlert("success", result.message ?? "บันทึกสำเร็จ");
         } catch (e: any) {
             console.error(e);
             await showAlert("error", e?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
@@ -498,6 +674,97 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         },
     ];
 
+    const equipmentColumns: GridColDef<EquipmentBranchRow>[] = [
+        {
+            field: "order",
+            headerName: "ลำดับ",
+            width: 90,
+            headerAlign: "center",
+            align: "center",
+            sortable: false,
+            renderCell: (params) =>
+                params.api.getRowIndexRelativeToVisibleRows(params.id) + 1,
+        },
+        {
+            field: "equipment_name",
+            headerName: "ชื่ออุปกรณ์",
+            flex: 1,
+            headerAlign: "center",
+            align: "center",
+            sortable: false,
+            renderCell: (params) => {
+                const isEditing = editingId === params.row.equipment_id;
+
+                if (!isEditing) {
+                    return <span>{params.row.equipment_name || "—"}</span>;
+                }
+
+                const current =
+                    equipmentOptions.find(
+                        (o) =>
+                            o.equipment_name ===
+                            (draftEquipment.equipment_name ?? params.row.equipment_name)
+                    ) || null;
+
+                return (
+                    <Autocomplete
+                        options={equipmentOptions}
+                        getOptionLabel={(o) => o.equipment_name}
+                        value={current}
+                        onChange={(_, val) =>
+                            setDraftEquipment((prev) => ({
+                                ...prev,
+                                equipment_id: val?.equipment_id ?? "",   // 👈 เก็บ id ของ option
+                                equipment_name: val?.equipment_name ?? "", // 👈 เก็บชื่อด้วย
+                            }))
+                        }
+                        fullWidth
+                        renderInput={(p) => (
+                            <TextField {...p} size="small" placeholder="-- เลือกอุปกรณ์ --" />
+                        )}
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            width: "95%",
+                            ".MuiInputBase-root": {
+                                height: 36,
+                            },
+                        }}
+                    />
+                );
+            },
+        },
+        {
+            field: "actions",
+            headerName: "Action",
+            width: 150,
+            sortable: false,
+            filterable: false,
+            disableColumnMenu: true,
+            align: "center",
+            headerAlign: "center",
+            renderCell: (params) => {
+                const isEditing = editingId === params.row.equipment_id;
+                return (
+                    <>
+                        {isEditing ? (
+                            <IconButton onClick={() => handleSaveEquipmentBranch(params.row.equipment_id)} color="primary">
+                                <SaveIcon />
+                            </IconButton>
+                        ) : (
+                            <IconButton onClick={() => startEditEquipment(params.row)} color="primary">
+                                <EditIcon />
+                            </IconButton>
+                        )}
+                        <IconButton onClick={() => handleDeleteEquipment(params.row.equipment_id, params.row.branch_id)} color="error">
+                            <DeleteIcon />
+                        </IconButton>
+                    </>
+                );
+            },
+        },
+    ];
+
     // const handleOpenAdd = () => {
     //     setIsEdit(false);
     //     setFormData({
@@ -558,7 +825,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             }
         } catch (err) {
             showLoading(false);
-            console.error("fetch customer name error:", err);
+            console.error("fetch error:", err);
         }
     };
 
@@ -1364,9 +1631,9 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                         </Box>
 
                         <Box mt={2}>
-                            <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
+                            <h3 className="text-xl font-bold text-gray-800">
                                 Service
-                            </label>
+                            </h3>
 
                             {/* ถ้ายังไม่เลือกโซน */}
                             {!formEquipmentData.zone_id && !formEquipmentData.service_id ? (
@@ -1504,6 +1771,49 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                                     );
                                 })()
                             )}
+                        </Box>
+
+                        <Box mt={2}>
+                            <div className="w-full">
+                                <div className="flex items-center justify-between mb-1">
+                                    <h3 className="text-xl font-bold text-gray-800">
+                                        อุปกรณ์
+                                    </h3>
+                                    <Button className=" mb-10" variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleAddEquipment}>
+                                        เพิ่มอุปกรณ์
+                                    </Button>
+                                </div>
+                                <DataGrid
+                                    rows={equipmentRows}
+                                    columns={equipmentColumns}
+                                    getRowId={(row) => row.equipment_id}
+                                    disableRowSelectionOnClick
+                                    pagination
+                                    hideFooter
+                                    autoHeight
+                                    sx={{
+                                        "& .MuiDataGrid-cell": {
+                                            display: "flex",
+                                            alignItems: "center",
+                                            py: 0,
+                                        },
+                                        "& .MuiDataGrid-cellContent": {
+                                            display: "flex",          // 👈 เพิ่ม
+                                            alignItems: "center",     // 👈 เพิ่ม (จัดกลางแนวตั้งที่ content จริง)
+                                            width: "100%",
+                                            height: "100%",
+                                        },
+                                        "& .MuiDataGrid-cell > div": { width: "100%" },
+                                        "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": { outline: "none" },
+                                        "& .MuiDataGrid-columnHeader": { py: 0 },
+                                        "& .MuiDataGrid-virtualScroller": {
+                                            maxHeight: "200px !important",
+                                            overflowY: "auto !important",
+                                            overflowX: "hidden",
+                                        },
+                                    }}
+                                />
+                            </div>
                         </Box>
                     </DialogContent>
                     <DialogActions>

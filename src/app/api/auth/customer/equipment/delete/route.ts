@@ -5,37 +5,37 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        // รองรับหลายคีย์จาก FE
+        // รองรับหลายคีย์ (กันยิงมาเป็น entity/function)
         const fn = body.fn ?? body.function ?? body.entity;
-        const idRaw = body.id ?? body.contact_id;
+        const id = String(body.id ?? "").trim();
+        const branch_id = String(body.branch_id ?? "").trim();
 
-        const id = typeof idRaw === "string" ? idRaw.trim() : String(idRaw ?? "").trim();
-
-        if (!id || !fn) {
+        if (!id || !branch_id || !fn) {
             return NextResponse.json(
-                { success: false, message: "กรุณาส่ง id และ function" },
+                { success: false, message: "กรุณาส่ง id, branch_id และ function" },
                 { status: 400 }
             );
         }
 
-        if (fn === "contact") {
+        if (fn === "equipment") {
             const result: any = await query(
-                `DELETE FROM data_contact_customers WHERE contact_id = ?`,
-                [id]
+                `DELETE FROM data_branch_equipments WHERE equipment_id = ? AND branch_id = ?`,
+                [id, branch_id]
             );
-
-            // mysql2 จะคืน OkPacket เป็น "rows" จาก helper query()
             const affected = result?.affectedRows ?? result?.[0]?.affectedRows ?? 0;
 
             if (affected === 0) {
-                // ไม่พบข้อมูลให้ลบ -> แจ้ง 400 เพื่อง่ายต่อ FE
+                // ไม่พบข้อมูลให้ลบ -> แจ้ง 400 ตามโปรโตคอลฝั่ง FE
                 return NextResponse.json(
                     { success: false, message: "ไม่พบข้อมูลที่จะลบ" },
                     { status: 400 }
                 );
             }
 
-            return NextResponse.json({ success: true, message: "ลบข้อมูลเรียบร้อย" });
+            return NextResponse.json({
+                success: true,
+                message: "ลบข้อมูลเรียบร้อย",
+            });
         }
 
         return NextResponse.json(

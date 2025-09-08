@@ -268,3 +268,14 @@ export interface ContactRow {
     updated_date?: string;
     order?: number;
 }
+export interface EquipmentBranchRow {
+    branch_id: string;
+    equipment_id: string;
+    equipment_name?: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+}
