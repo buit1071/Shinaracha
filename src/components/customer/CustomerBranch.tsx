@@ -157,6 +157,13 @@ export default function CustomerBranch({ customerId, onBack }: Props) {
             width: 150,
             headerAlign: "center",
             align: "center",
+            renderCell: (params: GridRenderCellParams<CustomerBranchRow>) => (
+                <>
+                    <IconButton color="error" onClick={() => handleDeleteBranch(params.row.branch_id)}>
+                        <DeleteIcon />
+                    </IconButton>
+                </>
+            ),
         },
     ];
 
@@ -250,6 +257,35 @@ export default function CustomerBranch({ customerId, onBack }: Props) {
                 showLoading(false);
                 await showAlert("success", result.message);
                 fetchGroupByCustomerId();
+            } else {
+                showLoading(false);
+                showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
+            }
+        } catch (err) {
+            console.error("Delete error:", err);
+            showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    const handleDeleteBranch = async (id: string) => {
+        const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบข้อมูล");
+        if (!confirmed) return;
+
+        showLoading(true);
+        try {
+            const res = await fetch(`/api/auth/customer/delete`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, function: "branch" }),
+            });
+
+            const result = await res.json();
+            if (result.success) {
+                showLoading(false);
+                await showAlert("success", result.message);
+                fetchCustomerBranch();
             } else {
                 showLoading(false);
                 showAlert("error", result.message || "ลบข้อมูลล้มเหลว");

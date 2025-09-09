@@ -289,6 +289,12 @@ export async function POST(req: Request) {
                 });
             } catch (err: any) {
                 try { await conn.rollback(); } catch { }
+                if (err?.code === "ER_DUP_ENTRY") {
+                    return NextResponse.json(
+                        { success: false, message: "โซนนี้ถูกเลือกแล้วสำหรับบริการนี้ในสาขานี้" },
+                        { status: 409 }
+                    );
+                }
                 console.error("DB Error:", err);
                 return NextResponse.json(
                     { success: false, message: "Database error", error: err?.message },

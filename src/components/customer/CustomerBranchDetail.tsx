@@ -854,7 +854,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                                 <EditIcon />
                             </IconButton>
                         )}
-                        <IconButton onClick={() => handleDeleteEquipment(params.row.equipment_id, params.row.branch_id, params.row.service_id)} color="error">
+                        <IconButton onClick={() => handleDeleteEquipment(params.row.equipment_id, params.row.branch_id, params.row.service_id || formEquipmentData.service_id)} color="error">
                             <DeleteIcon />
                         </IconButton>
                     </>
