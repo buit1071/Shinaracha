@@ -37,10 +37,10 @@ type Props = {
 };
 
 export default function CustomerBranchDetail({ customerId, branchId, onBack }: Props) {
-    const [view, setView] = React.useState<null | { type: "detail"; id: string }>(null);
     const [services, setServices] = React.useState<ServiceRow[]>([]);
     const [groups, setGroups] = React.useState<CustomerGroupRow[]>([]);
     const [equipments, setEquipments] = React.useState<ServiceEquipmentRow[]>([]);
+    const safeArr = <T,>(a?: T[]) => Array.isArray(a) ? a : [];
     const [error, setError] = React.useState(false);
     const [errorContact, setErrorContact] = React.useState(false);
     const [errorEquipment, setErrorEquipment] = React.useState(false);
@@ -87,11 +87,30 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         branch_id: branchId || "",
         service_id: "",
         zone_id: "",
+        service_inspec_id: "",
         is_active: 1,
         created_by: "admin",
         updated_by: "admin",
+        inspection: [
+            {
+                inspection_id: "",
+                inspection_name: "",
+                items: [
+                    {
+                        inspection_item_id: "",
+                        inspection_item_name: ""
+                    }
+                ]
+            }
+        ],
     });
 
+    const [contactRows, setContactRows] = React.useState<ContactRow[]>([]);
+    const [equipmentRows, setEquipmentRows] = React.useState<EquipmentBranchRow[]>([]);
+
+    const [editingId, setEditingId] = React.useState<string | null>(null);
+    const [draft, setDraft] = React.useState<Partial<ContactRow>>({});
+    const [draftEquipment, setDraftEquipment] = React.useState<Partial<EquipmentBranchRow>>({});
     const [formContactData, setFormContactData] = React.useState<ContactRow>({
         branch_id: branchId || "",
         contact_id: "",
@@ -106,6 +125,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
     const [equipmentOptions, setEquipmentOptions] = React.useState<EquipmentRow[]>([]);
     const [formEquipmentBranchData, setFormEquipmentBranchData] = React.useState<EquipmentBranchRow>({
         branch_id: branchId || "",
+        service_id: "",
         equipment_id: "",
         equipment_name: "",
         is_active: 1,
@@ -128,13 +148,13 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         }
     };
 
-    const fetchEquipmentByBranchId = async () => {
+    const fetchEquipmentByBranchId = async (service_id?: string) => {
         showLoading(true);
         try {
             const res = await fetch("/api/auth/customer/equipment/get", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "equipment", branch_id: branchId }),
+                body: JSON.stringify({ function: "equipment", branch_id: branchId, service_id: service_id || formEquipmentData.service_id }),
             });
 
             const result = await res.json();
@@ -150,8 +170,50 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
 
     const handleOpenEditService = (row: ServiceEquipmentRow) => {
         setIsEditEquipment(true);
-        setFormEquipmentData(row);
+
+        // 1) เซ็ตฟอร์มหลัก
+        setFormEquipmentData({
+            branch_id: row.branch_id || "",
+            service_id: row.service_id || "",
+            zone_id: row.zone_id || "",
+            service_inspec_id: row.service_inspec_id || "",
+            is_active: row.is_active ?? 1,
+            created_by: row.created_by || "admin",
+            updated_by: row.updated_by || "admin",
+            inspection: safeArr(row.inspection),
+        });
+
+        // 2) preload selections จาก inspection[]
+        const groups = safeArr(row.inspection);
+
+        // กลุ่มที่ถูกติ๊กของโซนนี้ (ใช้ inspection_id)
+        const groupIds = groups.map(g => g.inspection_id).filter(Boolean);
+
+        // ไอเท็มที่ถูกติ๊กในแต่ละกลุ่ม (key = inspection_id, value = array ของ inspection_item_id)
+        const byGroup: Record<string, string[]> = {};
+        for (const g of groups) {
+            const items = safeArr(g.items).map(it => it.inspection_item_id).filter(Boolean);
+            byGroup[g.inspection_id] = items;
+        }
+
+        setSelectedInspectsByZone(prev => ({ ...prev, [row.zone_id]: groupIds }));
+        setSelectedItemsByGroup(byGroup);
+
+        // 3) ขยาย accordion ของทุก group ที่มีอยู่ เพื่อเห็นรายการตอนเปิดมา
+        setExpandedZones(new Set(groupIds));
+
+        // 4) เปิด modal
         setOpenEquipment(true);
+
+        // 5) preload ข้อมูลที่ต้องเรียกเพิ่ม (ถ้าจำเป็น)
+        //    - โหลดรายการ zone ของ service นี้ เพื่อให้ Select แสดง zone ถูกต้อง
+        if (row.service_id) fetchZonesByService(row.service_id);
+        //    - โหลด groups ของ zone นี้เพื่อให้ cache มีข้อมูล (UI จะไม่ขึ้น "กำลังโหลด...")
+        if (row.zone_id) fetchInspectsByZone(row.zone_id).then(async (res) => {
+            // พรีโหลด items ของทุก group ที่มีเลือกไว้ จะได้ติ๊กโชว์ทันที
+            await Promise.all(groupIds.map(id => fetchItemsByInspect(id)));
+        });
+        fetchEquipmentByBranchId(row.service_id);
     };
 
     const handleDeleteService = async (id: string) => {
@@ -183,7 +245,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         }
     };
 
-    const handleDeleteEquipment = async (id: string, branch_id: string) => {
+    const handleDeleteEquipment = async (id: string, branch_id: string, service_id: string) => {
         const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบข้อมูล");
         if (!confirmed) return;
 
@@ -192,7 +254,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             const res = await fetch(`/api/auth/customer/equipment/delete`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id, branch_id, function: "equipment" }),
+                body: JSON.stringify({ id, branch_id, service_id, function: "equipment" }),
             });
 
             const result = await res.json();
@@ -221,42 +283,54 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         }
     };
 
+    const countSelectedItems = (): number =>
+        Object.values(selectedItemsByGroup).reduce((sum, arr) => sum + ((arr as string[] | undefined)?.length || 0), 0);
+
     const handleSaveEquipment = async () => {
-        if (!formEquipmentData.service_id && formEquipmentData.zone_id) {
+        if (!formEquipmentData.service_id || !formEquipmentData.zone_id) {
             setErrorEquipment(true);
-            return; // ยังไม่เปิดโหลด เพราะเราเช็คก่อน
+            return;
+        }
+
+        // ✅ ต้องมี "item" ถูกเลือกอย่างน้อย 1 รายการ
+        if (countSelectedItems() === 0) {
+            await showAlert("error", "โปรดเลือก Inspection Item อย่างน้อย 1 รายการ");
+            return;
         }
 
         showLoading(true);
         try {
+            const inspection = await buildSelectedInspections();
+
+            setFormEquipmentData((prev) => ({ ...prev, inspection }));
+
             const payload = {
-                entity: "groupCustomer" as const,
+                entity: "serviceItem" as const,
                 data: {
-                    branch_id: formEquipmentData.branch_id || undefined,
+                    branch_id: branchId,
+                    service_inspec_id: formEquipmentData.service_inspec_id,
                     service_id: formEquipmentData.service_id,
                     zone_id: formEquipmentData.zone_id,
                     is_active: formEquipmentData.is_active ?? 1,
                     created_by: formEquipmentData.created_by || "admin",
                     updated_by: formEquipmentData.updated_by || "admin",
+                    inspection,
                 },
             };
 
-            const res = await fetch("/api/auth/customer/post", {
+            const res = await fetch("/api/auth/customer/equipment/post", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                // cache: "no-store", // ถ้าต้องการกัน cache
                 body: JSON.stringify(payload),
             });
 
             const result = await res.json();
-            showLoading(false);
 
             if (result.success) {
-                // ปิดโหลดก่อน แล้วค่อยปิด dialog และค่อยโชว์ swal
                 showLoading(false);
                 setOpenEquipment(false);
                 await showAlert("success", result.message);
-                fetchGroupByCustomerId();
+                fetchServiceEquipment();
             } else {
                 showLoading(false);
                 setOpenEquipment(false);
@@ -268,23 +342,29 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             setOpenEquipment(false);
             await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
-            // กันตกหล่น/throw จาก showAlert
             showLoading(false);
         }
     };
 
     const handleCloseEquipment = () => setOpenEquipment(false);
 
+    const serviceNameById = React.useMemo(
+        () => new Map(services.map(z => [z.service_id, z.service_name])),
+        [services]
+    );
+
     const columnEquipments: GridColDef<ServiceEquipmentRow>[] = [
+        { field: "order", headerName: "ลำดับ", width: 90, headerAlign: "center", align: "center" },
         {
-            field: "order",
-            headerName: "ลำดับ",
-            width: 90,
+            field: "service_name",
+            headerName: "Service",
+            flex: 1,
             headerAlign: "center",
             align: "center",
-        },
-        {
-            field: "zone_name", headerName: "Zone", flex: 1, headerAlign: "center", align: "left",
+            renderCell: ({ row }) => (
+                <>{serviceNameById.get(row.service_id) ?? "-"}</>
+            ),
+            sortComparator: (v1, v2) => String(v1).localeCompare(String(v2)),
         },
         {
             field: "actions",
@@ -307,13 +387,6 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             ),
         },
     ];
-
-    const [contactRows, setContactRows] = React.useState<ContactRow[]>([]);
-    const [equipmentRows, setEquipmentRows] = React.useState<EquipmentBranchRow[]>([]);
-
-    const [editingId, setEditingId] = React.useState<string | null>(null);
-    const [draft, setDraft] = React.useState<Partial<ContactRow>>({});
-    const [draftEquipment, setDraftEquipment] = React.useState<Partial<EquipmentBranchRow>>({});
 
     const startEdit = (row: ContactRow) => {
         setEditingId(row.contact_id);
@@ -355,7 +428,6 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             });
 
             const result = await res.json();
-            console.log(result.data);
             if (result.success && result.data) {
                 setFormData(result.data || []);
                 showLoading(false);
@@ -365,13 +437,6 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             console.error("fetch error:", err);
         }
     };
-
-    React.useEffect(() => {
-        fetchBranchDetail();
-        fetchEquipment();
-        fetchEquipmentByBranchId();
-        fetchContactByBranchId();
-    }, [branchId]);
 
     const handleFieldChange = <K extends keyof ContactRow>(key: K, value: ContactRow[K]) => {
         setDraft((p) => ({ ...p, [key]: value }));
@@ -396,6 +461,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
     const handleAddEquipment = () => {
         const newRow: EquipmentBranchRow = {
             branch_id: branchId || "",
+            service_id: formEquipmentData.service_id,
             equipment_id: "",
             equipment_name: "",
             is_active: 1,
@@ -528,6 +594,8 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
     const handleSaveEquipmentBranch = async (equipment_id: string) => {
         showLoading(true);
         try {
+            const service_id =
+                formEquipmentData.service_id;
             const id =
                 equipment_id ||
                 draftEquipment.equipment_id ||      // ✅ เอาจาก draft ถ้า param ว่าง
@@ -541,6 +609,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                 entity: "equipment" as const,
                 data: {
                     branch_id: branchId || "",
+                    service_id: service_id,
                     equipment_id: id,
                     equipment_name: name,
                     is_active: formEquipmentBranchData.is_active ?? 1,
@@ -674,6 +743,17 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         },
     ];
 
+    const equipmentNameById = React.useMemo(() => {
+        const m = new Map<string, string>();
+        for (const o of equipmentOptions) m.set(o.equipment_id, o.equipment_name);
+        return m;
+    }, [equipmentOptions]);
+
+    const usedEquipIds = React.useMemo(
+        () => new Set(equipmentRows.map(r => r.equipment_id)),
+        [equipmentRows]
+    );
+
     const equipmentColumns: GridColDef<EquipmentBranchRow>[] = [
         {
             field: "order",
@@ -696,39 +776,57 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                 const isEditing = editingId === params.row.equipment_id;
 
                 if (!isEditing) {
-                    return <span>{params.row.equipment_name || "—"}</span>;
+                    const name =
+                        params.row.equipment_name ||
+                        equipmentNameById.get(params.row.equipment_id) ||
+                        "—";
+                    return <span>{name}</span>;
                 }
 
+                const currentRowId = params.row.equipment_id;
+                const selectedId = draftEquipment.equipment_id ?? currentRowId ?? "";
                 const current =
-                    equipmentOptions.find(
-                        (o) =>
-                            o.equipment_name ===
-                            (draftEquipment.equipment_name ?? params.row.equipment_name)
-                    ) || null;
+                    equipmentOptions.find(o => o.equipment_id === selectedId) || null;
 
                 return (
                     <Autocomplete
                         options={equipmentOptions}
-                        getOptionLabel={(o) => o.equipment_name}
+                        isOptionEqualToValue={(opt, val) => opt.equipment_id === val.equipment_id}
+                        getOptionLabel={(o) => o.equipment_name || ""}
                         value={current}
                         onChange={(_, val) =>
-                            setDraftEquipment((prev) => ({
+                            setDraftEquipment(prev => ({
                                 ...prev,
-                                equipment_id: val?.equipment_id ?? "",   // 👈 เก็บ id ของ option
-                                equipment_name: val?.equipment_name ?? "", // 👈 เก็บชื่อด้วย
+                                equipment_id: val?.equipment_id ?? "",
+                                equipment_name: val?.equipment_name ?? "",
                             }))
                         }
-                        fullWidth
+                        getOptionDisabled={(opt) =>
+                            usedEquipIds.has(opt.equipment_id) && opt.equipment_id !== currentRowId
+                        }
                         renderInput={(p) => (
                             <TextField {...p} size="small" placeholder="-- เลือกอุปกรณ์ --" />
                         )}
+                        // (ทางเลือก) โชว์ label ว่า “ถูกใช้งานแล้ว” ในเมนู
+                        renderOption={(props, option) => {
+                            const disabled =
+                                usedEquipIds.has(option.equipment_id) &&
+                                option.equipment_id !== currentRowId;
+                            return (
+                                <li {...props} aria-disabled={disabled}>
+                                    <span style={{ flex: 1 }}>{option.equipment_name}</span>
+                                    {disabled && (
+                                        <span style={{ opacity: 0.6, fontSize: 12 }}>ถูกใช้งานแล้ว</span>
+                                    )}
+                                </li>
+                            );
+                        }}
+                        fullWidth
                         sx={{
                             display: "flex",
                             alignItems: "center",
                             width: "95%",
-                            ".MuiInputBase-root": {
-                                height: 36,
-                            },
+                            ".MuiInputBase-root": { height: 36 },
                         }}
                     />
                 );
@@ -756,7 +854,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                                 <EditIcon />
                             </IconButton>
                         )}
-                        <IconButton onClick={() => handleDeleteEquipment(params.row.equipment_id, params.row.branch_id)} color="error">
+                        <IconButton onClick={() => handleDeleteEquipment(params.row.equipment_id, params.row.branch_id, params.row.service_id)} color="error">
                             <DeleteIcon />
                         </IconButton>
                     </>
@@ -765,46 +863,17 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         },
     ];
 
-    // const handleOpenAdd = () => {
-    //     setIsEdit(false);
-    //     setFormData({
-    //         customer_id: customerId,
-    //         branch_id: branchId,
-    //         branch_name: "",
-    //         cus_cost_centre: "",
-    //         store_no: "",
-    //         customer_format: "",
-    //         customer_area: "",
-    //         customer_hub: "",
-    //         branch_tel: "",
-    //         contact_person_id: "",
-    //         contact_tel_id: "",
-    //         address: "",
-    //         customer_regional: "",
-    //         customer_province: "",
-    //         customer_email_id: "",
-    //         group_id: "",
-    //         latitude: "",
-    //         longitude: "",
-    //         service_id: "",
-    //         zone_id: "",
-    //         equipment_group_id: "",
-    //         is_active: 1,
-    //         created_by: "admin",
-    //         updated_by: "admin",
-    //     });
-    //     setOpen(true);
-    // };
-
     const handleOpenAddEquipment = () => {
         setIsEditEquipment(false);
         setFormEquipmentData({
             branch_id: branchId || "",
+            service_inspec_id: "",
             service_id: "",
             zone_id: "",
             is_active: 1,
             created_by: "admin",
             updated_by: "admin",
+            inspection: [],
         });
         setOpenEquipment(true);
     };
@@ -821,6 +890,26 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             const result = await res.json();
             if (result.success && result.data) {
                 setGroups(result.data || []);
+                showLoading(false);
+            }
+        } catch (err) {
+            showLoading(false);
+            console.error("fetch error:", err);
+        }
+    };
+
+    const fetchServiceEquipment = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/customer/equipment/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "serviceItem", branch_id: branchId }),
+            });
+
+            const result = await res.json();
+            if (result.success && result.data) {
+                setEquipments(result.data || []);
                 showLoading(false);
             }
         } catch (err) {
@@ -1024,6 +1113,14 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         fetchService();
     }, [customerId]);
 
+    React.useEffect(() => {
+        fetchBranchDetail();
+        fetchEquipment();
+        fetchEquipmentByBranchId();
+        fetchContactByBranchId();
+        fetchServiceEquipment();
+    }, [branchId]);
+
     const filteredEquipmentRows = equipments.filter((row) =>
         Object.values(row).some((value) =>
             String(value).toLowerCase().includes(searchTextEquipment.toLowerCase())
@@ -1034,7 +1131,6 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
     }));
 
     const handleSave = async () => {
-        // ระบุฟิลด์ที่บังคับ
         const requiredFields = [
             "cus_cost_centre",
             "store_no",
@@ -1108,6 +1204,54 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         } finally {
             showLoading(false);
         }
+    };
+
+    const buildSelectedInspections = async (): Promise<
+        {
+            inspection_id: string;
+            inspection_name: string;
+            items: { inspection_item_id: string; inspection_item_name: string }[];
+        }[]
+    > => {
+        const zoneId = formEquipmentData.zone_id;
+        const zi = zoneInspects[zoneId];
+        if (!zi?.items?.length) return [];
+
+        // โหลด items ของเฉพาะกรุ๊ปที่มีการเลือก item เพื่อดึงชื่อ item
+        for (const grp of zi.items as InspectGroupRow[]) {
+            const pickedIds = selectedItemsByGroup[grp.inspect_id] || [];
+            if (pickedIds.length && !groupItems[grp.inspect_id]?.items) {
+                await fetchItemsByInspect(grp.inspect_id);
+            }
+        }
+
+        const out: {
+            inspection_id: string;
+            inspection_name: string;
+            items: { inspection_item_id: string; inspection_item_name: string }[];
+        }[] = [];
+
+        for (const grp of zi.items as InspectGroupRow[]) {
+            const pickedIds: string[] = selectedItemsByGroup[grp.inspect_id] || [];
+            if (!pickedIds.length) continue; // ⬅️ ไม่มี item ถูกเลือก ข้ามกรุ๊ปนี้
+
+            const itemsList = (groupItems[grp.inspect_id]?.items as InspectItemsRow[] | undefined) || [];
+            const items = pickedIds.map((id) => {
+                const it = itemsList.find((x) => x.inspect_item_id === id);
+                return {
+                    inspection_item_id: id,
+                    inspection_item_name: it?.inspect_item_name || "",
+                };
+            });
+
+            out.push({
+                inspection_id: grp.inspect_id,
+                inspection_name: grp.inspect_name,
+                items,
+            });
+        }
+
+        return out;
     };
 
     return (
@@ -1459,7 +1603,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
 
                 {/* Dialog Popup */}
                 <Dialog open={openEquipment} onClose={handleCloseEquipment} fullWidth maxWidth="xl" sx={{ zIndex: 1000 }}>
-                    <DialogTitle>{isEditEquipment ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
+                    <DialogTitle>{isEditEquipment ? "แก้ไขข้อมูลการตรวจสอบ" : "เพิ่มข้อมูลการตรวจสอบ"}</DialogTitle>
                     <DialogContent dividers>
                         <Box>
                             <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
@@ -1773,48 +1917,50 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                             )}
                         </Box>
 
-                        <Box mt={2}>
-                            <div className="w-full">
-                                <div className="flex items-center justify-between mb-1">
-                                    <h3 className="text-xl font-bold text-gray-800">
-                                        อุปกรณ์
-                                    </h3>
-                                    <Button className=" mb-10" variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleAddEquipment}>
-                                        เพิ่มอุปกรณ์
-                                    </Button>
+                        {isEditEquipment && (
+                            <Box mt={2}>
+                                <div className="w-full">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <h3 className="text-xl font-bold text-gray-800">
+                                            อุปกรณ์
+                                        </h3>
+                                        <Button className=" mb-10" variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleAddEquipment}>
+                                            เพิ่มอุปกรณ์
+                                        </Button>
+                                    </div>
+                                    <DataGrid
+                                        rows={equipmentRows}
+                                        columns={equipmentColumns}
+                                        getRowId={(row) => row.equipment_id}
+                                        disableRowSelectionOnClick
+                                        pagination
+                                        hideFooter
+                                        autoHeight
+                                        sx={{
+                                            "& .MuiDataGrid-cell": {
+                                                display: "flex",
+                                                alignItems: "center",
+                                                py: 0,
+                                            },
+                                            "& .MuiDataGrid-cellContent": {
+                                                display: "flex",          // 👈 เพิ่ม
+                                                alignItems: "center",     // 👈 เพิ่ม (จัดกลางแนวตั้งที่ content จริง)
+                                                width: "100%",
+                                                height: "100%",
+                                            },
+                                            "& .MuiDataGrid-cell > div": { width: "100%" },
+                                            "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": { outline: "none" },
+                                            "& .MuiDataGrid-columnHeader": { py: 0 },
+                                            "& .MuiDataGrid-virtualScroller": {
+                                                maxHeight: "200px !important",
+                                                overflowY: "auto !important",
+                                                overflowX: "hidden",
+                                            },
+                                        }}
+                                    />
                                 </div>
-                                <DataGrid
-                                    rows={equipmentRows}
-                                    columns={equipmentColumns}
-                                    getRowId={(row) => row.equipment_id}
-                                    disableRowSelectionOnClick
-                                    pagination
-                                    hideFooter
-                                    autoHeight
-                                    sx={{
-                                        "& .MuiDataGrid-cell": {
-                                            display: "flex",
-                                            alignItems: "center",
-                                            py: 0,
-                                        },
-                                        "& .MuiDataGrid-cellContent": {
-                                            display: "flex",          // 👈 เพิ่ม
-                                            alignItems: "center",     // 👈 เพิ่ม (จัดกลางแนวตั้งที่ content จริง)
-                                            width: "100%",
-                                            height: "100%",
-                                        },
-                                        "& .MuiDataGrid-cell > div": { width: "100%" },
-                                        "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": { outline: "none" },
-                                        "& .MuiDataGrid-columnHeader": { py: 0 },
-                                        "& .MuiDataGrid-virtualScroller": {
-                                            maxHeight: "200px !important",
-                                            overflowY: "auto !important",
-                                            overflowX: "hidden",
-                                        },
-                                    }}
-                                />
-                            </div>
-                        </Box>
+                            </Box>
+                        )}
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={handleCloseEquipment}>ยกเลิก</Button>

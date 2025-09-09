@@ -242,7 +242,31 @@ export interface CustomerGroupRow {
     updated_date?: string;
     order?: number;
 }
+// รายการย่อยภายใน inspection
+export interface InspectionItem {
+    inspection_item_id: string;
+    inspection_item_name: string;
+    order?: number;
+    is_active?: number;
+    created_by?: string;
+    updated_by?: string;
+    created_date?: string;
+    updated_date?: string;
+}
+export interface InspectionGroup {
+    inspection_id: string;
+    inspection_name: string;
+    order?: number;
+    is_active?: number;
+    created_by?: string;
+    updated_by?: string;
+    created_date?: string;
+    updated_date?: string;
+
+    items: InspectionItem[];
+}
 export interface ServiceEquipmentRow {
+    service_inspec_id: string;
     service_id: string;
     service_name?: string;
     branch_id: string;
@@ -254,6 +278,8 @@ export interface ServiceEquipmentRow {
     created_date?: string;
     updated_date?: string;
     order?: number;
+
+    inspection: InspectionGroup[];
 }
 export interface ContactRow {
     branch_id: string;
@@ -270,6 +296,7 @@ export interface ContactRow {
 }
 export interface EquipmentBranchRow {
     branch_id: string;
+    service_id: string;
     equipment_id: string;
     equipment_name?: string;
     is_active: number;
