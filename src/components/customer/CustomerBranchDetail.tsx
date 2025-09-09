@@ -29,6 +29,7 @@ import Select from "react-select";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { CustomerBranchRow, CustomerGroupRow, ServiceEquipmentRow, ServiceRow, ZoneRow, InspectGroupRow, InspectItemsRow, ContactRow, EquipmentBranchRow, EquipmentRow } from "@/interfaces/master";
 import { generateId } from "@/lib/fetcher";
+import GoogleMapBox from "@/components/google-map/GoogleMapBox";
 
 type Props = {
     customerId: string;
@@ -1556,6 +1557,12 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                             setFormData({ ...formData, longitude: val.toString() });
                         }}
                     />
+                </Box>
+
+                <Box sx={{ mt: 2, display: "flex", justifyContent: "center" }}>
+                    <Box sx={{ width: "80%", height: 500, borderRadius: 2, overflow: "hidden" }}>
+                        <GoogleMapBox lat={13.7563} lng={100.5018} />
+                    </Box>
                 </Box>
 
                 {branchId && (
