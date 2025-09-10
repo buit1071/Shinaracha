@@ -6,6 +6,7 @@ type GetBody =
     | { function: "customerBranch"; customer_id: string }
     | { function: "customerBranchDetail"; branch_id: string }
     | { function: "groupByCustomerId"; customer_id: string }
+    | { function: "customerBranchAll"; }
     ;
 
 export async function POST(req: Request) {
@@ -73,6 +74,18 @@ export async function POST(req: Request) {
                 FROM data_customer_branchs
                 WHERE customer_id = ?`,
                 [body.customer_id]
+            );
+
+            return NextResponse.json({
+                success: true,
+                data: rows || [],
+            });
+        }
+
+        if (fn === "customerBranchAll") {
+            const rows = await query(
+                `SELECT *
+                FROM data_customer_branchs`,
             );
 
             return NextResponse.json({

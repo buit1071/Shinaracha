@@ -184,11 +184,11 @@ export interface JobsRow {
     job_end_time: string;
     team_id: string;
     team_name?: string;
-    service_id: string;
-    service_name?: string;
-    zone_id: string,
-    zone_name?: string,
     status_id?: string;
+    customer_id: string;
+    customer_name?: string;
+    branch_id: string;
+    branch_name?: string;
     status_name?: string;
     is_active: number;
     created_by: string;

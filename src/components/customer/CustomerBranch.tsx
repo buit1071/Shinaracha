@@ -120,9 +120,11 @@ export default function CustomerBranch({ customerId, onBack }: Props) {
         if (!customerId) return;
 
         const fetchAll = async () => {
+            showLoading(true);
             await fetchCustomerById();
             await fetchCustomerBranch();
             await fetchGroupByCustomerId();
+            showLoading(false);
         };
 
         fetchAll();

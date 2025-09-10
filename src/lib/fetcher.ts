@@ -100,3 +100,26 @@ export const showConfirm = async (
   });
   return result.isConfirmed;
 };
+
+export const toNull = (v: any) => (v === "" || v === undefined ? null : v);
+
+export const toMysqlDate = (s?: string | null) => {
+  if (!s) return null;
+  // รองรับ DD/MM/YYYY -> YYYY-MM-DD
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+    const [dd, mm, yyyy] = s.split("/");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  // ถ้าส่งมาถูกอยู่แล้วก็ปล่อยผ่าน
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  return null; // ค่าที่ไม่รู้จักรูปแบบ -> NULL
+};
+
+export const toMysqlTime = (s?: string | null) => {
+  if (!s) return null;
+  // "HH:MM" -> "HH:MM:00"
+  if (/^\d{2}:\d{2}$/.test(s)) return `${s}:00`;
+  // ถูกอยู่แล้ว
+  if (/^\d{2}:\d{2}:\d{2}$/.test(s)) return s;
+  return null;
+};

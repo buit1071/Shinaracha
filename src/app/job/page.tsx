@@ -33,6 +33,8 @@ import {
     TeamRow,
     ProjectRow,
     JobStatusRow,
+    CustomerRow,
+    CustomerBranchRow
 } from "@/interfaces/master";
 import { showLoading } from "@/lib/loading";
 import { formatToThaiDate, parseToInputDate, showAlert, showConfirm } from "@/lib/fetcher";
@@ -40,6 +42,9 @@ import { formatToThaiDate, parseToInputDate, showAlert, showConfirm } from "@/li
 export default function InspectionTypePage() {
     const [rows, setRows] = React.useState<JobsRow[]>([]);
     const [teams, setTeams] = React.useState<TeamRow[]>([]);
+    const [customers, setCustomers] = React.useState<CustomerRow[]>([]);
+    const customersRef = React.useRef<CustomerRow[]>([]);
+    const [branchs, setBranchs] = React.useState<CustomerBranchRow[]>([]);
     const [projects, setProjects] = React.useState<ProjectRow[]>([]);
     const [status, setStatus] = React.useState<JobStatusRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
@@ -58,6 +63,10 @@ export default function InspectionTypePage() {
         job_end_date: "",
         job_start_time: "",
         job_end_time: "",
+        customer_id: "",
+        customer_name: "",
+        branch_id: "",
+        branch_name: "",
         team_id: "",
         team_name: "",
         status_id: "",
@@ -67,14 +76,66 @@ export default function InspectionTypePage() {
         updated_by: "admin",
     });
 
+    const fetchCustomers = async () => {
+        const res = await fetch("/api/auth/customer?active=true");
+        const data = await res.json();
+        if (data.success) {
+            setCustomers(data.data);
+            customersRef.current = data.data;   // <<< สำคัญ
+        }
+    };
+
+    const fetchCustomerBranch = async (customer_id: string) => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/customer/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "customerBranch", customer_id: customer_id }),
+            });
+
+            const result = await res.json();
+            if (result.success && result.data) {
+                showLoading(false);
+                setBranchs(result.data || []);
+            }
+        } catch (err) {
+            showLoading(false);
+            console.error("fetch customer name error:", err);
+        }
+    };
+
+    const fetchCustomerBranchAll = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/customer/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "customerBranchAll" }),
+            });
+
+            const result = await res.json();
+            if (result.success && result.data) {
+                showLoading(false);
+                setBranchs(result.data || []);
+            }
+        } catch (err) {
+            showLoading(false);
+            console.error("fetch customer name error:", err);
+        }
+    };
     // Loaders
     const fetchJobs = async () => {
         showLoading(true);
         try {
-            const res = await fetch("/api/auth/job/get");
+            const res = await fetch("/api/auth/job/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "job" }),
+            });
             const data = await res.json();
             if (data.success) {
-                setRows(data.success || []);
+                setRows(data.data || []);
             }
         } catch (err) {
             console.error("Fetch error:", err);
@@ -118,6 +179,8 @@ export default function InspectionTypePage() {
             showLoading(true);
             try {
                 await fetchProject();
+                await fetchCustomers();
+                await fetchCustomerBranchAll();
                 await fetchTeam();
                 await fetchStatus();
                 await fetchJobs();
@@ -139,6 +202,10 @@ export default function InspectionTypePage() {
             job_end_date: "",
             job_start_time: "",
             job_end_time: "",
+            customer_id: "",
+            customer_name: "",
+            branch_id: "",
+            branch_name: "",
             team_id: "",
             team_name: "",
             status_id: "",
@@ -151,11 +218,11 @@ export default function InspectionTypePage() {
     };
 
     const handleOpenEdit = (row: JobsRow) => {
-        const start_th = formatToThaiDate(row.job_start_date);
-        const end_th = formatToThaiDate(row.job_end_date);
+        const startISO = row.job_start_date ? String(row.job_start_date).slice(0, 10) : ""; // YYYY-MM-DD
+        const endISO = row.job_end_date ? String(row.job_end_date).slice(0, 10) : "";
 
         setIsEdit(true);
-        setFormData((prev) => ({
+        setFormData(prev => ({
             ...prev,
 
             job_id: row.job_id ?? "",
@@ -166,22 +233,21 @@ export default function InspectionTypePage() {
 
             shift_next_jobs: Number(row.shift_next_jobs ?? 0),
 
-            job_start_date: start_th,
-            job_end_date: end_th,
-            job_start_time: row.job_start_time ?? "",
-            job_end_time: row.job_end_time ?? "",
+            job_start_date: startISO,  // ← เก็บ ISO
+            job_end_date: endISO,      // ← เก็บ ISO
+            job_start_time: (row.job_start_time ?? "").slice(0, 5), // "HH:mm"
+            job_end_time: (row.job_end_time ?? "").slice(0, 5),
 
             team_id: row.team_id ?? "",
             team_name: row.team_name ?? "",
 
-            service_id: row.service_id ?? "",
-            service_name: row.service_name ?? "",
-
-            in_type_id: row.zone_id ?? (row as any).zone_id ?? "",
-            in_type_name: row.zone_name ?? (row as any).zone_name ?? "",
-
             status_id: row.status_id ?? "",
             status_name: row.status_name ?? "",
+
+            customer_id: row.customer_id ?? "",
+            customer_name: row.customer_name ?? "",
+            branch_id: row.branch_id ?? "",
+            branch_name: row.branch_name ?? "",
 
             is_active: row.is_active ?? 1,
             created_by: row.created_by ?? "admin",
@@ -193,18 +259,50 @@ export default function InspectionTypePage() {
     const handleClose = () => setOpen(false);
 
     const handleSave = async () => {
-        if (!formData.job_name) {
+        if (
+            !formData.job_name ||
+            !formData.project_id ||
+            !formData.job_start_date ||
+            !formData.job_end_date ||
+            !formData.job_start_time ||
+            !formData.job_end_time ||
+            !formData.team_id ||
+            !formData.customer_id ||
+            !formData.branch_id
+        ) {
             setError(true);
             return;
         }
 
         showLoading(true);
         try {
+            const payload = {
+                entity: "job" as const,
+                data: {
+                    job_id: formData.job_id || "",
+                    job_name: formData.job_name.trim(),
+                    project_id: formData.project_id,
+                    shift_next_jobs: formData.shift_next_jobs,
+                    job_start_date: formData.job_start_date,
+                    job_end_date: formData.job_end_date,
+                    job_start_time: formData.job_start_time,
+                    job_end_time: formData.job_end_time,
+                    team_id: formData.team_id,
+                    status_id: formData.status_id,
+                    customer_id: formData.customer_id,
+                    branch_id: formData.branch_id,
+                    is_active: formData.is_active ?? 1,
+                    created_by: formData.created_by || "admin",
+                    updated_by: formData.updated_by || "admin",
+                },
+            };
+
             const res = await fetch("/api/auth/job/post", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             });
+
             const result = await res.json();
             showLoading(false);
             setOpen(false);
@@ -223,12 +321,16 @@ export default function InspectionTypePage() {
         }
     };
 
-    const handleDelete = async (project_id: string) => {
+    const handleDelete = async (job_id: string) => {
         const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบข้อมูล");
         if (!confirmed) return;
         showLoading(true);
         try {
-            const res = await fetch(`/api/auth/project-list/${project_id}`, { method: "DELETE" });
+            const res = await fetch(`/api/auth/job/delete`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: job_id, function: "job" }),
+            });
             const result = await res.json();
             showLoading(false);
             if (result.success) {
@@ -247,18 +349,16 @@ export default function InspectionTypePage() {
 
     const columns: GridColDef<JobsRow>[] = [
         { field: "order", headerName: "ลำดับ", width: 90, headerAlign: "center", align: "center" },
-        { field: "job_id", headerName: "ID", flex: 1, headerAlign: "center", align: "center" },
         { field: "job_name", headerName: "งาน", flex: 1, headerAlign: "center", align: "left" },
         { field: "team_name", headerName: "ทีม", flex: 1, headerAlign: "center", align: "left" },
         { field: "project_name", headerName: "โครงการ", flex: 1, headerAlign: "center", align: "left" },
         {
-            field: "is_active",
+            field: "status_name",
             headerName: "สถานะ",
             flex: 1,
             headerAlign: "center",
             align: "center",
-            valueGetter: (v) => (v == null ? "" : v),
-            renderCell: ({ row }) => (row.is_active === 1 ? "ใช้งาน" : "ปิด"),
+            renderCell: ({ value }) => (value && String(value).trim() ? value : "-"),
         },
         {
             field: "actions",
@@ -274,7 +374,7 @@ export default function InspectionTypePage() {
                     <IconButton color="primary" onClick={() => handleOpenEdit(params.row)}>
                         <EditIcon />
                     </IconButton>
-                    <IconButton color="error" onClick={() => handleDelete(params.row.project_id)}>
+                    <IconButton color="error" onClick={() => handleDelete(params.row.job_id)}>
                         <DeleteIcon />
                     </IconButton>
                 </>
@@ -319,7 +419,7 @@ export default function InspectionTypePage() {
                     rows={filteredRows}
                     columns={columns.map((col) => ({ ...col, resizable: false }))}
                     initialState={{ pagination: { paginationModel: { pageSize: 5, page: 0 } } }}
-                    pageSizeOptions={[5, 10]}
+                    pageSizeOptions={[5, 10, 15]}
                     disableRowSelectionOnClick
                     getRowId={(row) => row.job_id}
                 />
@@ -339,8 +439,8 @@ export default function InspectionTypePage() {
                             }}
                         >
                             <Box>
-                                <label style={{ fontSize: "14px", marginBottom: "-4.5px", display: "block" }}>
-                                    ID
+                                <label style={{ fontSize: "14px", marginBottom: "16px", display: "block" }}>
+
                                 </label>
                                 <TextField
                                     size="small"
@@ -369,7 +469,7 @@ export default function InspectionTypePage() {
                                     onChange={(selected) =>
                                         setFormData({ ...formData, status_id: selected?.value || "" })
                                     }
-                                    placeholder="-- เลือกโครงการ --"
+                                    placeholder="-- เลือกสถานะ --"
                                     isClearable
                                     menuPortalTarget={typeof window !== "undefined" ? document.body : null}
                                     styles={{
@@ -445,8 +545,8 @@ export default function InspectionTypePage() {
                         }}
                     >
                         <Box>
-                            <label style={{ fontSize: "14px", marginBottom: "-4.5px", display: "block" }}>
-                                งาน
+                            <label style={{ fontSize: "14px", marginBottom: "16px", display: "block" }}>
+
                             </label>
                             <TextField
                                 size="small"
@@ -624,7 +724,6 @@ export default function InspectionTypePage() {
                         </LocalizationProvider>
                     </Box>
 
-                    {/* row5: แก้ไขวันแล้วเลื่อนงานถัดไปไหม */}
                     <FormControlLabel
                         control={
                             <Checkbox
@@ -645,6 +744,181 @@ export default function InspectionTypePage() {
                             gap: 2,
                         }}
                     >
+                        <Box>
+                            <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
+                                ลูกค้า
+                            </label>
+                            <Select
+                                options={customers.map(c => ({
+                                    value: c.customer_id,
+                                    label: c.customer_name,
+                                }))}
+                                value={
+                                    customers
+                                        .map(c => ({ value: c.customer_id, label: c.customer_name }))
+                                        .find(opt => opt.value === formData.customer_id) || null
+                                }
+                                onChange={(selected) => {
+                                    const id = selected?.value || "";
+
+                                    setFormData(prev => ({ ...prev, customer_id: id }));
+
+                                    if (id) {
+                                        fetchCustomerBranch(id);
+                                    } else {
+                                        setBranchs?.([]);
+                                    }
+                                }}
+                                placeholder="-- เลือกลูกค้า --"
+                                isClearable
+                                menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                styles={{
+                                    control: (base, state) => ({
+                                        ...base,
+                                        backgroundColor: "#fff",
+                                        borderColor:
+                                            error && !formData.customer_id
+                                                ? "#d32f2f" // ❌ สีแดงเมื่อ error
+                                                : state.isFocused
+                                                    ? "#3b82f6"
+                                                    : "#d1d5db",
+                                        boxShadow: "none",
+                                        "&:hover": {
+                                            borderColor:
+                                                error && !formData.customer_id ? "#d32f2f" : "#9ca3af",
+                                        },
+                                    }),
+                                    menu: (base) => ({
+                                        ...base,
+                                        backgroundColor: "#fff",
+                                        boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                        border: "1px solid #e5e7eb",
+                                    }),
+                                    menuPortal: (base) => ({
+                                        ...base,
+                                        zIndex: 2100,
+                                    }),
+                                    option: (base, state) => ({
+                                        ...base,
+                                        backgroundColor: state.isSelected
+                                            ? "#e5f2ff"
+                                            : state.isFocused
+                                                ? "#f3f4f6"
+                                                : "#fff",
+                                        color: "#111827",
+                                    }),
+                                    menuList: (base) => ({
+                                        ...base,
+                                        backgroundColor: "#fff",
+                                        paddingTop: 0,
+                                        paddingBottom: 0,
+                                    }),
+                                    singleValue: (base) => ({
+                                        ...base,
+                                        color: "#111827",
+                                    }),
+                                }}
+                            />
+
+                            {/* ✅ helperText */}
+                            {error && !formData.customer_id && (
+                                <span
+                                    style={{
+                                        color: "#d32f2f",
+                                        fontSize: "12px",
+                                        marginTop: 4,
+                                        display: "block",
+                                    }}
+                                >
+                                    กรุณาเลือกลูกค้า
+                                </span>
+                            )}
+                        </Box>
+
+                        <Box>
+                            <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
+                                สาขา
+                            </label>
+                            <Select
+                                options={branchs.map(c => ({
+                                    value: c.branch_id,
+                                    label: c.branch_name,
+                                }))}
+                                value={
+                                    branchs
+                                        .map(c => ({ value: c.branch_id, label: c.branch_name }))
+                                        .find(opt => opt.value === formData.branch_id) || null
+                                }
+                                onChange={(selected) =>
+                                    setFormData({ ...formData, branch_id: selected?.value || "" })
+                                }
+                                placeholder="-- เลือกสาขา --"
+                                isClearable
+                                isDisabled={!formData.customer_id}
+                                menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                styles={{
+                                    control: (base, state) => ({
+                                        ...base,
+                                        backgroundColor: "#fff",
+                                        borderColor:
+                                            error && !formData.branch_id
+                                                ? "#d32f2f" // ❌ สีแดงเมื่อ error
+                                                : state.isFocused
+                                                    ? "#3b82f6"
+                                                    : "#d1d5db",
+                                        boxShadow: "none",
+                                        "&:hover": {
+                                            borderColor:
+                                                error && !formData.branch_id ? "#d32f2f" : "#9ca3af",
+                                        },
+                                    }),
+                                    menu: (base) => ({
+                                        ...base,
+                                        backgroundColor: "#fff",
+                                        boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                        border: "1px solid #e5e7eb",
+                                    }),
+                                    menuPortal: (base) => ({
+                                        ...base,
+                                        zIndex: 2100,
+                                    }),
+                                    option: (base, state) => ({
+                                        ...base,
+                                        backgroundColor: state.isSelected
+                                            ? "#e5f2ff"
+                                            : state.isFocused
+                                                ? "#f3f4f6"
+                                                : "#fff",
+                                        color: "#111827",
+                                    }),
+                                    menuList: (base) => ({
+                                        ...base,
+                                        backgroundColor: "#fff",
+                                        paddingTop: 0,
+                                        paddingBottom: 0,
+                                    }),
+                                    singleValue: (base) => ({
+                                        ...base,
+                                        color: "#111827",
+                                    }),
+                                }}
+                            />
+
+                            {/* ✅ helperText */}
+                            {error && !formData.branch_id && (
+                                <span
+                                    style={{
+                                        color: "#d32f2f",
+                                        fontSize: "12px",
+                                        marginTop: 4,
+                                        display: "block",
+                                    }}
+                                >
+                                    กรุณาเลือกสาขา
+                                </span>
+                            )}
+                        </Box>
+
                         <Box>
                             <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
                                 ทีม
