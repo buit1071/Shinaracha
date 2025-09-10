@@ -1877,7 +1877,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                                                                 }
                                                                 label={
                                                                     <Typography variant="subtitle2" fontWeight={600} sx={{ m: 0, lineHeight: 1 }}>
-                                                                        Inspection Group : {grp.inspect_name}
+                                                                        {grp.inspect_name}
                                                                     </Typography>
                                                                 }
                                                                 sx={{
@@ -1908,7 +1908,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                                                                                         size="small"
                                                                                     />
                                                                                 }
-                                                                                label={`Inspection Item : ${itRow.inspect_item_name}`}
+                                                                                label={itRow.inspect_item_name}
                                                                             />
                                                                         ))}
                                                                     </FormGroup>

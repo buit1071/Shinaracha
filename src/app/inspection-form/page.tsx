@@ -209,8 +209,8 @@ export default function InspectionFormPage() {
             align: "center",
         },
         {
-            field: "service_id",
-            headerName: "Service ID",
+            field: "service_name",
+            headerName: "ชื่อ Service",
             flex: 1,
             headerAlign: "center",
             align: "center",
@@ -220,11 +220,10 @@ export default function InspectionFormPage() {
                     className="hover:no-underline text-blue-600 hover:opacity-80 cursor-pointer"
                     title="เปิดรายละเอียด"
                 >
-                    {params.row.service_id}
+                    {params.row.service_name}
                 </button>
             ),
         },
-        { field: "service_name", headerName: "ชื่อ Service", flex: 1, headerAlign: "center", align: "left" },
         {
             field: "created_date",
             headerName: "วันที่สร้าง",

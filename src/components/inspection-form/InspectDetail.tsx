@@ -268,11 +268,11 @@ export default function InspectDetail({ InspectId, onBack }: Props) {
       </div>
 
       {/* Content */}
-      <div className="flex-1">
+      <div className="flex-1" style={{ minHeight: "90vh"}}>
         <DataGrid
           sx={{
             width: "100%",
-            height: "100%",
+            height: "100%",   // จะอ้างอิงตาม div แม่
             borderRadius: "0.5rem",
             boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
             "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": {
@@ -284,7 +284,7 @@ export default function InspectDetail({ InspectId, onBack }: Props) {
           initialState={{
             pagination: { paginationModel: { pageSize: 10, page: 0 } },
           }}
-          pageSizeOptions={[5, 10, 25]}
+          pageSizeOptions={[5, 10, 15]}
           disableRowSelectionOnClick
           getRowId={(row) => row.inspect_item_id}
         />
