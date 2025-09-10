@@ -125,8 +125,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
 
     const [equipmentOptions, setEquipmentOptions] = React.useState<EquipmentRow[]>([]);
     const [formEquipmentBranchData, setFormEquipmentBranchData] = React.useState<EquipmentBranchRow>({
-        branch_id: branchId || "",
-        service_id: "",
+        service_inspec_id: "",
         equipment_id: "",
         equipment_name: "",
         is_active: 1,
@@ -149,13 +148,13 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         }
     };
 
-    const fetchEquipmentByBranchId = async (service_id?: string) => {
+    const fetchEquipmentByBranchId = async (service_inspec_id?: string) => {
         showLoading(true);
         try {
             const res = await fetch("/api/auth/customer/equipment/get", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "equipment", branch_id: branchId, service_id: service_id || formEquipmentData.service_id }),
+                body: JSON.stringify({ function: "equipment", service_inspec_id: service_inspec_id || formEquipmentData.service_inspec_id }),
             });
 
             const result = await res.json();
@@ -214,7 +213,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             // พรีโหลด items ของทุก group ที่มีเลือกไว้ จะได้ติ๊กโชว์ทันที
             await Promise.all(groupIds.map(id => fetchItemsByInspect(id)));
         });
-        fetchEquipmentByBranchId(row.service_id);
+        fetchEquipmentByBranchId(row.service_inspec_id);
     };
 
     const handleDeleteService = async (id: string) => {
@@ -226,14 +225,14 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             const res = await fetch(`/api/auth/customer/delete`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id, function: "group" }),
+                body: JSON.stringify({ id, function: "service" }),
             });
 
             const result = await res.json();
             if (result.success) {
                 showLoading(false);
                 await showAlert("success", result.message);
-                fetchGroupByCustomerId();
+                fetchServiceEquipment();
             } else {
                 showLoading(false);
                 showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
@@ -246,7 +245,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         }
     };
 
-    const handleDeleteEquipment = async (id: string, branch_id: string, service_id: string) => {
+    const handleDeleteEquipment = async (id: string, service_inspec_id: string) => {
         const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบข้อมูล");
         if (!confirmed) return;
 
@@ -255,22 +254,13 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             const res = await fetch(`/api/auth/customer/equipment/delete`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id, branch_id, service_id, function: "equipment" }),
+                body: JSON.stringify({ id, service_inspec_id, function: "equipment" }),
             });
 
             const result = await res.json();
-            showLoading(false);
-
-            // ถ้าไม่เจอใน DB -> ถือว่าสำเร็จ (ลบออกจาก UI เหมือนกัน)
-            if (res.status === 400) {
-                await showAlert("success", "ลบข้อมูลเรียบร้อย");
-                // รีเฟรชรายการ
-                fetchEquipmentByBranchId();
-                return;
-            }
 
             if (!res.ok || !result.success) {
-                showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
+                await showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
                 return;
             }
 
@@ -349,21 +339,21 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
 
     const handleCloseEquipment = () => setOpenEquipment(false);
 
-    const serviceNameById = React.useMemo(
-        () => new Map(services.map(z => [z.service_id, z.service_name])),
-        [services]
+    const zoneNameById = React.useMemo(
+        () => new Map(zones.map(z => [z.zone_id, z.zone_name])),
+        [zones]
     );
 
     const columnEquipments: GridColDef<ServiceEquipmentRow>[] = [
         { field: "order", headerName: "ลำดับ", width: 90, headerAlign: "center", align: "center" },
         {
-            field: "service_name",
-            headerName: "Service",
+            field: "zone_name",
+            headerName: "การตรวจ",
             flex: 1,
             headerAlign: "center",
-            align: "center",
+            align: "left",
             renderCell: ({ row }) => (
-                <>{serviceNameById.get(row.service_id) ?? "-"}</>
+                <>{zoneNameById.get(row.zone_id) ?? "-"}</>
             ),
             sortComparator: (v1, v2) => String(v1).localeCompare(String(v2)),
         },
@@ -381,7 +371,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                     <IconButton color="primary" onClick={() => handleOpenEditService(params.row)}>
                         <EditIcon />
                     </IconButton>
-                    <IconButton color="error" onClick={() => handleDeleteService(params.row.zone_id)}>
+                    <IconButton color="error" onClick={() => handleDeleteService(params.row.service_inspec_id)}>
                         <DeleteIcon />
                     </IconButton>
                 </>
@@ -411,6 +401,26 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             const result = await res.json();
             if (result.success && result.data) {
                 setContactRows(result.data || []);
+                showLoading(false);
+            }
+        } catch (err) {
+            showLoading(false);
+            console.error("fetch error:", err);
+        }
+    };
+
+    const fetchZoneAll = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/inspection-form/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "zonesAll" }),
+            });
+
+            const result = await res.json();
+            if (result.success && result.data) {
+                setZones(result.data || []);
                 showLoading(false);
             }
         } catch (err) {
@@ -462,6 +472,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
     const handleAddEquipment = () => {
         const newRow: EquipmentBranchRow = {
             branch_id: branchId || "",
+            service_inspec_id: formEquipmentData.service_inspec_id,
             service_id: formEquipmentData.service_id,
             equipment_id: "",
             equipment_name: "",
@@ -595,8 +606,8 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
     const handleSaveEquipmentBranch = async (equipment_id: string) => {
         showLoading(true);
         try {
-            const service_id =
-                formEquipmentData.service_id;
+            const service_inspec_id =
+                formEquipmentData.service_inspec_id;
             const id =
                 equipment_id ||
                 draftEquipment.equipment_id ||      // ✅ เอาจาก draft ถ้า param ว่าง
@@ -609,8 +620,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             const payload = {
                 entity: "equipment" as const,
                 data: {
-                    branch_id: branchId || "",
-                    service_id: service_id,
+                    service_inspec_id: service_inspec_id,
                     equipment_id: id,
                     equipment_name: name,
                     is_active: formEquipmentBranchData.is_active ?? 1,
@@ -855,7 +865,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                                 <EditIcon />
                             </IconButton>
                         )}
-                        <IconButton onClick={() => handleDeleteEquipment(params.row.equipment_id, params.row.branch_id, params.row.service_id || formEquipmentData.service_id)} color="error">
+                        <IconButton onClick={() => handleDeleteEquipment(params.row.equipment_id, params.row.service_inspec_id)} color="error">
                             <DeleteIcon />
                         </IconButton>
                     </>
@@ -899,13 +909,18 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         }
     };
 
-    const fetchServiceEquipment = async () => {
+    const fetchServiceEquipment = async (id?: string) => {
+        if (!branchId) {
+            setEquipments([]);
+            return;
+        }
+
         showLoading(true);
         try {
             const res = await fetch("/api/auth/customer/equipment/get", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "serviceItem", branch_id: branchId }),
+                body: JSON.stringify({ function: "serviceItem", branch_id: branchId || id }),
             });
 
             const result = await res.json();
@@ -1119,6 +1134,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         fetchEquipment();
         fetchEquipmentByBranchId();
         fetchContactByBranchId();
+        fetchZoneAll();
         fetchServiceEquipment();
     }, [branchId]);
 
@@ -1593,7 +1609,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                         <DataGrid
                             rows={filteredEquipmentRows}
                             columns={columnEquipments}
-                            getRowId={(row) => row.zone_id}
+                            getRowId={(row) => row.service_inspec_id}
                             disableRowSelectionOnClick
                             autoHeight
                             initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}

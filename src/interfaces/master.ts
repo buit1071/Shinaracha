@@ -295,8 +295,7 @@ export interface ContactRow {
     order?: number;
 }
 export interface EquipmentBranchRow {
-    branch_id: string;
-    service_id: string;
+    service_inspec_id: string;
     equipment_id: string;
     equipment_name?: string;
     is_active: number;

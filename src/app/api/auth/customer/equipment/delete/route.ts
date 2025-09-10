@@ -8,10 +8,9 @@ export async function POST(req: Request) {
         // รองรับหลายคีย์ (กันยิงมาเป็น entity/function)
         const fn = body.fn ?? body.function ?? body.entity;
         const id = String(body.id ?? "").trim();
-        const branch_id = String(body.branch_id ?? "").trim();
-        const service_id = String(body.service_id ?? "").trim();
+        const service_inspec_id = String(body.service_inspec_id ?? "").trim();
 
-        if (!id || !branch_id || !fn) {
+        if (!id || !service_inspec_id || !fn) {
             return NextResponse.json(
                 { success: false, message: "กรุณาส่ง id, branch_id และ function" },
                 { status: 400 }
@@ -20,8 +19,8 @@ export async function POST(req: Request) {
 
         if (fn === "equipment") {
             const result: any = await query(
-                `DELETE FROM data_branch_equipments WHERE equipment_id = ? AND branch_id = ? AND service_id = ?`,
-                [id, branch_id, service_id]
+                `DELETE FROM data_branch_equipments WHERE equipment_id = ? AND service_inspec_id = ?`,
+                [id, service_inspec_id]
             );
             const affected = result?.affectedRows ?? result?.[0]?.affectedRows ?? 0;
 

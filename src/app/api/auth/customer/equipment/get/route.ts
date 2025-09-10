@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { query } from "@/lib-server/db";
 
 type GetBody =
-    | { function: "equipment"; branch_id: string, service_id: string }
+    | { function: "equipment"; service_inspec_id: string }
     | { function: "serviceItem"; branch_id: string }
     ;
 
@@ -19,21 +19,21 @@ export async function POST(req: Request) {
         }
 
         if (fn === "equipment") {
-            if (!body.branch_id && !body.service_id) {
+            if (!body.service_inspec_id) {
                 return NextResponse.json(
-                    { success: false, message: "กรุณาระบุ branch_id และ service_id" },
+                    { success: false, message: "กรุณาระบุ service_inspec_id" },
                     { status: 400 }
                 );
             }
             const rows = await query(
                 `
-        SELECT equipment_id, equipment_name, branch_id, is_active,
+        SELECT equipment_id, service_inspec_id, equipment_name, is_active,
                created_by, created_date, updated_by, updated_date
         FROM data_branch_equipments
-        WHERE branch_id = ? AND service_id = ?
+        WHERE service_inspec_id = ?
         ORDER BY created_date DESC
         `,
-                [body.branch_id, body.service_id]
+                [body.service_inspec_id]
             );
             return NextResponse.json({ success: true, data: rows });
         }
@@ -58,9 +58,7 @@ export async function POST(req: Request) {
             // 1) ดึงเอกสารทั้งหมดของ branch
             const eqRes = await query(
                 `
-    SELECT
-      service_inspec_id, branch_id, service_id, zone_id,
-      is_active, created_by, updated_by, created_date, updated_date
+    SELECT *
     FROM data_service_equipment
     WHERE branch_id = ?
     ORDER BY updated_date DESC, created_date DESC

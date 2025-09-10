@@ -20,6 +20,10 @@ export async function POST(req: Request) {
             await query(`DELETE FROM data_customer_branchs WHERE branch_id=?`, [id]);
             return NextResponse.json({ success: true, message: "ลบข้อมูลเรียบร้อย" });
         }
+        if (fn === "service") {
+            await query(`DELETE FROM data_service_equipment WHERE service_inspec_id=?`, [id]);
+            return NextResponse.json({ success: true, message: "ลบข้อมูลเรียบร้อย" });
+        }
 
         return NextResponse.json(
             { success: false, message: "ไม่รู้จัก function ที่ส่งมา" },

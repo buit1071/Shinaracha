@@ -4,12 +4,14 @@ import { query } from "@/lib-server/db";
 
 type GetBody =
     | { function: "services" }
+    | { function: "zonesAll" }
     | { function: "zonesByService"; service_id: string }
     | { function: "zoneById"; zone_id: string }
     | { function: "inspectsByZone"; zone_id: string }
     | { function: "groupById"; inspect_id: string }
     | { function: "inspectItems"; inspect_id: string }
-    | { function: "serviceById"; service_id: string };
+    | { function: "serviceById"; service_id: string }
+    ;
 
 export async function POST(req: Request) {
     try {
@@ -69,6 +71,17 @@ export async function POST(req: Request) {
         ORDER BY created_date DESC
         `,
                 [body.service_id]
+            );
+            return NextResponse.json({ success: true, data: rows });
+        }
+
+        if (fn === "zonesAll") {
+            const rows = await query(
+                `
+        SELECT *
+        FROM data_service_zone
+        ORDER BY created_date DESC
+        `,
             );
             return NextResponse.json({ success: true, data: rows });
         }

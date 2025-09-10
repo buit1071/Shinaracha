@@ -19,113 +19,48 @@ export async function POST(req: Request) {
         // =========== Equipment ===========
         if (entity === "equipment") {
             const {
+                service_inspec_id,
                 equipment_id,
-                branch_id,
-                service_id,
                 equipment_name,
                 is_active,
                 created_by,
                 updated_by,
             } = data;
 
-            // ---- validate
             if (!equipment_id?.trim()) {
-                return NextResponse.json(
-                    { success: false, message: "กรุณาระบุ equipment_id (มาจากฝั่งหน้าเว็บ)" },
-                    { status: 400 }
-                );
-            }
-            if (!branch_id?.trim()) {
-                return NextResponse.json(
-                    { success: false, message: "กรุณาระบุสาขา (branch_id)" },
-                    { status: 400 }
-                );
-            }
-            if (!service_id?.trim()) {
-                return NextResponse.json(
-                    { success: false, message: "กรุณาระบุบริการ (service_id)" },
-                    { status: 400 }
-                );
+                return NextResponse.json({ success: false, message: "กรุณาระบุ equipment_id" }, { status: 400 });
             }
             if (!equipment_name?.trim()) {
-                return NextResponse.json(
-                    { success: false, message: "กรุณาระบุชื่ออุปกรณ์ (equipment_name)" },
-                    { status: 400 }
-                );
+                return NextResponse.json({ success: false, message: "กรุณาระบุ equipment_name" }, { status: 400 });
             }
 
-            const activeVal = typeof is_active === "string" ? parseInt(is_active, 10) || 1 : (is_active ?? 1);
+            const activeVal =
+                typeof is_active === "string" ? parseInt(is_active, 10) || 1 : (is_active ?? 1);
 
-            // ---- UPDATE ก่อน (เรียง params ให้ตรงกับ SQL)
-            const upd: any = await query(
+            // ✅ UPSERT: แทรกใหม่ ถ้าชนคีย์ให้อัปเดตแทน
+            await query(
                 `
-      UPDATE data_branch_equipments
-      SET
-        branch_id      = ?,
-        service_id     = ?,
-        equipment_name = ?,
-        is_active      = ?,
-        updated_by     = ?,
-        updated_date   = NOW()
-      WHERE equipment_id = ? AND service_id = ?
+    INSERT INTO data_branch_equipments
+      (equipment_id, service_inspec_id, equipment_name, is_active, created_by, created_date, updated_by, updated_date)
+    VALUES
+      (?,?,?,?,?,NOW(),?,NOW())
+    ON DUPLICATE KEY UPDATE
+      equipment_name = VALUES(equipment_name),
+      is_active      = VALUES(is_active),
+      updated_by     = VALUES(updated_by),
+      updated_date   = NOW()
     `,
                 [
-                    branch_id,             // ?
-                    service_id,            // ?
-                    equipment_name,        // ?
-                    activeVal,             // ?
-                    updated_by ?? "system",// ?
-                    equipment_id,          // WHERE equipment_id = ?
-                    service_id,            // AND service_id = ?
+                    equipment_id,          // ✅ ตรงกับคอลัมน์ลำดับที่ 1
+                    service_inspec_id,     // ✅ ลำดับที่ 2
+                    equipment_name,
+                    activeVal,
+                    created_by ?? "system",
+                    updated_by ?? "system",
                 ]
             );
 
-            const affected =
-                (upd && typeof upd === "object" && "affectedRows" in upd && upd.affectedRows) ||
-                (Array.isArray(upd) && upd[0]?.affectedRows) ||
-                0;
-
-            if (affected > 0) {
-                return NextResponse.json({
-                    success: true,
-                    message: "อัปเดตอุปกรณ์เรียบร้อย",
-                    equipment_id,
-                });
-            }
-
-            // ---- ไม่พบ row ให้ INSERT (ตรวจลำดับฟิลด์กับ params ให้ตรงกัน)
-            try {
-                await query(
-                    `
-        INSERT INTO data_branch_equipments
-          (equipment_id, equipment_name, branch_id, service_id, is_active, created_by, created_date, updated_by, updated_date)
-        VALUES
-          (?,?,?,?,?,?,NOW(),?,NOW())
-      `,
-                    [
-                        equipment_id,
-                        equipment_name,
-                        branch_id,
-                        service_id,
-                        activeVal,
-                        created_by ?? "system",
-                        updated_by ?? "system",
-                    ]
-                );
-
-                return NextResponse.json(
-                    { success: true, message: "เพิ่มอุปกรณ์เรียบร้อย", equipment_id },
-                    { status: 201 }
-                );
-            } catch (e: any) {
-                if (e?.code === "ER_DUP_ENTRY") {
-                    return NextResponse.json(
-                        { success: false, message: "มี equipment_id นี้อยู่แล้ว" },
-                        { status: 409 }
-                    );
-                }
-                throw e;
-            }
+            return NextResponse.json({ success: true, message: "บันทึกอุปกรณ์เรียบร้อย", equipment_id });
         }
 
         // ======= Service Item (เวอร์ชันลด lock) =======
