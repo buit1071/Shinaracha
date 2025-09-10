@@ -175,6 +175,29 @@ export async function POST(req: Request) {
             });
         }
 
+        if (entity === "serviceActive") {
+            const { service_id, is_active, updated_by } = data;
+
+            if (!service_id) {
+                return NextResponse.json(
+                    { success: false, message: "กรุณาระบุ service_id" },
+                    { status: 400 }
+                );
+            }
+
+            const activeVal =
+                typeof is_active === "string" ? parseInt(is_active, 10) || 0 : Number(is_active ?? 0);
+
+            await query(
+                `UPDATE master_services
+       SET is_active = ?, updated_by = ?, updated_date = NOW()
+     WHERE service_id = ?`,
+                [activeVal, updated_by ?? "system", service_id]
+            );
+
+            return NextResponse.json({ success: true, message: "อัปเดตสถานะเรียบร้อย" });
+        }
+
         // entity ไม่ตรง
         return NextResponse.json(
             { success: false, message: "entity ไม่ถูกต้อง (service | zone | inspect)" },

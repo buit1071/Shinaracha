@@ -211,6 +211,7 @@ export default function CustomersPage() {
   };
 
   const toggleStatus = async (row: CustomerRow) => {
+    showLoading(true);
     try {
       const res = await fetch("/api/auth/customer", {
         method: "POST",
@@ -220,6 +221,7 @@ export default function CustomersPage() {
           is_active: row.is_active === 1 ? 0 : 1,
         }),
       });
+      showLoading(false);
       const result = await res.json();
       if (result.success) {
         fetchCustomers();
@@ -237,7 +239,6 @@ export default function CustomersPage() {
       headerAlign: "center",
       align: "center",
     },
-    { field: "customer_id", headerName: "รหัสลูกค้า", flex: 1, headerAlign: "center", align: "center" },
     {
       field: "customer_name",
       headerName: "ชื่อลูกค้า",
@@ -389,21 +390,6 @@ export default function CustomersPage() {
                 error={error && !formData.customer_name}
                 helperText={error && !formData.customer_name ? "กรุณากรอกชื่อลูกค้า" : ""}
               />
-
-              <Box mt={2} display="flex" alignItems="center" gap={2}>
-                <span>สถานะ:</span>
-                <Switch
-                  checked={formData.is_active === 1}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      is_active: e.target.checked ? 1 : 0,
-                    })
-                  }
-                  color="success"
-                />
-                <span>{formData.is_active === 1 ? "ใช้งาน" : "ปิดการใช้งาน"}</span>
-              </Box>
             </DialogContent>
             <DialogActions>
               <Button onClick={handleClose}>ยกเลิก</Button>

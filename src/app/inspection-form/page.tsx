@@ -182,20 +182,31 @@ export default function InspectionFormPage() {
     };
 
     const toggleStatus = async (row: ServiceRow) => {
+        showLoading(true);
         try {
-            const res = await fetch("/api/auth/inspection-form", {
+            const res = await fetch("/api/auth/inspection-form/post", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    ...row,
-                    is_active: row.is_active === 1 ? 0 : 1,
+                    entity: "serviceActive",
+                    data: {
+                        service_id: row.service_id,
+                        is_active: row.is_active === 1 ? 0 : 1,
+                        updated_by: "admin",
+                    },
                 }),
             });
+
             const result = await res.json();
-            if (result.success) {
+            showLoading(false);
+
+            if (res.ok && result.success) {
                 fetchService();
+            } else {
+                console.error("Toggle failed:", result.message);
             }
         } catch (err) {
+            showLoading(false);
             console.error("Toggle status error:", err);
         }
     };

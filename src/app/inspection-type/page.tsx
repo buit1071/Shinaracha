@@ -149,13 +149,6 @@ export default function InspectionTypePage() {
             headerAlign: "center",
             align: "center",
         },
-        {
-            field: "service_id",
-            headerName: "Service ID",
-            flex: 1,
-            headerAlign: "center",
-            align: "center",
-        },
         { field: "service_name", headerName: "ชื่อ Service", flex: 1, headerAlign: "center", align: "left" },
         { field: "inspection_duration", headerName: "ระยะเวลาที่ใช้ในการตรวจ (วัน)", flex: 1, headerAlign: "center", align: "center" },
         { field: "inspections_per_year", headerName: "จำนวนครั้งในการตรวจต่อปี (ครั้ง / ปี)", flex: 1, headerAlign: "center", align: "center" },
@@ -244,6 +237,7 @@ export default function InspectionTypePage() {
                         label="ชื่อ Service"
                         fullWidth
                         required
+                        disabled
                         value={formData.service_name}
                         onChange={(e) => {
                             setFormData({ ...formData, service_name: e.target.value });

@@ -192,6 +192,7 @@ export default function ProjectListPage() {
     };
 
     const toggleStatus = async (row: ProjectRow) => {
+        showLoading(true);
         try {
             const res = await fetch("/api/auth/project-list", {
                 method: "POST",
@@ -202,6 +203,7 @@ export default function ProjectListPage() {
                     skipDate: true,
                 }),
             });
+            showLoading(false);
             const result = await res.json();
             if (result.success) {
                 fetchProject();
@@ -219,7 +221,6 @@ export default function ProjectListPage() {
             headerAlign: "center",
             align: "center",
         },
-        { field: "project_id", headerName: "Project ID", flex: 1, headerAlign: "center", align: "center" },
         { field: "project_name", headerName: "ชื่อโครงการ", flex: 1, headerAlign: "center", align: "left" },
         { field: "customer_name", headerName: "ชื่อลูกค้า", flex: 1, headerAlign: "center", align: "left" },
         {
@@ -488,21 +489,6 @@ export default function ProjectListPage() {
                             error={error && !formData.end_date}
                             helperText={error && !formData.end_date ? "กรุณาเลือกวันที่สิ้นสุด" : ""}
                         />
-                    </Box>
-
-                    <Box mt={2} display="flex" alignItems="center" gap={2}>
-                        <span>สถานะ:</span>
-                        <Switch
-                            checked={formData.is_active === 1}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    is_active: e.target.checked ? 1 : 0,
-                                })
-                            }
-                            color="success"
-                        />
-                        <span>{formData.is_active === 1 ? "ใช้งาน" : "ปิดการใช้งาน"}</span>
                     </Box>
                 </DialogContent>
                 <DialogActions>

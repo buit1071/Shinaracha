@@ -152,6 +152,7 @@ export default function ZonePage() {
     };
 
     const toggleStatus = async (row: ZoneRow) => {
+        showLoading(true);
         try {
             const res = await fetch("/api/auth/zone", {
                 method: "POST",
@@ -161,6 +162,7 @@ export default function ZonePage() {
                     is_active: row.is_active === 1 ? 0 : 1,
                 }),
             });
+            showLoading(false);
             const result = await res.json();
             if (result.success) {
                 fetchZone();
@@ -178,7 +180,6 @@ export default function ZonePage() {
             headerAlign: "center",
             align: "center",
         },
-        { field: "zone_id", headerName: "Zone ID", flex: 1, headerAlign: "center", align: "center" },
         { field: "zone_name", headerName: "พื้นที่", flex: 1, headerAlign: "center", align: "left" },
         {
             field: "created_date",
@@ -310,21 +311,6 @@ export default function ZonePage() {
                         error={error && !formData.zone_name}
                         helperText={error && !formData.zone_name ? "กรุณากรอกชื่อพื้นที่" : ""}
                     />
-
-                    <Box mt={2} display="flex" alignItems="center" gap={2}>
-                        <span>สถานะ:</span>
-                        <Switch
-                            checked={formData.is_active === 1}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    is_active: e.target.checked ? 1 : 0,
-                                })
-                            }
-                            color="success"
-                        />
-                        <span>{formData.is_active === 1 ? "ใช้งาน" : "ปิดการใช้งาน"}</span>
-                    </Box>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose}>ยกเลิก</Button>

@@ -215,6 +215,7 @@ export default function ProjectListPage() {
     };
 
     const toggleStatus = async (row: TeamRow) => {
+        showLoading(true);
         try {
             const res = await fetch("/api/auth/team", {
                 method: "POST",
@@ -224,6 +225,7 @@ export default function ProjectListPage() {
                     is_active: row.is_active === 1 ? 0 : 1,
                 }),
             });
+            showLoading(false);
             const result = await res.json();
             if (result.success) {
                 fetchTeam();
@@ -241,7 +243,6 @@ export default function ProjectListPage() {
             headerAlign: "center",
             align: "center",
         },
-        { field: "team_id", headerName: "Team ID", flex: 1, headerAlign: "center", align: "center" },
         { field: "team_name", headerName: "ชื่อ", flex: 1, headerAlign: "center", align: "left" },
         { field: "uuid", headerName: "UUID", flex: 1, headerAlign: "center", align: "center" },
         {
@@ -251,7 +252,7 @@ export default function ProjectListPage() {
             headerAlign: "center",
             align: "left",
             renderCell: (params: GridRenderCellParams<TeamRow>) => (
-                <span>{params.row.created_by || "-"}</span>
+                <span>{params.row.username || "-"}</span>
             ),
         },
         { field: "zone_name", headerName: "พื้นที่", flex: 1, headerAlign: "center", align: "center" },
@@ -769,20 +770,6 @@ export default function ProjectListPage() {
 
                     </Box>
 
-                    <Box mt={2} display="flex" alignItems="center" gap={2}>
-                        <span>สถานะ:</span>
-                        <Switch
-                            checked={formData.is_active === 1}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    is_active: e.target.checked ? 1 : 0,
-                                })
-                            }
-                            color="success"
-                        />
-                        <span>{formData.is_active === 1 ? "ใช้งาน" : "ปิดการใช้งาน"}</span>
-                    </Box>
                     {/* Add Employee to team (react-select) */}
                     {(formData.team_id && formData.is_active === 1) && (
                         <>

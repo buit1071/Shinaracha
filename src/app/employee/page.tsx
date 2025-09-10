@@ -238,6 +238,7 @@ export default function EmployeePage() {
     };
 
     const toggleStatus = async (row: EmployeeRow) => {
+        showLoading(true);
         try {
             const res = await fetch("/api/auth/employee", {
                 method: "POST",
@@ -247,6 +248,7 @@ export default function EmployeePage() {
                     is_active: row.is_active === 1 ? 0 : 1,
                 }),
             });
+            showLoading(false);
             const result = await res.json();
             if (result.success) {
                 fetchEmployees();
@@ -587,21 +589,6 @@ export default function EmployeePage() {
                             }}
                         />
                     )}
-
-                    <Box mt={2} display="flex" alignItems="center" gap={2}>
-                        <span>สถานะ:</span>
-                        <Switch
-                            checked={formData.is_active === 1}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    is_active: e.target.checked ? 1 : 0,
-                                })
-                            }
-                            color="success"
-                        />
-                        <span>{formData.is_active === 1 ? "ใช้งาน" : "ปิดการใช้งาน"}</span>
-                    </Box>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose}>ยกเลิก</Button>
