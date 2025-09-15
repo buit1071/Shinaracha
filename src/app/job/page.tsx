@@ -349,9 +349,9 @@ export default function InspectionTypePage() {
 
     const columns: GridColDef<JobsRow>[] = [
         { field: "order", headerName: "ลำดับ", width: 90, headerAlign: "center", align: "center" },
+        { field: "project_name", headerName: "โครงการ", flex: 1, headerAlign: "center", align: "left" },
         { field: "job_name", headerName: "งาน", flex: 1, headerAlign: "center", align: "left" },
         { field: "team_name", headerName: "ทีม", flex: 1, headerAlign: "center", align: "left" },
-        { field: "project_name", headerName: "โครงการ", flex: 1, headerAlign: "center", align: "left" },
         {
             field: "status_name",
             headerName: "สถานะ",

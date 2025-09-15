@@ -305,3 +305,16 @@ export interface EquipmentBranchRow {
     updated_date?: string;
     order?: number;
 }
+export interface SelectForm {
+    branch_id: string;
+    service_inspec_id: string;
+    service_id: string;
+    zone_id: string;
+    zone_name?: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+}

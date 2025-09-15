@@ -54,21 +54,22 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         หน้าหลัก
                     </NavLink>
 
-                    {/* โครงการ */}
+                    {/* ตั้งค่า */}
                     <button
-                        onClick={() => toggleMenu("projects")}
+                        onClick={() => toggleMenu("company")}
                         className="w-full flex justify-between items-center px-3 py-2 rounded hover:bg-gray-700 cursor-pointer"
                     >
-                        <span>โครงการ</span>
-                        <span className="text-sm">{openMenus.includes("projects") ? "▲" : "▼"}</span>
+                        <span>ข้อมูลบริษัท</span>
+                        <span className="text-sm">{openMenus.includes("company") ? "▲" : "▼"}</span>
                     </button>
-                    {openMenus.includes("projects") && (
+
+                    {openMenus.includes("company") && (
                         <div className="ml-4 mt-1 space-y-1">
-                            <NavLink href="/project-list" currentPath={pathname}>โครงการ</NavLink>
-                            <NavLink href="/job" currentPath={pathname}>งาน</NavLink>
-                            <NavLink href="/plan" currentPath={pathname}>แผนงาน</NavLink>
-                            <NavLink href="/inspection" currentPath={pathname}>ผลตรวจ</NavLink>
-                            <NavLink href="/report" currentPath={pathname}>รายงาน</NavLink>
+                            <NavLink href="/team" currentPath={pathname}>ทีมตรวจ</NavLink>
+                            <NavLink href="/zone" currentPath={pathname}>พื้นที่การตรวจ</NavLink>
+                            <NavLink href="/employee" currentPath={pathname}>ข้อมูลพนักงาน</NavLink>
+                            <NavLink href="/permission" currentPath={pathname}>สิทธิการใช้งาน</NavLink>
+                            <NavLink href="/holiday" currentPath={pathname}>วันหยุด</NavLink>
                         </div>
                     )}
 
@@ -77,24 +78,37 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         onClick={() => toggleMenu("settings")}
                         className="w-full flex justify-between items-center px-3 py-2 rounded hover:bg-gray-700 cursor-pointer"
                     >
-                        <span>ตั้งค่า</span>
+                        <span>ข้อมูลหลัก</span>
                         <span className="text-sm">{openMenus.includes("settings") ? "▲" : "▼"}</span>
                     </button>
+
                     {openMenus.includes("settings") && (
                         <div className="ml-4 mt-1 space-y-1">
-                            <NavLink href="/inspection-form" currentPath={pathname}>แบบฟอร์มการตรวจ</NavLink>
-                            <NavLink href="/inspection-type" currentPath={pathname}>ประเภทการตรวจ</NavLink>
-                            <NavLink href="/team" currentPath={pathname}>ทีม</NavLink>
-                            <NavLink href="/customer" currentPath={pathname}>ข้อมูลลูกค้า</NavLink>
-                            <NavLink href="/equipment" currentPath={pathname}>อุปกรณ์</NavLink>
-                            <NavLink href="/holiday" currentPath={pathname}>วันหยุด</NavLink>
-                            <NavLink href="/employee" currentPath={pathname}>ข้อมูลพนักงาน</NavLink>
-                            <NavLink href="/permission" currentPath={pathname}>สิทธิการใช้งาน</NavLink>
-                            <NavLink href="/zone" currentPath={pathname}>พื้นที่</NavLink>
-                            <NavLink href="/upload-file" currentPath={pathname}>Upload File</NavLink>
+                            <NavLink href="/equipment" currentPath={pathname}>ระบบ & อุปกรณ์</NavLink>
+                            {/* <NavLink href="/upload-file" currentPath={pathname}>Upload File</NavLink> */}
                         </div>
                     )}
 
+                    {/* โครงการ */}
+                    <button
+                        onClick={() => toggleMenu("projects")}
+                        className="w-full flex justify-between items-center px-3 py-2 rounded hover:bg-gray-700 cursor-pointer"
+                    >
+                        <span>ตั้งค่ารายงาน</span>
+                        <span className="text-sm">{openMenus.includes("projects") ? "▲" : "▼"}</span>
+                    </button>
+                    {openMenus.includes("projects") && (
+                        <div className="ml-4 mt-1 space-y-1">
+                            <NavLink href="/inspection-form" currentPath={pathname}>จัดการแบบฟอร์ม</NavLink>
+                            <NavLink href="/customer" currentPath={pathname}>จัดการข้อมูลลูกค้า</NavLink>
+                            <NavLink href="/project-list" currentPath={pathname}>จัดการโครงการ</NavLink>
+                            <NavLink href="/job" currentPath={pathname}>จัดการงาน</NavLink>
+                            <NavLink href="/inspection-type" currentPath={pathname}>จัดการแผนงาน</NavLink>
+                            <NavLink href="/report" currentPath={pathname}>ลงข้อมูลแบบฟอร์ม</NavLink>
+                            <NavLink href="/plan" currentPath={pathname}>ตารางแผนงาน</NavLink>
+                            <NavLink href="/inspection" currentPath={pathname}>แสดงผลรายงาน</NavLink>
+                        </div>
+                    )}
                 </nav>
                 <div className="p-4 border-t border-gray-700 flex items-center justify-between">
                     <div className="flex items-center space-x-2">
