@@ -22,7 +22,7 @@ import {
     Switch,
 } from "@mui/material";
 import { showLoading } from "@/lib/loading";
-import { ProjectRow, CustomerRow } from "@/interfaces/master";
+import { ProjectRow } from "@/interfaces/master";
 import { showAlert, showConfirm, parseToInputDate, formatToThaiDate, formatDate } from "@/lib/fetcher";
 
 export default function ProjectListPage() {
@@ -31,14 +31,11 @@ export default function ProjectListPage() {
     const [open, setOpen] = React.useState(false);
     const [isEdit, setIsEdit] = React.useState(false);
     const [error, setError] = React.useState(false);
-    const [customers, setCustomers] = React.useState<CustomerRow[]>([]);
-    const customersRef = React.useRef<CustomerRow[]>([]);
 
     const [formData, setFormData] = React.useState<ProjectRow>({
         project_id: "",
         project_name: "",
         project_description: "",
-        customer_id: "",
         start_date: "",
         end_date: "",
         is_active: 1,
@@ -53,7 +50,7 @@ export default function ProjectListPage() {
             const res = await fetch("/api/auth/project-list");
             const data = await res.json();
             if (data.success) {
-                updateWithOrder(data.data);
+                setRows(data.data);
             }
         } catch (err) {
             console.error("Fetch error:", err);
@@ -62,39 +59,10 @@ export default function ProjectListPage() {
         }
     };
 
-    const fetchCustomers = async () => {
-        const res = await fetch("/api/auth/customer?active=true");
-        const data = await res.json();
-        if (data.success) {
-            setCustomers(data.data);
-            customersRef.current = data.data;   // <<< สำคัญ
-        }
-    };
-    // helper: เรียงใหม่ทุกครั้ง + เพิ่ม order + map customer_name
-    const updateWithOrder = (data: ProjectRow[]) => {
-        const sorted = [...data].sort(
-            (a, b) =>
-                new Date(b.updated_date || "").getTime() -
-                new Date(a.updated_date || "").getTime()
-        );
-
-        const withOrder = sorted.map((row, index) => {
-            const cust = customersRef.current.find(c => c.customer_id === row.customer_id); // <<< ใช้ ref
-            return {
-                ...row,
-                customer_name: cust ? cust.customer_name : "-",
-                order: index + 1,
-            };
-        });
-
-        setRows(withOrder);
-    };
-
     React.useEffect(() => {
         (async () => {
             showLoading(true);
             try {
-                await fetchCustomers();
                 await fetchProject();
             } finally {
                 showLoading(false);
@@ -108,7 +76,6 @@ export default function ProjectListPage() {
             project_id: "",
             project_name: "",
             project_description: "",
-            customer_id: "",
             start_date: "",
             end_date: "",
             is_active: 1,
@@ -134,7 +101,7 @@ export default function ProjectListPage() {
     const handleClose = () => setOpen(false);
 
     const handleSave = async () => {
-        if (!formData.project_name) {
+        if (!formData.project_name || !formData.start_date || !formData.end_date) {
             setError(true);
             return;
         }
@@ -222,7 +189,6 @@ export default function ProjectListPage() {
             align: "center",
         },
         { field: "project_name", headerName: "ชื่อโครงการ", flex: 1, headerAlign: "center", align: "left" },
-        { field: "customer_name", headerName: "ชื่อลูกค้า", flex: 1, headerAlign: "center", align: "left" },
         {
             field: "start_date",
             headerName: "วันที่เริ่ม",
@@ -313,13 +279,13 @@ export default function ProjectListPage() {
                         },
                     }}
                     rows={filteredRows}
-                    columns={columns.map((col) => ({ ...col, resizable: false }))}
+                    columns={columns}
                     initialState={{
                         pagination: { paginationModel: { pageSize: 5, page: 0 } },
                     }}
                     pageSizeOptions={[5, 10]}
                     disableRowSelectionOnClick
-                    getRowId={(row) => row.project_id} // ใช้ project_id แทน id
+                    getRowId={(row) => row.project_id}
                 />
             </div>
 
@@ -357,100 +323,11 @@ export default function ProjectListPage() {
                         margin="dense"
                         label="รายละเอียด"
                         fullWidth
-                        required
                         value={formData.project_description}
                         onChange={(e) => {
                             setFormData({ ...formData, project_description: e.target.value });
                         }}
-                        error={error && !formData.project_description}
-                        helperText={error && !formData.project_description ? "กรุณากรอกรายละเอียด" : ""}
                     />
-
-                    {/* Customer Select (react-select) */}
-                    <Box>
-                        <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
-                            ลูกค้า
-                        </label>
-
-                        <Select
-                            options={customers.map(c => ({
-                                value: c.customer_id,
-                                label: c.customer_name,
-                            }))}
-                            value={
-                                customers
-                                    .map(c => ({ value: c.customer_id, label: c.customer_name }))
-                                    .find(opt => opt.value === formData.customer_id) || null
-                            }
-                            onChange={(selected) =>
-                                setFormData({ ...formData, customer_id: selected?.value || "" })
-                            }
-                            placeholder="-- เลือกลูกค้า --"
-                            isClearable
-                            menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-                            styles={{
-                                control: (base, state) => ({
-                                    ...base,
-                                    backgroundColor: "#fff",
-                                    borderColor:
-                                        error && !formData.customer_id
-                                            ? "#d32f2f" // ❌ สีแดงเมื่อ error
-                                            : state.isFocused
-                                                ? "#3b82f6"
-                                                : "#d1d5db",
-                                    boxShadow: "none",
-                                    "&:hover": {
-                                        borderColor:
-                                            error && !formData.customer_id ? "#d32f2f" : "#9ca3af",
-                                    },
-                                }),
-                                menu: (base) => ({
-                                    ...base,
-                                    backgroundColor: "#fff",
-                                    boxShadow: "0 8px 24px rgba(0,0,0,.2)",
-                                    border: "1px solid #e5e7eb",
-                                }),
-                                menuPortal: (base) => ({
-                                    ...base,
-                                    zIndex: 2100,
-                                }),
-                                option: (base, state) => ({
-                                    ...base,
-                                    backgroundColor: state.isSelected
-                                        ? "#e5f2ff"
-                                        : state.isFocused
-                                            ? "#f3f4f6"
-                                            : "#fff",
-                                    color: "#111827",
-                                }),
-                                menuList: (base) => ({
-                                    ...base,
-                                    backgroundColor: "#fff",
-                                    paddingTop: 0,
-                                    paddingBottom: 0,
-                                }),
-                                singleValue: (base) => ({
-                                    ...base,
-                                    color: "#111827",
-                                }),
-                            }}
-                        />
-
-                        {/* ✅ helperText */}
-                        {error && !formData.customer_id && (
-                            <span
-                                style={{
-                                    color: "#d32f2f",
-                                    fontSize: "12px",
-                                    marginTop: 4,
-                                    display: "block",
-                                }}
-                            >
-                                กรุณาเลือกลูกค้า
-                            </span>
-                        )}
-                    </Box>
-
 
                     {/* Start & End Date in one row */}
                     <Box display="flex" gap={2} mt={2}>
@@ -488,6 +365,10 @@ export default function ProjectListPage() {
                             }
                             error={error && !formData.end_date}
                             helperText={error && !formData.end_date ? "กรุณาเลือกวันที่สิ้นสุด" : ""}
+                            // 👇 บรรทัดนี้สำคัญมาก!
+                            inputProps={{
+                                min: parseToInputDate(formData.start_date),
+                            }}
                         />
                     </Box>
                 </DialogContent>

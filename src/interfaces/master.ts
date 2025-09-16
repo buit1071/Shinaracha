@@ -2,8 +2,6 @@ export interface ProjectRow {
     project_id: string;
     project_name: string;
     project_description: string;
-    customer_id: string;
-    customer_name?: string;
     start_date: string;
     end_date: string;
     is_active: number;

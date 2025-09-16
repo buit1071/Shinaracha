@@ -40,7 +40,6 @@ export async function POST(req: Request) {
             project_id,
             project_name,
             project_description,
-            customer_id,
             start_date,
             end_date,
             is_active,
@@ -51,7 +50,6 @@ export async function POST(req: Request) {
             project_id?: string;
             project_name?: string;
             project_description?: string;
-            customer_id?: string;
             start_date?: string;
             end_date?: string;
             is_active?: number;
@@ -82,7 +80,6 @@ export async function POST(req: Request) {
           SET 
             project_name = ?, 
             project_description = ?, 
-            customer_id = ?, 
             is_active = ?, 
             updated_by = ?, 
             updated_date = NOW()
@@ -91,7 +88,6 @@ export async function POST(req: Request) {
                     [
                         project_name,
                         project_description ?? null,
-                        customer_id ?? null,
                         is_active ?? 1,
                         updated_by ?? "system",
                         project_id,
@@ -105,7 +101,6 @@ export async function POST(req: Request) {
           SET 
             project_name = ?, 
             project_description = ?, 
-            customer_id = ?, 
             start_date = ?, 
             end_date = ?, 
             is_active = ?, 
@@ -116,7 +111,6 @@ export async function POST(req: Request) {
                     [
                         project_name,
                         project_description ?? null,
-                        customer_id ?? null,
                         startDateSql,
                         endDateSql,
                         is_active ?? 1,
@@ -128,7 +122,7 @@ export async function POST(req: Request) {
 
             return NextResponse.json({
                 success: true,
-                message: "อัปเดตข้อมูลโครงการเรียบร้อย",
+                message: "อัปเดตข้อมูลเรียบร้อย",
                 project_id,
             });
         } else {
@@ -138,15 +132,14 @@ export async function POST(req: Request) {
             await query(
                 `
           INSERT INTO data_projects 
-            (project_id, project_name, project_description, customer_id, start_date, end_date, is_active, created_by, created_date, updated_by, updated_date) 
+            (project_id, project_name, project_description, start_date, end_date, is_active, created_by, created_date, updated_by, updated_date) 
           VALUES 
-            (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, NOW())
+            (?, ?, ?, ?, ?, ?, ?, NOW(), ?, NOW())
         `,
                 [
                     newProjectId,
                     project_name,
                     project_description ?? null,
-                    customer_id ?? null,
                     startDateSql,
                     endDateSql,
                     is_active ?? 1,
