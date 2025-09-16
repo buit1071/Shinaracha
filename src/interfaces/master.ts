@@ -185,6 +185,8 @@ export interface JobsRow {
     job_end_date: string;
     job_start_time: string;
     job_end_time: string;
+    start_date?: string;
+    end_date?: string;
     team_id: string;
     team_name?: string;
     status_id?: string;

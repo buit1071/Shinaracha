@@ -26,7 +26,8 @@ import {
     DialogContent,
     DialogTitle,
     FormControlLabel,
-    Checkbox, FormGroup, Accordion, AccordionSummary, AccordionDetails, Autocomplete
+    Checkbox,
+    Autocomplete
 } from "@mui/material";
 import Select from "react-select";
 import {
@@ -40,9 +41,10 @@ import {
     EquipmentBranchRow
 } from "@/interfaces/master";
 import { showLoading } from "@/lib/loading";
-import { formatToThaiDate, parseToInputDate, showAlert, showConfirm } from "@/lib/fetcher";
+import { formatToThaiDate, parseToInputDate, showAlert, showConfirm, formatDateTime } from "@/lib/fetcher";
 
 export default function JobPage() {
+    const DATE_COL_WIDTH = 170;
     const [rows, setRows] = React.useState<JobsRow[]>([]);
     const [teams, setTeams] = React.useState<TeamRow[]>([]);
     const [customers, setCustomers] = React.useState<CustomerRow[]>([]);
@@ -407,35 +409,56 @@ export default function JobPage() {
     };
 
     const columns: GridColDef<JobsRow>[] = [
-        { field: "order", headerName: "ลำดับ", width: 90, headerAlign: "center", align: "center" },
-        { field: "project_name", headerName: "โครงการ", flex: 1, headerAlign: "center", align: "left" },
-        { field: "job_name", headerName: "งาน", flex: 1, headerAlign: "center", align: "left" },
-        { field: "team_name", headerName: "ทีม", flex: 1, headerAlign: "center", align: "left" },
+        // เล็กลง
+        { field: "order", headerName: "ลำดับ", width: 70, headerAlign: "center", align: "center", resizable: false },
+
+        // ใหญ่ขึ้น
+        {
+            field: "project_name",
+            headerName: "โครงการ",
+            flex: 2.2, minWidth: 260,
+            headerAlign: "center", align: "left", resizable: false,
+        },
+        {
+            field: "job_name",
+            headerName: "งาน",
+            flex: 2.0, minWidth: 220,
+            headerAlign: "center", align: "left", resizable: false,
+        },
+
+        // ปานกลาง
+        { field: "customer_name", headerName: "ลูกค้า", flex: 1.2, minWidth: 160, headerAlign: "center", align: "left", resizable: false },
+        { field: "branch_name", headerName: "สาขา", flex: 1.2, minWidth: 160, headerAlign: "center", align: "left", resizable: false },
+        // { field: "team_name", headerName: "ทีม", flex: 1.0, minWidth: 140, headerAlign: "center", align: "left", resizable: false },
+
+        // วันที่: กว้างเท่ากัน ตายตัว
+        {
+            field: "start_date", headerName: "วันเวลาเริ่มต้น",
+            width: DATE_COL_WIDTH, headerAlign: "center", align: "center", resizable: false,
+            renderCell: ({ row }) => formatDateTime(row.start_date),
+        },
+        {
+            field: "end_date", headerName: "วันเวลาสิ้นสุด",
+            width: DATE_COL_WIDTH, headerAlign: "center", align: "center", resizable: false,
+            renderCell: ({ row }) => formatDateTime(row.end_date),
+        },
+
+        // เล็กลง
         {
             field: "status_name",
             headerName: "สถานะ",
-            flex: 1,
-            headerAlign: "center",
-            align: "center",
+            width: 110, headerAlign: "center", align: "center", resizable: false,
             renderCell: ({ value }) => (value && String(value).trim() ? value : "-"),
         },
         {
             field: "actions",
             headerName: "Action",
-            sortable: false,
-            filterable: false,
-            disableColumnMenu: true,
-            width: 150,
-            headerAlign: "center",
-            align: "center",
-            renderCell: (params: GridRenderCellParams<JobsRow>) => (
+            sortable: false, filterable: false, disableColumnMenu: true,
+            width: 120, headerAlign: "center", align: "center", resizable: false,
+            renderCell: (params) => (
                 <>
-                    <IconButton color="primary" onClick={() => handleOpenEdit(params.row)}>
-                        <EditIcon />
-                    </IconButton>
-                    <IconButton color="error" onClick={() => handleDelete(params.row.job_id)}>
-                        <DeleteIcon />
-                    </IconButton>
+                    <IconButton color="primary" onClick={() => handleOpenEdit(params.row)}><EditIcon /></IconButton>
+                    <IconButton color="error" onClick={() => handleDelete(params.row.job_id)}><DeleteIcon /></IconButton>
                 </>
             ),
         },

@@ -462,6 +462,13 @@ export default function EquipmentPage() {
                 <DataGrid
                     rows={filteredRows}
                     columns={columns}
+                    sx={{
+                        borderRadius: "0.5rem",
+                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                        "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": {
+                            outline: "none",
+                        },
+                    }}
                     initialState={{ pagination: { paginationModel: { pageSize: 5, page: 0 } } }}
                     pageSizeOptions={[5, 10]}
                     disableRowSelectionOnClick
@@ -771,14 +778,6 @@ export default function EquipmentPage() {
                                 equipment_name: formData.equipment_name,
                                 schema: schemaObj,
                             };
-
-
-                            // await fetch("/api/inspection/form-schema", {
-                            //     method: "POST",
-                            //     headers: { "Content-Type": "application/json" },
-                            //     body: JSON.stringify(payload),
-                            // });
-
                             handleClose();
                         }}
                     >
