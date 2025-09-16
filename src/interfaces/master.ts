@@ -102,8 +102,13 @@ export interface TeamRow {
 };
 export interface EquipmentRow {
     equipment_id: string;
+    equipment_code: string;
     equipment_name: string;
     description: string;
+    service_id: string;
+    service_name?: string;
+    zone_id: string;
+    zone_name?: string;
     image_limit?: number;
     is_active: number;
     created_by: string;

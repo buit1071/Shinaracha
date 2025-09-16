@@ -10,7 +10,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import IconButton from "@mui/material/IconButton";
-import Select from "react-select";
+import Select, { SingleValue } from "react-select";
 import dynamic from "next/dynamic";
 import {
     Box,
@@ -24,7 +24,7 @@ import {
 } from "@mui/material";
 import { showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
-import { EquipmentRow } from "@/interfaces/master";
+import { EquipmentRow, ServiceRow, ZoneRow } from "@/interfaces/master";
 import { builderViewWithCss } from "@react-form-builder/components-rsuite";
 import type { IFormStorage } from "@react-form-builder/designer";
 
@@ -68,7 +68,7 @@ class LocalFormStorage implements IFormStorage {
     }
 }
 
-export default function InspectionFormPage() {
+export default function EquipmentPage() {
     const storageRef = React.useRef<LocalFormStorage | null>(null);
     if (!storageRef.current) {
         storageRef.current = new LocalFormStorage({ components: [] });
@@ -78,16 +78,103 @@ export default function InspectionFormPage() {
     const [openEdit, setOpenEdit] = React.useState(false);
     const [openDetail, setOpenDetail] = React.useState(false);
     const [error, setError] = React.useState(false);
+    const [services, setServices] = React.useState<ServiceRow[]>([]);
+    const [zones, setZones] = React.useState<ZoneRow[]>([]);
+    const zonesAbortRef = React.useRef<AbortController | null>(null);
+    type Option = { value: string; label: string };
 
     const [formData, setFormData] = React.useState<EquipmentRow>({
         equipment_id: "",
+        equipment_code: "",
         equipment_name: "",
         description: "",
+        service_id: "",
+        service_name: "",
+        zone_id: "",
+        zone_name: "",
         image_limit: 0,
         is_active: 1,
         created_by: "admin",
         updated_by: "admin",
     });
+
+    const fetchService = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/inspection-form/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                // ถ้าต้องการกัน cache ฝั่งเบราว์เซอร์ เพิ่ม cache: "no-store"
+                body: JSON.stringify({ function: "services" }),
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                setServices(data.data || []);
+            } else {
+                console.error("โหลด services ไม่สำเร็จ:", data.message);
+            }
+        } catch (err) {
+            console.error("Fetch error:", err);
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    const fetchZoneAll = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/inspection-form/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "zonesAll" }),
+            });
+
+            const result = await res.json();
+            if (result.success && result.data) {
+                setZones(result.data || []);
+                showLoading(false);
+            }
+        } catch (err) {
+            showLoading(false);
+            console.error("fetch error:", err);
+        }
+    };
+
+    const fetchZonesByService = async (serviceId: string) => {
+        if (zonesAbortRef.current) zonesAbortRef.current.abort();
+
+        // เคลียร์ข้อมูลเก่าเมื่อ service เปลี่ยน
+        setZones([]);
+
+        if (!serviceId) return;
+
+        const ctrl = new AbortController();
+        zonesAbortRef.current = ctrl;
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/inspection-form/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "zonesByService", service_id: serviceId }),
+                signal: ctrl.signal,
+            });
+            const data = await res.json();
+            if (data?.success) {
+                setZones(data.data || []);
+            } else {
+                setZones([]);
+                console.error("zonesByService error:", data?.message);
+            }
+        } catch (err) {
+            if ((err as any).name !== "AbortError") {
+                console.error("zonesByService fetch error:", err);
+                setZones([]);
+            }
+        } finally {
+            showLoading(false);
+        }
+    };
 
     // โหลดข้อมูลและจัดเรียงใหม่
     const fecthEquipment = async () => {
@@ -119,14 +206,21 @@ export default function InspectionFormPage() {
     };
 
     React.useEffect(() => {
+        fetchService();
+        fetchZoneAll();
         fecthEquipment();
     }, []);
 
     const handleOpenAdd = () => {
         setFormData({
             equipment_id: "",
+            equipment_code: "",
             equipment_name: "",
             description: "",
+            service_id: "",
+            service_name: "",
+            zone_id: "",
+            zone_name: "",
             image_limit: 0,
             is_active: 1,
             created_by: "admin",
@@ -155,7 +249,10 @@ export default function InspectionFormPage() {
     const handleSave = async () => {
         if (
             !formData.equipment_name ||
-            !formData.image_limit
+            !formData.equipment_code ||
+            !formData.image_limit ||
+            !formData.service_id ||
+            !formData.zone_id
         ) {
             setError(true);
             return;
@@ -249,16 +346,51 @@ export default function InspectionFormPage() {
             width: 90,
             headerAlign: "center",
             align: "center",
+            resizable: false,
         },
-        { field: "equipment_name", headerName: "อุปกรณ์", flex: 1, headerAlign: "center", align: "center" },
-        { field: "image_limit", headerName: "จำนวนรูป", flex: 1, headerAlign: "center", align: "center" },
+        {
+            field: "equipment_name",
+            headerName: "อุปกรณ์",
+            flex: 2,              // 👈 กว้างสุด
+            minWidth: 260,
+            headerAlign: "center",
+            align: "left",
+            resizable: false,
+        },
+        {
+            field: "service_name",
+            headerName: "บริการ",
+            flex: 1.4,            // 👈 กว้างกว่าทั่วไป
+            minWidth: 200,
+            headerAlign: "center",
+            align: "center",
+            resizable: false,
+        },
+        {
+            field: "zone_name",
+            headerName: "การตรวจ",
+            flex: 1.4,            // 👈 กว้างกว่าทั่วไป
+            minWidth: 200,
+            headerAlign: "center",
+            align: "center",
+            resizable: false,
+        },
+        {
+            field: "image_limit",
+            headerName: "จำนวนรูป",
+            width: 120,           // 👈 ควบคุมขนาดตายตัว
+            headerAlign: "center",
+            align: "center",
+            resizable: false,
+        },
         {
             field: "is_active",
             headerName: "สถานะ",
-            flex: 1,
+            width: 120,           // 👈 ควบคุมขนาดตายตัว
             headerAlign: "center",
             align: "center",
-            renderCell: (params: GridRenderCellParams<EquipmentRow>) => (
+            resizable: false,
+            renderCell: (params) => (
                 <Switch
                     checked={params.row.is_active === 1}
                     onChange={() => toggleStatus(params.row)}
@@ -266,32 +398,17 @@ export default function InspectionFormPage() {
                 />
             ),
         },
-        // {
-        //     field: "detail",
-        //     headerName: "Detail",
-        //     sortable: false,
-        //     width: 150,
-        //     headerAlign: "center",
-        //     align: "center",
-        //     renderCell: (params: GridRenderCellParams<EquipmentRow>) => (
-        //         <IconButton
-        //             color="primary"
-        //             onClick={(e) => { e.stopPropagation(); handleOpenEditDetail(params.row); }}
-        //         >
-        //             <EditIcon />
-        //         </IconButton>
-        //     ),
-        // },
         {
             field: "actions",
             headerName: "Action",
             sortable: false,
             filterable: false,
             disableColumnMenu: true,
-            width: 150,
+            width: 150,           // 👈 ควบคุมขนาดตายตัว
             headerAlign: "center",
             align: "center",
-            renderCell: (params: GridRenderCellParams<EquipmentRow>) => (
+            resizable: false,
+            renderCell: (params) => (
                 <>
                     <IconButton
                         color="primary"
@@ -304,7 +421,8 @@ export default function InspectionFormPage() {
                         onClick={(e) => { e.stopPropagation(); handleDelete(params.row.equipment_id); }}
                     >
                         <DeleteIcon />
-                    </IconButton></>
+                    </IconButton>
+                </>
             ),
         },
     ];
@@ -325,7 +443,7 @@ export default function InspectionFormPage() {
         <div className="min-h-[96vh] grid place-items-center bg-gray-50">
             {/* Header Bar */}
             <div className="h-[6vh] w-full bg-white shadow-md flex items-center justify-between px-4 text-black font-semibold rounded-lg">
-                อุปกรณ์
+                ระบบ & อุปกรณ์
                 <div className="flex gap-2 items-center">
                     <TextField
                         size="small"
@@ -342,18 +460,9 @@ export default function InspectionFormPage() {
             {/* Table */}
             <div className="h-[88vh] w-full bg-white">
                 <DataGrid
-                    sx={{
-                        borderRadius: "0.5rem",
-                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                        "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": {
-                            outline: "none",
-                        },
-                    }}
                     rows={filteredRows}
-                    columns={columns.map((col) => ({ ...col, resizable: false }))}
-                    initialState={{
-                        pagination: { paginationModel: { pageSize: 5, page: 0 } },
-                    }}
+                    columns={columns}
+                    initialState={{ pagination: { paginationModel: { pageSize: 5, page: 0 } } }}
                     pageSizeOptions={[5, 10]}
                     disableRowSelectionOnClick
                     getRowId={(row) => row.equipment_id}
@@ -376,6 +485,20 @@ export default function InspectionFormPage() {
                             disabled
                         />
                     )}
+
+                    <TextField
+                        size="small"
+                        margin="dense"
+                        label="รหัสอุปกรณ์"
+                        fullWidth
+                        required
+                        value={formData.equipment_code}
+                        onChange={(e) => {
+                            setFormData({ ...formData, equipment_code: e.target.value });
+                        }}
+                        error={error && !formData.equipment_code}
+                        helperText={error && !formData.equipment_code ? "กรุณากรอกรหัสอุปกรณ์" : ""}
+                    />
 
                     <TextField
                         size="small"
@@ -428,6 +551,173 @@ export default function InspectionFormPage() {
                             error={error && !formData.image_limit}
                             helperText={error && !formData.image_limit ? "กรุณาระบุจำนวนรูป" : ""}
                         />
+                    </Box>
+
+                    <Box>
+                        <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
+                            การบริการ
+                        </label>
+                        <Select
+                            options={services.map(c => ({ value: c.service_id, label: c.service_name }))}
+                            value={services.map(c => ({ value: c.service_id, label: c.service_name }))
+                                .find(opt => opt.value === formData.service_id) || null}
+                            onChange={async (selected) => {
+                                const service_id = selected?.value || "";
+
+                                setFormData({
+                                    ...formData,
+                                    service_id,
+                                });
+
+                                // โหลดโซนของบริการ
+                                await fetchZonesByService(service_id);
+                            }}
+                            placeholder="-- เลือกการบริการ --"
+                            isClearable
+                            menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                            styles={{
+                                control: (base, state) => ({
+                                    ...base,
+                                    backgroundColor: "#fff",
+                                    borderColor:
+                                        error && !formData.service_id
+                                            ? "#d32f2f" // ❌ สีแดงเมื่อ error
+                                            : state.isFocused
+                                                ? "#3b82f6"
+                                                : "#d1d5db",
+                                    boxShadow: "none",
+                                    "&:hover": {
+                                        borderColor:
+                                            error && !formData.service_id ? "#d32f2f" : "#9ca3af",
+                                    },
+                                }),
+                                menu: (base) => ({
+                                    ...base,
+                                    backgroundColor: "#fff",
+                                    boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                    border: "1px solid #e5e7eb",
+                                }),
+                                menuPortal: (base) => ({
+                                    ...base,
+                                    zIndex: 2100,
+                                }),
+                                option: (base, state) => ({
+                                    ...base,
+                                    backgroundColor: state.isSelected
+                                        ? "#e5f2ff"
+                                        : state.isFocused
+                                            ? "#f3f4f6"
+                                            : "#fff",
+                                    color: "#111827",
+                                }),
+                                menuList: (base) => ({
+                                    ...base,
+                                    backgroundColor: "#fff",
+                                    paddingTop: 0,
+                                    paddingBottom: 0,
+                                }),
+                                singleValue: (base) => ({
+                                    ...base,
+                                    color: "#111827",
+                                }),
+                            }}
+                        />
+
+                        {/* ✅ helperText */}
+                        {error && !formData.service_id && (
+                            <span
+                                style={{
+                                    color: "#d32f2f",
+                                    fontSize: "12px",
+                                    marginTop: 4,
+                                    display: "block",
+                                }}
+                            >
+                                กรุณาเลือกการบริการ
+                            </span>
+                        )}
+                    </Box>
+
+                    <Box>
+                        <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
+                            การตรวจ
+                        </label>
+                        <Select
+                            options={zones.map(c => ({ value: c.zone_id, label: c.zone_name }))}
+                            value={zones.map(c => ({ value: c.zone_id, label: c.zone_name }))
+                                .find(opt => opt.value === formData.zone_id) || null}
+                            onChange={(selected: SingleValue<Option>) =>
+                                setFormData(prev => ({
+                                    ...prev,
+                                    zone_id: selected?.value ?? "",
+                                    zone_name: selected?.label ?? "",
+                                }))
+                            }
+                            placeholder="-- เลือกการตรวจ --"
+                            isDisabled={!formData.service_id}
+                            isClearable
+                            menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                            styles={{
+                                control: (base, state) => ({
+                                    ...base,
+                                    backgroundColor: "#fff",
+                                    borderColor:
+                                        error && !formData.zone_id
+                                            ? "#d32f2f" // ❌ สีแดงเมื่อ error
+                                            : state.isFocused
+                                                ? "#3b82f6"
+                                                : "#d1d5db",
+                                    boxShadow: "none",
+                                    "&:hover": {
+                                        borderColor:
+                                            error && !formData.zone_id ? "#d32f2f" : "#9ca3af",
+                                    },
+                                }),
+                                menu: (base) => ({
+                                    ...base,
+                                    backgroundColor: "#fff",
+                                    boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                    border: "1px solid #e5e7eb",
+                                }),
+                                menuPortal: (base) => ({
+                                    ...base,
+                                    zIndex: 2100,
+                                }),
+                                option: (base, state) => ({
+                                    ...base,
+                                    backgroundColor: state.isSelected
+                                        ? "#e5f2ff"
+                                        : state.isFocused
+                                            ? "#f3f4f6"
+                                            : "#fff",
+                                    color: "#111827",
+                                }),
+                                menuList: (base) => ({
+                                    ...base,
+                                    backgroundColor: "#fff",
+                                    paddingTop: 0,
+                                    paddingBottom: 0,
+                                }),
+                                singleValue: (base) => ({
+                                    ...base,
+                                    color: "#111827",
+                                }),
+                            }}
+                        />
+
+                        {/* ✅ helperText */}
+                        {error && !formData.zone_id && (
+                            <span
+                                style={{
+                                    color: "#d32f2f",
+                                    fontSize: "12px",
+                                    marginTop: 4,
+                                    display: "block",
+                                }}
+                            >
+                                กรุณาเลือกการตรวจ
+                            </span>
+                        )}
                     </Box>
                 </DialogContent>
                 <DialogActions>
@@ -482,7 +772,6 @@ export default function InspectionFormPage() {
                                 schema: schemaObj,
                             };
 
-                            console.log("📦 PAYLOAD:", payload);
 
                             // await fetch("/api/inspection/form-schema", {
                             //     method: "POST",
