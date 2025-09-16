@@ -7,25 +7,33 @@ export async function POST(req: Request) {
 
         // รองรับหลายคีย์ (กันยิงมาเป็น entity/function)
         const fn = body.fn ?? body.function ?? body.entity;
-        const id = String(body.id ?? "").trim();
-        const service_inspec_id = String(body.service_inspec_id ?? "").trim();
+        const row_id = String(body.row_id ?? "").trim();
 
-        if (!id || !service_inspec_id || !fn) {
+        if (!row_id || !fn) {
             return NextResponse.json(
-                { success: false, message: "กรุณาส่ง id, branch_id และ function" },
+                { success: false, message: "กรุณาส่ง row_id และ function" },
                 { status: 400 }
             );
         }
 
         if (fn === "equipment") {
+            const row_id = String(body.row_id ?? "").trim();
+            if (!row_id) {
+                return NextResponse.json(
+                    { success: false, message: "กรุณาส่ง row_id" },
+                    { status: 400 }
+                );
+            }
+
             const result: any = await query(
-                `DELETE FROM data_branch_equipments WHERE equipment_id = ? AND service_inspec_id = ?`,
-                [id, service_inspec_id]
+                `DELETE FROM data_job_equipments WHERE row_id = ?`,
+                [row_id]
             );
-            const affected = result?.affectedRows ?? result?.[0]?.affectedRows ?? 0;
+
+            const affected =
+                result?.affectedRows ?? result?.[0]?.affectedRows ?? 0;
 
             if (affected === 0) {
-                // ไม่พบข้อมูลให้ลบ -> แจ้ง 400 ตามโปรโตคอลฝั่ง FE
                 return NextResponse.json(
                     { success: false, message: "ไม่พบข้อมูลที่จะลบ" },
                     { status: 400 }

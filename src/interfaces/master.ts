@@ -293,7 +293,8 @@ export interface ContactRow {
     order?: number;
 }
 export interface EquipmentBranchRow {
-    service_inspec_id: string;
+    row_id: string;
+    job_id: string;
     equipment_id: string;
     equipment_name?: string;
     is_active: number;
