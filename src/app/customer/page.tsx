@@ -319,7 +319,7 @@ export default function CustomersPage() {
     }));
 
   return (
-    <div className="min-h-[96vh] grid place-items-center bg-gray-50 w-full">
+    <div className="w-full h-full flex flex-col bg-gray-50 justify-between w-full">
       {view?.type === "detail" ? (
         <CustomerBranch customerId={view.id} onBack={backToList} />
       ) : (

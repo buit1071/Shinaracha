@@ -15,7 +15,7 @@ export default function DashboardPage() {
   // }, [router]);
 
   return (
-    <div className="min-h-[96vh] grid place-items-center bg-gray-50">
+    <div className="w-full h-full flex flex-col bg-gray-50 justify-between">
       
     </div>
   );

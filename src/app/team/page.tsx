@@ -516,7 +516,7 @@ export default function ProjectListPage() {
     }, [empStatus]);
 
     return (
-        <div className="min-h-[96vh] grid place-items-center bg-gray-50">
+        <div className="w-full h-full flex flex-col bg-gray-50 justify-between">
             <div className="h-[6vh] w-full bg-white shadow-md flex items-center justify-between px-4 text-black font-semibold rounded-lg">
                 Team
                 <div className="flex gap-2 items-center">
