@@ -124,7 +124,7 @@ export default function SectionFourDetails() {
     };
 
     return (
-        <section className="space-y-8 text-gray-900">
+        <section className="space-y-8 text-gray-900 p-2">
             {/* ========= ตารางที่ 1 ========= */}
             <div>
                 <div className="font-semibold mb-2">1. การตรวจสอบความมั่นคงแข็งแรงของป้าย</div>

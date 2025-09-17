@@ -13,7 +13,7 @@ export async function GET() {
         me.service_id,
         COALESCE(ms.service_name, '') AS service_name,   -- จาก master_services
         me.zone_id,
-        COALESCE(z.zone_name, '')    AS zone_name,       -- จาก data_service_zone
+        COALESCE(z.zone_name, '')    AS zone_name,       -- จาก data_service_form
         me.image_limit,
         me.is_active,
         me.created_by,
@@ -22,7 +22,7 @@ export async function GET() {
         me.updated_date
       FROM master_equipments AS me
       LEFT JOIN master_services     AS ms ON ms.service_id = me.service_id
-      LEFT JOIN data_service_zone   AS z  ON z.zone_id    = me.zone_id
+      LEFT JOIN data_service_form   AS z  ON z.zone_id    = me.zone_id
       ORDER BY me.updated_date DESC, me.created_date DESC
     `);
 

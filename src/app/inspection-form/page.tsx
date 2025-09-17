@@ -221,7 +221,7 @@ export default function InspectionFormPage() {
         },
         {
             field: "service_name",
-            headerName: "ชื่อ Service",
+            headerName: "บริการ",
             flex: 1,
             headerAlign: "center",
             align: "center",
@@ -306,7 +306,7 @@ export default function InspectionFormPage() {
                 <>
                     {/* Header Bar */}
                     <div className="h-[6vh] w-full bg-white shadow-md flex items-center justify-between px-4 text-black font-semibold rounded-lg">
-                        Service
+                        บริการ
                         <div className="flex gap-2 items-center">
                             <TextField
                                 size="small"
@@ -359,7 +359,7 @@ export default function InspectionFormPage() {
                             <TextField
                                 size="small"
                                 margin="dense"
-                                label="ชื่อ Service"
+                                label="บริการ"
                                 fullWidth
                                 required
                                 value={formData.service_name}
@@ -368,7 +368,7 @@ export default function InspectionFormPage() {
                                     if (error) setError(false);
                                 }}
                                 error={error && !formData.service_name}
-                                helperText={error && !formData.service_name ? "กรุณากรอกชื่อ Service" : ""}
+                                helperText={error && !formData.service_name ? "กรุณากรอกชื่อบริการ" : ""}
                             />
 
                             <Box mt={2} display="flex" alignItems="center" gap={2}>

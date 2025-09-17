@@ -66,7 +66,7 @@ export async function POST(req: Request) {
                 `
         SELECT zone_id, service_id, zone_name, is_active,
                created_by, created_date, updated_by, updated_date
-        FROM data_service_zone
+        FROM data_service_form
         WHERE service_id = ?
         ORDER BY created_date DESC
         `,
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
             const rows = await query(
                 `
         SELECT *
-        FROM data_service_zone
+        FROM data_service_form
         ORDER BY created_date DESC
         `,
             );
@@ -96,7 +96,7 @@ export async function POST(req: Request) {
 
             const rows = await query(
                 `SELECT zone_id, zone_name 
-     FROM data_service_zone
+     FROM data_service_form
      WHERE zone_id = ?`,
                 [body.zone_id]
             );

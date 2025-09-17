@@ -207,7 +207,7 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
       align: "center",
     },
     {
-      field: "zone_name", headerName: "Zone", flex: 1, headerAlign: "center", align: "left",
+      field: "zone_name", headerName: "ฟอร์ม", flex: 1, headerAlign: "center", align: "left",
       renderCell: (params: GridRenderCellParams<DataZonesRow>) => (
         <button
           onClick={() => openDetail(params.row.zone_id)}
@@ -263,7 +263,7 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
                 <ArrowBackIcon />
               </IconButton>
               <h2 className="text-xl font-bold text-gray-800 ml-5">
-                Service : <span className="text-blue-900">{serviceName}</span>
+                บริการ : <span className="text-blue-900">{serviceName}</span>
               </h2>
             </div>
             <div className="flex gap-2 items-center">

@@ -41,7 +41,7 @@ import {
     EquipmentBranchRow
 } from "@/interfaces/master";
 import { showLoading } from "@/lib/loading";
-import { formatToThaiDate, parseToInputDate, showAlert, showConfirm, formatDateTime } from "@/lib/fetcher";
+import { formatToThaiDate, parseToInputDate, showAlert, showConfirm, formatDate } from "@/lib/fetcher";
 
 export default function JobPage() {
     const DATE_COL_WIDTH = 170;
@@ -433,14 +433,14 @@ export default function JobPage() {
 
         // วันที่: กว้างเท่ากัน ตายตัว
         {
-            field: "start_date", headerName: "วันเวลาเริ่มต้น",
+            field: "job_start_date", headerName: "วันเริ่มต้น",
             width: DATE_COL_WIDTH, headerAlign: "center", align: "center", resizable: false,
-            renderCell: ({ row }) => formatDateTime(row.start_date),
+            renderCell: (params) => formatDate(params.row.job_start_date),
         },
         {
-            field: "end_date", headerName: "วันเวลาสิ้นสุด",
+            field: "job_end_date", headerName: "วันสิ้นสุด",
             width: DATE_COL_WIDTH, headerAlign: "center", align: "center", resizable: false,
-            renderCell: ({ row }) => formatDateTime(row.end_date),
+            renderCell: (params) => formatDate(params.row.job_end_date),
         },
 
         // เล็กลง
@@ -950,83 +950,83 @@ export default function JobPage() {
                         </Box>
                     </Box>
 
-                    <Box
-                        sx={{
-                            mt: 2,
-                            display: "grid",
-                            gridTemplateColumns: "1fr 1fr 1fr",
-                            gap: 2,
-                        }}
-                    >
-                        <TextField
-                            size="small"
-                            label="วันที่เริ่มต้น"
-                            type="date"
-                            fullWidth
-                            InputLabelProps={{ shrink: true }}
-                            value={parseToInputDate(formData.job_start_date ?? "")}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    job_start_date: formatToThaiDate(e.target.value),
-                                })
-                            }
-                            error={error && !formData.job_start_date}
-                            helperText={error && !formData.job_start_date ? "กรุณาเลือกวันที่เริ่มต้น" : ""}
-                        />
+                    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">
+                        <Box
+                            sx={{
+                                mt: 2,
+                                display: "grid",
+                                // มือถือ: 1 คอลัมน์, แท็บเล็ต: 2 คอลัมน์ (วัน/เวลา), จอใหญ่: 4 คอลัมน์ (วัน,เวลา,วัน,เวลา)
+                                gridTemplateColumns: {
+                                    xs: "1fr",
+                                    sm: "2fr 1fr",
+                                    md: "2fr 1fr 2fr 1fr", // เวลาเล็กกว่าวัน (2:1)
+                                },
+                                gap: 2,
+                                alignItems: "center",
+                            }}
+                        >
+                            {/* วันเริ่ม */}
+                            <TextField
+                                size="small"
+                                label="วันที่เริ่มต้น"
+                                type="date"
+                                fullWidth
+                                InputLabelProps={{ shrink: true }}
+                                value={parseToInputDate(formData.job_start_date ?? "")}
+                                onChange={(e) => setFormData({ ...formData, job_start_date: formatToThaiDate(e.target.value) })}
+                                error={error && !formData.job_start_date}
+                                helperText={error && !formData.job_start_date ? "กรุณาเลือกวันที่เริ่มต้น" : ""}
+                            />
 
-                        <TextField
-                            size="small"
-                            label="วันที่สิ้นสุด"
-                            type="date"
-                            fullWidth
-                            InputLabelProps={{ shrink: true }}
-                            value={parseToInputDate(formData.job_end_date ?? "")}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    job_end_date: formatToThaiDate(e.target.value),
-                                })
-                            }
-                            error={error && !formData.job_end_date}
-                            helperText={error && !formData.job_end_date ? "กรุณาเลือกวันที่สิ้นสุด" : ""}
-                        />
-                        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">
-                            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-                                <TimePicker
-                                    label="เวลาเริ่ม"
-                                    ampm={false}                // ✅ บังคับ 24 ชม.
-                                    timeSteps={{ hours: 1, minutes: 1 }}
-                                    value={formData.job_start_time ? dayjs(formData.job_start_time, 'HH:mm') : null}
-                                    onChange={(v) => setFormData({ ...formData, job_start_time: v ? v.format('HH:mm') : '' })}
-                                    slotProps={{
-                                        textField: {
-                                            size: 'small',
-                                            fullWidth: true,
-                                            error: error && !formData.job_start_time,
-                                            helperText: error && !formData.job_start_time ? 'กรุณาเลือกเวลาเริ่มต้น' : '',
-                                        },
-                                    }}
-                                />
+                            {/* เวลาเริ่ม */}
+                            <TimePicker
+                                label="เวลาเริ่ม"
+                                ampm={false}
+                                timeSteps={{ hours: 1, minutes: 1 }}
+                                value={formData.job_start_time ? dayjs(formData.job_start_time, "HH:mm") : null}
+                                onChange={(v) => setFormData({ ...formData, job_start_time: v ? v.format("HH:mm") : "" })}
+                                slotProps={{
+                                    textField: {
+                                        size: "small",
+                                        fullWidth: true,
+                                        error: error && !formData.job_start_time,
+                                        helperText: error && !formData.job_start_time ? "กรุณาเลือกเวลาเริ่มต้น" : "",
+                                    },
+                                }}
+                            />
 
-                                <TimePicker
-                                    label="เวลาสิ้นสุด"
-                                    ampm={false}                // ✅ ไม่มี AM/PM
-                                    timeSteps={{ hours: 1, minutes: 1 }}
-                                    value={formData.job_end_time ? dayjs(formData.job_end_time, 'HH:mm') : null}
-                                    onChange={(v) => setFormData({ ...formData, job_end_time: v ? v.format('HH:mm') : '' })}
-                                    slotProps={{
-                                        textField: {
-                                            size: 'small',
-                                            fullWidth: true,
-                                            error: error && !formData.job_end_time,
-                                            helperText: error && !formData.job_end_time ? 'กรุณาเลือกเวลาสิ้นสุด' : '',
-                                        },
-                                    }}
-                                />
-                            </Box>
-                        </LocalizationProvider>
-                    </Box>
+                            {/* วันสิ้น */}
+                            <TextField
+                                size="small"
+                                label="วันที่สิ้นสุด"
+                                type="date"
+                                fullWidth
+                                InputLabelProps={{ shrink: true }}
+                                value={parseToInputDate(formData.job_end_date ?? "")}
+                                onChange={(e) => setFormData({ ...formData, job_end_date: formatToThaiDate(e.target.value) })}
+                                inputProps={{ min: parseToInputDate(formData.job_start_date ?? "") }}
+                                error={error && !formData.job_end_date}
+                                helperText={error && !formData.job_end_date ? "กรุณาเลือกวันที่สิ้นสุด" : ""}
+                            />
+
+                            {/* เวลาสิ้น */}
+                            <TimePicker
+                                label="เวลาสิ้นสุด"
+                                ampm={false}
+                                timeSteps={{ hours: 1, minutes: 1 }}
+                                value={formData.job_end_time ? dayjs(formData.job_end_time, "HH:mm") : null}
+                                onChange={(v) => setFormData({ ...formData, job_end_time: v ? v.format("HH:mm") : "" })}
+                                slotProps={{
+                                    textField: {
+                                        size: "small",
+                                        fullWidth: true,
+                                        error: error && !formData.job_end_time,
+                                        helperText: error && !formData.job_end_time ? "กรุณาเลือกเวลาสิ้นสุด" : "",
+                                    },
+                                }}
+                            />
+                        </Box>
+                    </LocalizationProvider>
 
                     <FormControlLabel
                         control={

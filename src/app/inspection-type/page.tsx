@@ -149,7 +149,7 @@ export default function InspectionTypePage() {
             headerAlign: "center",
             align: "center",
         },
-        { field: "service_name", headerName: "ชื่อ Service", flex: 1, headerAlign: "center", align: "left" },
+        { field: "service_name", headerName: "บริการ", flex: 1, headerAlign: "center", align: "left" },
         { field: "inspection_duration", headerName: "ระยะเวลาที่ใช้ในการตรวจ (วัน)", flex: 1, headerAlign: "center", align: "center" },
         { field: "inspections_per_year", headerName: "จำนวนครั้งในการตรวจต่อปี (ครั้ง / ปี)", flex: 1, headerAlign: "center", align: "center" },
         {
@@ -234,7 +234,7 @@ export default function InspectionTypePage() {
                     <TextField
                         size="small"
                         margin="dense"
-                        label="ชื่อ Service"
+                        label="บริการ"
                         fullWidth
                         required
                         disabled
@@ -243,7 +243,7 @@ export default function InspectionTypePage() {
                             setFormData({ ...formData, service_name: e.target.value });
                         }}
                         error={error && !formData.service_name}
-                        helperText={error && !formData.service_name ? "กรุณากรอกชื่อ Service" : ""}
+                        helperText={error && !formData.service_name ? "กรุณากรอกชื่อบริการ" : ""}
                     />
 
                     {/* ระยะเวลาที่ใช้ในการตรวจ (วัน) */}

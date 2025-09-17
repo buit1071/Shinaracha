@@ -2,7 +2,7 @@ import * as React from "react";
 
 export default function SectionOneDetails() {
     return (
-        <div className="text-black leading-7 space-y-4">
+        <div className="text-black leading-7 space-y-4 p-2">
             {/* 1.1 */}
             <h3 className="text-lg font-semibold">1.1 ในแผนการตรวจสอบและรายละเอียดการตรวจสอบป้ายประจำปีฉบับนี้</h3>
 

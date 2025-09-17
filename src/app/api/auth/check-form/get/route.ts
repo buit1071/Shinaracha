@@ -39,7 +39,7 @@ export async function POST(req: Request) {
           e.created_date,
           e.updated_date
         FROM data_service_equipment e
-        LEFT JOIN data_service_zone z ON z.zone_id = e.zone_id
+        LEFT JOIN data_service_form z ON z.zone_id = e.zone_id
         WHERE e.branch_id = ?
         ORDER BY z.zone_name ASC, e.created_date DESC
         `,

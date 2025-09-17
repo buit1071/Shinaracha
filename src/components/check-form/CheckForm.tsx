@@ -3,137 +3,192 @@
 import * as React from "react";
 import Select, { SingleValue } from "react-select";
 import { showLoading } from "@/lib/loading";
-import type { SelectForm } from "@/interfaces/master";
+import type { SelectForm, EquipmentRow, ServiceRow, ZoneRow } from "@/interfaces/master";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import IconButton from "@mui/material/IconButton";
-import CheckLabelForm from "@/components/check-form/forms/CheckLabelForm";
+import {
+    DataGrid,
+    GridColDef,
+    GridRenderCellParams
+} from "@mui/x-data-grid";
+import {
+    TextField,
+} from "@mui/material";
+import CheckLabelForm from "@/components/check-form/forms/form1-3/CheckLabelForm";
 
 // ---------- Props ----------
 type Props = {
-    branchId: string;
+    jobId: string;
     onBack: () => void;
 };
 
 // ---------- Shared types ----------
 type Option = { value: string; label: string };
-type FormProps = { branchId: string; onBack: () => void };
 
-// ---------- ตัวอย่างฟอร์ม (แทนที่ด้วยฟอร์มจริงของคุณได้) ----------
-// ---------- แผนที่ zone_id -> Component (เพิ่มได้เรื่อยๆ) ----------
-const formRegistry: Record<string, React.FC<FormProps>> = {
-    "SERZ-65707609": CheckLabelForm,
-};
-
-export default function CheckForm({ branchId, onBack }: Props) {
+export default function CheckForm({ jobId, onBack }: Props) {
+    const backToList = () => setView(null);
+    const [jobName, setjobName] = React.useState<string>("");
     const [forms, setForms] = React.useState<SelectForm[]>([]);
     const [selectedForm, setSelectedForm] = React.useState<Option | null>(null);
-    const [showForm, setShowForm] = React.useState(false);
+    const [rows, setRows] = React.useState<EquipmentRow[]>([]);
+    const [searchText, setSearchText] = React.useState("");
+    const [view, setView] = React.useState<null | { type: "detail"; id: string; name: string }>(null);
 
-    // ทำ options ให้ label เป็น string เสมอ
-    const formOptions: Option[] = (forms ?? []).map((p) => ({
-        value: String(p.zone_id),
-        label: String(p.zone_name ?? "ไม่ระบุโซน"),
-    }));
-
-    // โหลดรายการฟอร์มตามสาขา
-    const fetchServiceZone = React.useCallback(async () => {
-        showLoading(true);
+    const fetchJobName = async () => {
         try {
-            const res = await fetch("/api/auth/check-form/get", {
+            const res = await fetch("/api/auth/job/get", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "serviceZone", branch_id: branchId }),
+                body: JSON.stringify({ function: "jobById", job_id: jobId }),
+            });
+
+            const result = await res.json();
+            if (result.success && result.data) {
+                setjobName(result.data.job_name);
+            }
+        } catch (err) {
+            console.error("fetch job name error:", err);
+        }
+    };
+
+    const fecthEquipmentByJobId = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/job/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "equipmentByJobId", job_id: jobId }),
             });
             const data = await res.json();
-            if (data?.success) setForms(data.data || []);
-            else setForms([]);
+            if (data.success) {
+                setRows(data.data);
+            }
         } catch (err) {
             console.error("Fetch error:", err);
-            setForms([]);
         } finally {
             showLoading(false);
         }
-    }, [branchId]);
+    };
 
-    // เปลี่ยนสาขา -> รีเซ็ตสถานะ + โหลดใหม่
     React.useEffect(() => {
-        if (!branchId) return;
-        setSelectedForm(null);
-        setShowForm(false);
-        fetchServiceZone();
-    }, [branchId, fetchServiceZone]);
+        if (!jobId) return;
+        fetchJobName();
+        fecthEquipmentByJobId();
+    }, [jobId]);
 
-    const zoneId = selectedForm?.value;
-    const ActiveForm = zoneId ? formRegistry[zoneId] : undefined;
+    const openDetail = React.useCallback((zone_id: string) => {
+        const row = rows.find(r => r.zone_id === zone_id);
+        if (!row) {
+            console.warn("job not found:", zone_id);
+            return;
+        }
+        setView({ type: "detail", id: row.zone_id, name: row.equipment_name });
+    }, [rows]);
+
+    const columns: GridColDef<EquipmentRow>[] = [
+        {
+            field: "order",
+            headerName: "ลำดับ",
+            width: 90,
+            headerAlign: "center",
+            align: "center",
+            resizable: false,
+        },
+        {
+            field: "equipment_name",
+            headerName: "อุปกรณ์",
+            flex: 2,              // 👈 กว้างสุด
+            minWidth: 260,
+            headerAlign: "center",
+            align: "left",
+            resizable: false,
+            renderCell: (params: GridRenderCellParams<EquipmentRow>) => (
+                <button
+                    onClick={() => openDetail(params.row.zone_id)}
+                    className="hover:no-underline text-blue-600 hover:opacity-80 cursor-pointer"
+                    title="เปิดรายละเอียด"
+                >
+                    {params.row.equipment_name}
+                </button>
+            ),
+        },
+        {
+            field: "zone_name",
+            headerName: "การตรวจ",
+            flex: 1.4,            // 👈 กว้างกว่าทั่วไป
+            minWidth: 200,
+            headerAlign: "center",
+            align: "center",
+            resizable: false,
+        },
+        {
+            field: "actions",
+            headerName: "Action",
+            sortable: false,
+            filterable: false,
+            disableColumnMenu: true,
+            width: 150,           // 👈 ควบคุมขนาดตายตัว
+            headerAlign: "center",
+            align: "center",
+            resizable: false,
+        },
+    ];
+
+    const filteredRows = rows
+        .filter((row) =>
+            Object.values(row).some((value) =>
+                String(value).toLowerCase().includes(searchText.toLowerCase())
+            )
+        )
+        .map((row, index) => ({
+            ...row,
+            order: index + 1,
+        }));
 
     return (
         <>
-            {/* Header bar */}
-            <div className="h-[6vh] flex items-center justify-between px-4 py-2 bg-white shadow-md mb-2 rounded-lg">
-                <div className="flex items-center">
-                    <IconButton onClick={onBack} color="primary">
-                        <ArrowBackIcon />
-                    </IconButton>
-                    <h2 className="text-xl font-bold text-gray-800 ml-5">ลงข้อมูลแบบฟอร์ม</h2>
-                </div>
-
-                <div className="flex gap-2 items-center">
-                    <Select<Option, false>
-                        options={formOptions}
-                        value={selectedForm}
-                        onChange={(opt: SingleValue<Option>) => {
-                            setSelectedForm(opt ?? null);
-                            setShowForm(!!opt); // เลือก = true, เคลียร์ = false
-                        }}
-                        placeholder="-- เลือกฟอร์มเอกสาร --"
-                        isClearable
-                        styles={{
-                            container: (base) => ({
-                                ...base,
-                                width: 400,
-                                flex: "0 0 400px",
-                            }),
-                            control: (base) => ({
-                                ...base,
-                                minHeight: 40,
-                                fontSize: 14,
-                            }),
-                            option: (base, state) => ({
-                                ...base,
-                                color: "#000",
-                                fontSize: 14,
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                backgroundColor: state.isSelected
-                                    ? "rgba(30,144,255,0.15)"
-                                    : state.isFocused
-                                        ? "rgba(30,144,255,0.08)"
-                                        : base.backgroundColor,
-                            }),
-                            singleValue: (base) => ({ ...base, color: "#000", fontSize: 14 }),
-                            input: (base) => ({ ...base, color: "#000", fontSize: 14 }),
-                            placeholder: (base) => ({ ...base, color: "#666", fontSize: 14 }),
-                            menu: (base) => ({ ...base, zIndex: 20 }),
-                        }}
-                    />
-                </div>
-            </div>
-
-            {/* Content area */}
-            <div className="h-[88vh] w-full bg-white overflow-auto">
-                {!showForm ? (
-                    <div className="h-full grid place-items-center text-gray-400">
-                        เลือกฟอร์มเอกสารเพื่อเริ่มต้น
+            {view?.type === "detail" ? (
+                <>
+                    <CheckLabelForm formId={view.id} jobId={jobId} name={view.name} onBack={backToList} />
+                </>
+            ) : (
+                <>
+                    {/* Header bar */}
+                    <div className="h-[6vh] flex items-center justify-between px-4 py-2 bg-white shadow-md mb-2 rounded-lg">
+                        <div className="flex items-center">
+                            <IconButton onClick={onBack} color="primary">
+                                <ArrowBackIcon />
+                            </IconButton>
+                            <h2 className="text-xl font-bold text-blue-900 ml-5">{jobName}</h2>
+                        </div>
+                        <div className="flex gap-2 items-center">
+                            <TextField
+                                size="small"
+                                placeholder="ค้นหา..."
+                                value={searchText}
+                                onChange={(e) => setSearchText(e.target.value)}
+                            />
+                        </div>
                     </div>
-                ) : ActiveForm ? (
-                    <CheckLabelForm />
-                ) : (
-                    <div className="h-full grid place-items-center text-gray-500">
-                        ยังไม่มีฟอร์มสำหรับโซนนี้ ({zoneId})
+
+                    {/* Content area */}
+                    <div className="h-[88vh] w-full bg-white overflow-auto">
+                        <DataGrid
+                            sx={{
+                                borderRadius: "0.5rem",
+                                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                                "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": { outline: "none" },
+                            }}
+                            rows={filteredRows}
+                            columns={columns}
+                            initialState={{ pagination: { paginationModel: { pageSize: 5, page: 0 } } }}
+                            pageSizeOptions={[5, 10, 15]}
+                            disableRowSelectionOnClick
+                            getRowId={(row) => row.equipment_id}
+                        />
                     </div>
-                )}
-            </div>
+                </>
+            )}
         </>
     );
 }

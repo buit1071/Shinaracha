@@ -312,8 +312,7 @@ export interface EquipmentBranchRow {
     order?: number;
 }
 export interface SelectForm {
-    branch_id: string;
-    service_inspec_id: string;
+    job_id: string;
     service_id: string;
     zone_id: string;
     zone_name?: string;

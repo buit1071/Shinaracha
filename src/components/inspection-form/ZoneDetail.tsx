@@ -211,7 +211,7 @@ export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
       align: "center",
     },
     {
-      field: "inspect_name", headerName: "Inspect Group Name", flex: 1, headerAlign: "center", align: "left",
+      field: "inspect_name", headerName: "หัวข้อการตรวจ", flex: 1, headerAlign: "center", align: "left",
       renderCell: (params: GridRenderCellParams<InspectGroupRow>) => (
         <button
           onClick={() => openDetail(params.row.inspect_id)}
@@ -265,7 +265,7 @@ export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
                 <ArrowBackIcon />
               </IconButton>
               <h2 className="text-xl font-bold text-gray-800 ml-5">
-                Zone : <span className="text-blue-900">{zoneName}</span>
+                ฟอร์ม : <span className="text-blue-900">{zoneName}</span>
               </h2>
             </div>
             <div className="flex gap-2 items-center">
@@ -326,7 +326,7 @@ export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
               <TextField
                 size="small"
                 margin="dense"
-                label="Inspect Group Name"
+                label="หัวข้อการตรวจ"
                 fullWidth
                 required
                 value={formData.inspect_name}
@@ -335,7 +335,7 @@ export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
                   if (error) setError(false);
                 }}
                 error={error && !formData.inspect_name}
-                helperText={error && !formData.inspect_name ? "กรุณากรอก Inspect Group Name" : ""}
+                helperText={error && !formData.inspect_name ? "กรุณากรอกหัวข้อการตรวจ" : ""}
               />
             </DialogContent>
             <DialogActions>

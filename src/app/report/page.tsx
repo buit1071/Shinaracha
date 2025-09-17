@@ -10,18 +10,17 @@ import {
     TextField,
 } from "@mui/material";
 import { showLoading } from "@/lib/loading";
-import { ProjectRow, CustomerRow } from "@/interfaces/master";
+import { ProjectRow } from "@/interfaces/master";
 import { formatDate } from "@/lib/fetcher";
 import ProjectJob from "@/components/project-job/ProjectJob";
 
 export default function ReportPage() {
+    const DATE_COL_WIDTH = 300; // ปรับได้ตามชอบ
     const [view, setView] = React.useState<null | { type: "detail"; id: string }>(null);
     const openDetail = (id: string) => setView({ type: "detail", id });
     const backToList = () => setView(null);
     const [rows, setRows] = React.useState<ProjectRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
-    const [customers, setCustomers] = React.useState<CustomerRow[]>([]);
-    const customersRef = React.useRef<CustomerRow[]>([]);
 
     // โหลดข้อมูลและจัดเรียงใหม่
     const fetchProject = async () => {
@@ -30,7 +29,7 @@ export default function ReportPage() {
             const res = await fetch("/api/auth/project-list");
             const data = await res.json();
             if (data.success) {
-                updateWithOrder(data.data);
+                setRows(data.data);
             }
         } catch (err) {
             console.error("Fetch error:", err);
@@ -39,39 +38,10 @@ export default function ReportPage() {
         }
     };
 
-    const fetchCustomers = async () => {
-        const res = await fetch("/api/auth/customer?active=true");
-        const data = await res.json();
-        if (data.success) {
-            setCustomers(data.data);
-            customersRef.current = data.data;   // <<< สำคัญ
-        }
-    };
-    // helper: เรียงใหม่ทุกครั้ง + เพิ่ม order + map customer_name
-    const updateWithOrder = (data: ProjectRow[]) => {
-        const sorted = [...data].sort(
-            (a, b) =>
-                new Date(b.updated_date || "").getTime() -
-                new Date(a.updated_date || "").getTime()
-        );
-
-        const withOrder = sorted.map((row, index) => {
-            const cust = customersRef.current.find(c => c.customer_id === row.customer_id); // <<< ใช้ ref
-            return {
-                ...row,
-                customer_name: cust ? cust.customer_name : "-",
-                order: index + 1,
-            };
-        });
-
-        setRows(withOrder);
-    };
-
     React.useEffect(() => {
         (async () => {
             showLoading(true);
             try {
-                await fetchCustomers();
                 await fetchProject();
             } finally {
                 showLoading(false);
@@ -88,10 +58,15 @@ export default function ReportPage() {
             align: "center",
         },
         {
-            field: "project_name", headerName: "โครงการ", flex: 1, headerAlign: "center", align: "left",
-            renderCell: (params: GridRenderCellParams<ProjectRow>) => (
+            field: "project_name",
+            headerName: "โครงการ",
+            flex: 1,            // ← กินพื้นที่ที่เหลือ
+            minWidth: 240,      // กันข้อความบีบเกินไป
+            headerAlign: "center",
+            align: "left",
+            renderCell: (params) => (
                 <button
-                    onClick={() => openDetail(params.row.project_id)}
+                    onClick={(e) => { e.stopPropagation(); openDetail(params.row.project_id); }}
                     className="hover:no-underline text-blue-600 hover:opacity-80 cursor-pointer"
                     title="เปิดรายละเอียด"
                 >
@@ -99,21 +74,22 @@ export default function ReportPage() {
                 </button>
             ),
         },
-        { field: "customer_name", headerName: "ลูกค้า", flex: 1, headerAlign: "center", align: "left" },
         {
             field: "start_date",
             headerName: "วันที่เริ่ม",
-            flex: 1,
+            width: DATE_COL_WIDTH, // ← ขนาดตายตัว
             headerAlign: "center",
             align: "center",
+            resizable: false,      // ล็อกไม่ให้ลากขยาย
             renderCell: (params) => formatDate(params.row.start_date),
         },
         {
             field: "end_date",
             headerName: "วันที่สิ้นสุด",
-            flex: 1,
+            width: DATE_COL_WIDTH, // ← เท่ากับ start_date
             headerAlign: "center",
             align: "center",
+            resizable: false,      // ล็อกไม่ให้ลากขยาย
             renderCell: (params) => formatDate(params.row.end_date),
         },
     ];

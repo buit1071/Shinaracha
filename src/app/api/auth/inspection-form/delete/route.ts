@@ -18,7 +18,7 @@ export async function POST(req: Request) {
         }
 
         if (fn === "zone") {
-            await query(`DELETE FROM data_service_zone WHERE zone_id=?`, [id]);
+            await query(`DELETE FROM data_service_form WHERE zone_id=?`, [id]);
             return NextResponse.json({ success: true, message: "ลบข้อมูลเรียบร้อย" });
         }
 

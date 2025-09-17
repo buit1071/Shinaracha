@@ -1,0 +1,38 @@
+import * as React from "react";
+
+import type { ReactNode } from "react";
+import Form1_3 from "./Form1_3"
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import IconButton from "@mui/material/IconButton";
+
+type Props = {
+  formId: string;
+  jobId: string;
+  name: string;
+  onBack: () => void;
+};
+
+export default function CheckLabelForm({ formId, jobId, name, onBack }: Props) {
+  const FORM_MAP: Record<string, ReactNode> = {
+    "FORM-67554643": <Form1_3 />,
+    // ใส่ฟอร์มอื่นทีหลัง...
+  };
+  return (
+    <>
+      <div className="h-[6vh] flex items-center justify-between px-4 py-2 bg-white shadow-md mb-2 rounded-lg">
+        <div className="flex items-center">
+          <IconButton onClick={onBack} color="primary">
+            <ArrowBackIcon />
+          </IconButton>
+          <h2 className="text-xl font-bold text-blue-900 ml-5">{name}</h2>
+        </div>
+      </div>
+      <div className="h-full w-full overflow-auto">
+        {/* พื้นที่ A4 แนวตั้ง */}
+        <div className="w-full shadow-sm border bg-white">
+          {FORM_MAP[formId] ?? null}
+        </div>
+      </div>
+    </>
+  );
+}

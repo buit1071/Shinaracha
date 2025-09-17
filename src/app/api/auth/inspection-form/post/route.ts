@@ -66,7 +66,7 @@ export async function POST(req: Request) {
             if (zone_id) {
                 // UPDATE
                 await query(
-                    `UPDATE data_service_zone
+                    `UPDATE data_service_form
            SET service_id=?, zone_name=?, is_active=?, updated_by=?, updated_date=NOW()
            WHERE zone_id=?`,
                     [service_id, zone_name, is_active ?? 1, updated_by ?? "system", zone_id]
@@ -74,9 +74,9 @@ export async function POST(req: Request) {
                 return NextResponse.json({ success: true, message: "อัปเดต Zone เรียบร้อย" });
             } else {
                 // INSERT
-                const newZoneId = generateId("SERZ");
+                const newZoneId = generateId("FORM");
                 await query(
-                    `INSERT INTO data_service_zone
+                    `INSERT INTO data_service_form
            (zone_id, service_id, zone_name, is_active, created_by, created_date, updated_by, updated_date)
            VALUES (?,?,?,?,?,NOW(),?,NOW())`,
                     [newZoneId, service_id, zone_name, is_active ?? 1, created_by ?? "system", updated_by ?? "system"]

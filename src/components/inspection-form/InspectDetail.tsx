@@ -205,7 +205,7 @@ export default function InspectDetail({ InspectId, onBack }: Props) {
       headerAlign: "center",
       align: "center",
     },
-    { field: "inspect_item_name", headerName: "Inspect Item Name", flex: 1, headerAlign: "center", align: "left" },
+    { field: "inspect_item_name", headerName: "รายการตรวจ", flex: 1, headerAlign: "center", align: "left" },
     {
       field: "actions",
       headerName: "Action",
@@ -246,7 +246,7 @@ export default function InspectDetail({ InspectId, onBack }: Props) {
             <ArrowBackIcon />
           </IconButton>
           <h2 className="text-xl font-bold text-gray-800 ml-5">
-            Inspection Group Name : <span className="text-blue-900">{groupName}</span>
+            หัวข้อ : <span className="text-blue-900">{groupName}</span>
           </h2>
         </div>
         <div className="flex gap-2 items-center">
@@ -307,7 +307,7 @@ export default function InspectDetail({ InspectId, onBack }: Props) {
           <TextField
             size="small"
             margin="dense"
-            label="Inspect Item Name"
+            label="รายการตรวจ"
             fullWidth
             required
             value={formData.inspect_item_name}
@@ -316,7 +316,7 @@ export default function InspectDetail({ InspectId, onBack }: Props) {
               if (error) setError(false);
             }}
             error={error && !formData.inspect_item_name}
-            helperText={error && !formData.inspect_item_name ? "กรุณากรอก Inspect Item Name" : ""}
+            helperText={error && !formData.inspect_item_name ? "กรุณากรอก รายการตรวจ" : ""}
           />
         </DialogContent>
         <DialogActions>

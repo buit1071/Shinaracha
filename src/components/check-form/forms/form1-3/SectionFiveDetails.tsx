@@ -90,7 +90,7 @@ export default function SectionFiveDetails() {
         setRows((p) => ({ ...p, [id]: { ...p[id], ...patch } }));
 
     return (
-        <section className="space-y-8 text-gray-900">
+        <section className="space-y-8 text-gray-900 p-2">
             {/* ========== ตารางสรุปผล ========== */}
             <div className="border border-gray-300 rounded-md overflow-hidden">
                 <div className="bg-gray-100 font-semibold text-center py-2">

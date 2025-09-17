@@ -33,7 +33,7 @@ export default function ProjectJob({ projectId, onBack }: Props) {
             console.warn("job not found:", jobId);
             return;
         }
-        setView({ type: "detail", id: row.branch_id });
+        setView({ type: "detail", id: row.job_id });
     }, [rows]);
 
     const fetchProjectName = async () => {
@@ -59,7 +59,7 @@ export default function ProjectJob({ projectId, onBack }: Props) {
             const res = await fetch("/api/auth/job/get", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "jobById", project_id: projectId }),
+                body: JSON.stringify({ function: "jobsById", project_id: projectId }),
             });
             const data = await res.json();
             if (data.success) {
@@ -119,7 +119,7 @@ export default function ProjectJob({ projectId, onBack }: Props) {
         <div className="w-full h-[96vh] flex flex-col bg-gray-50 justify-around">
             {view?.type === "detail" ? (
                 <>
-                    <CheckForm branchId={view.id} onBack={backToList} />
+                    <CheckForm jobId={view.id} onBack={backToList} />
                 </>
             ) : (
                 <>

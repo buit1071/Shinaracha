@@ -119,7 +119,7 @@ export default function SectionThreeDetails() {
     ];
 
     return (
-        <section className="space-y-8 text-gray-900">
+        <section className="space-y-8 text-gray-900 p-2">
             {/* ตารางที่ 1 */}
             <div>
                 <div className="text-base font-semibold mb-2">

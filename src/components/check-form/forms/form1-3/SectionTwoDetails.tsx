@@ -242,7 +242,7 @@ export default function SectionTwoDetails() {
     const [chkOther, setChkOther] = React.useState(false);
 
     return (
-        <div className="text-black leading-7 space-y-8">
+        <div className="text-black leading-7 space-y-8 p-2">
             <p className="text-sm text-gray-700">
                 ข้อมูลทั่วไปของป้ายที่ผู้ตรวจสอบต้องลงบันทึกในหัวข้อต่าง ๆ และอาจเพิ่มเติมได้เพื่อให้ข้อมูลสมบูรณ์ยิ่งขึ้น
                 ในบางรายการจะต้องประสานงานกับเจ้าของป้ายและผู้ดูแลป้ายเพื่อให้ได้ข้อมูลเหล่านั้น
