@@ -621,7 +621,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                         Group
                     </label>
 
-                    <Select
+                    <Select menuPlacement="auto"
                         options={groups.map(c => ({
                             value: c.group_id,
                             label: c.group_name,

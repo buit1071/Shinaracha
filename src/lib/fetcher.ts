@@ -101,8 +101,6 @@ export const showConfirm = async (
   return result.isConfirmed;
 };
 
-export const toNull = (v: any) => (v === "" || v === undefined ? null : v);
-
 export const toMysqlDate = (s?: string | null) => {
   if (!s) return null;
   // รองรับ DD/MM/YYYY -> YYYY-MM-DD
@@ -122,4 +120,13 @@ export const toMysqlTime = (s?: string | null) => {
   // ถูกอยู่แล้ว
   if (/^\d{2}:\d{2}:\d{2}$/.test(s)) return s;
   return null;
+};
+
+export const toNull = (v: unknown) => {
+  const s = String(v ?? "").trim();
+  return s ? s : null;
+};
+export const toInt = (v: unknown, d = 0) => {
+  const n = parseInt(String(v ?? ""), 10);
+  return Number.isFinite(n) ? n : d;
 };

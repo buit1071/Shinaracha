@@ -110,13 +110,42 @@ export interface EquipmentRow {
     zone_id: string;
     zone_name?: string;
     image_limit?: number;
+    // ---------------- ที่อยู่สถานที่ติดตั้ง ----------------
+    address_no: string;        // เลขที่
+    moo: string;               // หมู่
+    alley: string;             // ตรอก/ซอย
+    road: string;              // ถนน
+    sub_district_id: string;    // ตำบล/แขวง (id)
+    district_id: string;       // อำเภอ/เขต (id)
+    province_id: string;       // จังหวัด (id)
+    zipcode: string;           // รหัสไปรษณีย์
+    phone: string;             // โทรศัพท์
+    fax: string;               // โทรสาร
+    // -------- เจ้าของ/ผู้ครอบครอง & ผู้ออกแบบโครงสร้าง --------
+    owner_name: string;            // ชื่อ
+    owner_address_no: string;      // เลขที่
+    owner_moo: string;             // หมู่ที่
+    owner_alley: string;           // ตรอก/ซอย
+    owner_road: string;            // ถนน
+    owner_province_id: string;     // จังหวัด (id)
+    owner_district_id: string;     // อำเภอ/เขต (id)
+    owner_sub_district_id: string;  // ตำบล/แขวง (id)
+    owner_zipcode: string;         // รหัสไปรษณีย์
+    // ข้อมูลติดต่อเจ้าของ
+    owner_phone: string;       // โทรศัพท์
+    owner_fax: string;         // โทรสาร
+    owner_email: string;       // อีเมล
+    // ผู้ออกแบบด้านวิศวกรรมโครงสร้าง
+    designer_name: string;         // ชื่อผู้ออกแบบ
+    designer_license_no: string;   // ใบอนุญาตทะเบียนเลขที่
+
     is_active: number;
     created_by: string;
     updated_by: string;
     created_date?: string;
     updated_date?: string;
     order?: number;
-};
+}
 export interface DataZonesRow {
     service_id: string;
     zone_id: string;
@@ -323,3 +352,44 @@ export interface SelectForm {
     updated_date?: string;
     order?: number;
 }
+// ค่าร่วมของ master ทุกตาราง
+export interface MasterBase {
+    is_active: number;          // 1 = ใช้งาน, 0 = ปิดใช้งาน
+    created_by: string;
+    updated_by: string;
+    created_date?: string;      // ISO string จาก DB
+    updated_date?: string;      // ISO string จาก DB
+    order?: number;
+}
+
+/** จังหวัด */
+export interface MasterProvinceRow extends MasterBase {
+    id: number;                 // PK (INT)
+    province_id: string;        // รหัสจังหวัดแบบสตริง (เช่น '10', '11' หรือ 'PROV-01' ตามที่ใช้จริง)
+    name_th: string;
+    name_en?: string;
+}
+
+/** อำเภอ/เขต */
+export interface MasterDistrictRow extends MasterBase {
+    id: number;                 // PK (INT)
+    province_id: string;        // อ้างจังหวัดด้วย province_id (string)
+    district_id: string;        // รหัสอำเภอ/เขตแบบสตริง (เช่น 'DIS-01')
+    name_th: string;
+    name_en?: string;
+}
+
+/** ตำบล/แขวง */
+export interface MasterSubdistrictRow extends MasterBase {
+    id: number;                 // PK (INT)
+    district_id: string;        // อ้างอำเภอ/เขตด้วย district_id (string)
+    sub_district_id: string;    // รหัสตำบล/แขวงแบบสตริง (เช่น 'SDIS-01')
+    name_th: string;
+    name_en?: string;
+    post_code?: string;         // ถ้าเก็บในตารางนี้ (บางระบบแยกเป็นตาราง postcodes)
+}
+
+/* ---- ช่วยสำหรับ dropdown/select ---- */
+export type ProvinceOption = { value: string; label: string };     // value = province_id
+export type DistrictOption = { value: string; label: string };     // value = district_id
+export type SubdistrictOption = { value: string; label: string };  // value = sub_district_id

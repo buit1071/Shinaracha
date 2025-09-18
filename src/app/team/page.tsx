@@ -691,7 +691,7 @@ export default function ProjectListPage() {
                             พื้นที่
                         </label>
 
-                        <Select
+                        <Select menuPlacement="auto"
                             options={zones.map(p => ({
                                 value: p.zone_id,
                                 label: p.zone_name,
@@ -811,7 +811,7 @@ export default function ProjectListPage() {
                                                     {/* ชื่อ */}
                                                     <TableCell>
                                                         {row.editing ? (
-                                                            <Select
+                                                            <Select menuPlacement="auto"
                                                                 options={employeeOptions.filter(
                                                                     o =>
                                                                         // แสดง option ที่ยังไม่ถูกเลือกในแถวอื่น หรือเป็นของ row ปัจจุบันเอง
@@ -862,7 +862,7 @@ export default function ProjectListPage() {
                                                     {/* สถานะ (ใช้ status_id) */}
                                                     <TableCell align="center">
                                                         {row.editing ? (
-                                                            <Select
+                                                            <Select menuPlacement="auto"
                                                                 options={empStatusOptions.filter(o => {
                                                                     // ซ่อนตัวเลือก "หัวหน้า" ถ้ามีคนอื่นเป็นหัวหน้าแล้ว
                                                                     if (!leaderStatusId) return true; // เผื่อไม่มีข้อมูลใน master

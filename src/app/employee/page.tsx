@@ -411,7 +411,7 @@ export default function EmployeePage() {
                             หน้าที่
                         </label>
 
-                        <Select
+                        <Select menuPlacement="auto"
                             options={permissions.map(p => ({
                                 value: p.permission_id,
                                 label: p.permission_name || p.permission_id,

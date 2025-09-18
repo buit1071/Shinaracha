@@ -760,7 +760,7 @@ export default function JobPage() {
                                     สถานะ
                                 </label>
 
-                                <Select
+                                <Select menuPlacement="auto"
                                     options={status.map(c => ({
                                         value: c.status_id,
                                         label: c.status_name,
@@ -870,7 +870,7 @@ export default function JobPage() {
                                 โครงการ
                             </label>
 
-                            <Select
+                            <Select menuPlacement="auto"
                                 options={projects.map(c => ({
                                     value: c.project_id,
                                     label: c.project_name,
@@ -1052,7 +1052,7 @@ export default function JobPage() {
                             <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
                                 ลูกค้า
                             </label>
-                            <Select
+                            <Select menuPlacement="auto"
                                 options={customers.map(c => ({
                                     value: c.customer_id,
                                     label: c.customer_name,
@@ -1143,7 +1143,7 @@ export default function JobPage() {
                             <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
                                 สาขา
                             </label>
-                            <Select
+                            <Select menuPlacement="auto"
                                 options={branchs.map(c => ({
                                     value: c.branch_id,
                                     label: c.branch_name,
@@ -1227,7 +1227,7 @@ export default function JobPage() {
                             <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
                                 ทีม
                             </label>
-                            <Select
+                            <Select menuPlacement="auto"
                                 options={teams.map(c => ({
                                     value: c.team_id,
                                     label: c.team_name,

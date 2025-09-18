@@ -11,7 +11,6 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import IconButton from "@mui/material/IconButton";
 import Select, { SingleValue } from "react-select";
-import dynamic from "next/dynamic";
 import {
     Box,
     Button,
@@ -21,17 +20,12 @@ import {
     DialogTitle,
     TextField,
     Switch,
+    Typography
 } from "@mui/material";
 import { showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
-import { EquipmentRow, ServiceRow, ZoneRow } from "@/interfaces/master";
-import { builderViewWithCss } from "@react-form-builder/components-rsuite";
+import { EquipmentRow, ServiceRow, ZoneRow, MasterProvinceRow, MasterDistrictRow, MasterSubdistrictRow } from "@/interfaces/master";
 import type { IFormStorage } from "@react-form-builder/designer";
-
-const FormBuilder = dynamic(
-    () => import("@react-form-builder/designer").then(m => m.FormBuilder),
-    { ssr: false }
-);
 
 class LocalFormStorage implements IFormStorage {
     private last = "{}";
@@ -76,8 +70,13 @@ export default function EquipmentPage() {
     const [rows, setRows] = React.useState<EquipmentRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
     const [openEdit, setOpenEdit] = React.useState(false);
-    const [openDetail, setOpenDetail] = React.useState(false);
     const [error, setError] = React.useState(false);
+    const [provinces, setProvince] = React.useState<MasterProvinceRow[]>([]);
+    const [districts, setDistrict] = React.useState<MasterDistrictRow[]>([]);
+    const [subDistricts, setSubDistrict] = React.useState<MasterSubdistrictRow[]>([]);
+    const [provincesOwn, setOwnProvince] = React.useState<MasterProvinceRow[]>([]);
+    const [districtsOwn, setOwnDistrict] = React.useState<MasterDistrictRow[]>([]);
+    const [subDistrictsOwn, setOwnSubDistrict] = React.useState<MasterSubdistrictRow[]>([]);
     const [services, setServices] = React.useState<ServiceRow[]>([]);
     const [zones, setZones] = React.useState<ZoneRow[]>([]);
     const zonesAbortRef = React.useRef<AbortController | null>(null);
@@ -96,7 +95,229 @@ export default function EquipmentPage() {
         is_active: 1,
         created_by: "admin",
         updated_by: "admin",
+        created_date: "",
+        updated_date: "",
+        order: undefined,
+
+        // ที่อยู่สถานที่ติดตั้ง
+        address_no: "",
+        moo: "",
+        alley: "",
+        road: "",
+        sub_district_id: "",
+        district_id: "",
+        province_id: "",
+        zipcode: "",
+        phone: "",
+        fax: "",
+
+        // เจ้าของ/ผู้ครอบครอง
+        owner_name: "",
+        owner_address_no: "",
+        owner_moo: "",
+        owner_alley: "",
+        owner_road: "",
+        owner_province_id: "",
+        owner_district_id: "",
+        owner_sub_district_id: "",
+        owner_zipcode: "",
+
+        // ข้อมูลติดต่อเจ้าของ
+        owner_phone: "",
+        owner_fax: "",
+        owner_email: "",
+
+        // ผู้ออกแบบโครงสร้าง
+        designer_name: "",
+        designer_license_no: "",
     });
+
+    const fetchProvince = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/equipment/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                // ถ้าต้องการกัน cache ฝั่งเบราว์เซอร์ เพิ่ม cache: "no-store"
+                body: JSON.stringify({ function: "ProvinceOption" }),
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                setProvince(data.data || []);
+                setOwnProvince(data.data || []);
+            } else {
+                console.error("โหลด Provinces ไม่สำเร็จ:", data.message);
+            }
+        } catch (err) {
+            console.error("Fetch error:", err);
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    const fetchDistrict = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/equipment/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                // ถ้าต้องการกัน cache ฝั่งเบราว์เซอร์ เพิ่ม cache: "no-store"
+                body: JSON.stringify({ function: "DistrictOption" }),
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                setDistrict(data.data || []);
+                setOwnDistrict(data.data || []);
+            } else {
+                console.error("โหลด Provinces ไม่สำเร็จ:", data.message);
+            }
+        } catch (err) {
+            console.error("Fetch error:", err);
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    const fetchSubDistrict = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/equipment/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                // ถ้าต้องการกัน cache ฝั่งเบราว์เซอร์ เพิ่ม cache: "no-store"
+                body: JSON.stringify({ function: "SubDistrictOption" }),
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                setSubDistrict(data.data || []);
+                setOwnSubDistrict(data.data || []);
+            } else {
+                console.error("โหลด Provinces ไม่สำเร็จ:", data.message);
+            }
+        } catch (err) {
+            console.error("Fetch error:", err);
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    const fetchDistrictByProvinceId = async (province_id: string) => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/equipment/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                // ถ้าต้องการกัน cache ฝั่งเบราว์เซอร์ เพิ่ม cache: "no-store"
+                body: JSON.stringify({ function: "DistrictOptionByProvinceId", province_id }),
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                setDistrict(data.data || []);
+            } else {
+                console.error("โหลด District ไม่สำเร็จ:", data.message);
+            }
+        } catch (err) {
+            console.error("Fetch error:", err);
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    const fetchSubDistrictByDistrictId = async (district_id: string) => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/equipment/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                // ถ้าต้องการกัน cache ฝั่งเบราว์เซอร์ เพิ่ม cache: "no-store"
+                body: JSON.stringify({ function: "SubDistrictOptionByDistrictId", district_id }),
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                setSubDistrict(data.data || []);
+            } else {
+                console.error("โหลด Sub District ไม่สำเร็จ:", data.message);
+            }
+        } catch (err) {
+            console.error("Fetch error:", err);
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    const fetchOwnProvince = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/equipment/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                // ถ้าต้องการกัน cache ฝั่งเบราว์เซอร์ เพิ่ม cache: "no-store"
+                body: JSON.stringify({ function: "ProvinceOption" }),
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                setOwnProvince(data.data || []);
+            } else {
+                console.error("โหลด Provinces ไม่สำเร็จ:", data.message);
+            }
+        } catch (err) {
+            console.error("Fetch error:", err);
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    const fetchOwnDistrictByProvinceId = async (owner_province_id: string) => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/equipment/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                // ถ้าต้องการกัน cache ฝั่งเบราว์เซอร์ เพิ่ม cache: "no-store"
+                body: JSON.stringify({ function: "DistrictOptionByProvinceId", province_id: owner_province_id }),
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                setOwnDistrict(data.data || []);
+            } else {
+                console.error("โหลด District ไม่สำเร็จ:", data.message);
+            }
+        } catch (err) {
+            console.error("Fetch error:", err);
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    const fetchOwnSubDistrictByDistrictId = async (owner_district_id: string) => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/equipment/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                // ถ้าต้องการกัน cache ฝั่งเบราว์เซอร์ เพิ่ม cache: "no-store"
+                body: JSON.stringify({ function: "SubDistrictOptionByDistrictId", district_id: owner_district_id }),
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                setOwnSubDistrict(data.data || []);
+            } else {
+                console.error("โหลด Sub District ไม่สำเร็จ:", data.message);
+            }
+        } catch (err) {
+            console.error("Fetch error:", err);
+        } finally {
+            showLoading(false);
+        }
+    };
 
     const fetchService = async () => {
         showLoading(true);
@@ -206,6 +427,10 @@ export default function EquipmentPage() {
     };
 
     React.useEffect(() => {
+        fetchProvince();
+        fetchDistrict();
+        fetchSubDistrict();
+        fetchOwnProvince();
         fetchService();
         fetchZoneAll();
         fecthEquipment();
@@ -225,25 +450,52 @@ export default function EquipmentPage() {
             is_active: 1,
             created_by: "admin",
             updated_by: "admin",
+            created_date: "",
+            updated_date: "",
+            order: undefined,
+
+            // ที่อยู่สถานที่ติดตั้ง
+            address_no: "",
+            moo: "",
+            alley: "",
+            road: "",
+            sub_district_id: "",
+            district_id: "",
+            province_id: "",
+            zipcode: "",
+            phone: "",
+            fax: "",
+
+            // เจ้าของ/ผู้ครอบครอง
+            owner_name: "",
+            owner_address_no: "",
+            owner_moo: "",
+            owner_alley: "",
+            owner_road: "",
+            owner_province_id: "",
+            owner_district_id: "",
+            owner_sub_district_id: "",
+            owner_zipcode: "",
+
+            // ข้อมูลติดต่อเจ้าของ
+            owner_phone: "",
+            owner_fax: "",
+            owner_email: "",
+
+            // ผู้ออกแบบโครงสร้าง
+            designer_name: "",
+            designer_license_no: "",
         });
         setOpenEdit(true);
     };
 
     const handleOpenEdit = (row: EquipmentRow) => {
         setFormData(row);
-        setOpenDetail(false);   // ✅ ปิดอีกตัวกันซ้อน
         setOpenEdit(true);
     };
 
-    // const handleOpenEditDetail = (row: EquipmentRow) => {
-    //     setFormData(row);
-    //     setOpenEdit(false);     // ✅ ปิดอีกตัวกันซ้อน
-    //     setOpenDetail(true);
-    // };
-
     const handleClose = () => {
         setOpenEdit(false);
-        setOpenDetail(false);
     };
 
     const handleSave = async () => {
@@ -257,7 +509,6 @@ export default function EquipmentPage() {
             setError(true);
             return;
         }
-
         showLoading(true);
 
         try {
@@ -439,6 +690,23 @@ export default function EquipmentPage() {
             order: index + 1,
         }));
 
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const subdistrictOptions = subDistricts.map(s => ({
+        value: s.sub_district_id,
+        label: s.name_th || s.sub_district_id,
+        zipcode: s.post_code ?? "",
+    }));
+
+    const subdistrictOwnOptions = subDistrictsOwn.map(s => ({
+        value: s.sub_district_id,
+        label: s.name_th || s.sub_district_id,
+        owner_zipcode: s.post_code ?? "",
+    }));
+
     return (
         <div className="w-full h-full flex flex-col bg-gray-50 justify-between">
             {/* Header Bar */}
@@ -477,11 +745,14 @@ export default function EquipmentPage() {
             </div>
 
             {/* Dialog Popup */}
-            <Dialog open={openEdit} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
+            <Dialog open={openEdit} onClose={handleClose} fullWidth maxWidth="xl" sx={{ zIndex: 1000 }}>
                 <DialogTitle>
                     {formData.equipment_id ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}
                 </DialogTitle>
                 <DialogContent dividers>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                        ข้อมูลอุปกรณ์
+                    </Typography>
                     {formData.equipment_id && (
                         <TextField
                             size="small"
@@ -560,11 +831,679 @@ export default function EquipmentPage() {
                         />
                     </Box>
 
+                    <Box sx={{ mt: 2 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                            ข้อมูลที่อยู่
+                        </Typography>
+
+                        {/* แถว 1: เลขที่, หมู่, ตรอก/ซอย, ถนน */}
+                        <Box
+                            sx={{
+                                display: "grid",
+                                gap: 2,
+                                gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
+                            }}
+                        >
+                            <TextField label="เลขที่" size="small" fullWidth name="address_no"
+                                value={formData.address_no ?? ""} onChange={handleChange} />
+                            <TextField label="หมู่ที่" size="small" fullWidth name="moo"
+                                value={formData.moo ?? ""} onChange={handleChange} />
+                            <TextField label="ตรอก/ซอย" size="small" fullWidth name="alley"
+                                value={formData.alley ?? ""} onChange={handleChange} />
+                            <TextField label="ถนน" size="small" fullWidth name="road"
+                                value={formData.road ?? ""} onChange={handleChange} />
+                        </Box>
+
+                        {/* แถว 2: จังหวัด, อำเภอ/เขต, ตำบล/แขวง, รหัสไปรษณีย์  (เก็บเป็น *_id) */}
+                        <Box
+                            sx={{
+                                mt: 2,
+                                display: "grid",
+                                gap: 2,
+                                gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
+                            }}
+                        >
+                            <Box>
+                                <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
+                                    จังหวัด
+                                </label>
+                                <Select menuPlacement="auto"
+                                    options={provinces.map(p => ({
+                                        value: p.province_id,
+                                        label: p.name_th || p.province_id,
+                                    }))}
+
+                                    value={
+                                        provinces
+                                            .map(p => ({
+                                                value: p.province_id,
+                                                label: p.name_th || p.province_id,
+                                            }))
+                                            .find(opt => opt.value === formData.province_id) || null
+                                    }
+
+                                    onChange={async (selected: Option | null) => {
+                                        const province_id = selected?.value ?? "";
+
+                                        // อัปเดตค่า province_id เดิมด้วย handleChange
+                                        handleChange({
+                                            target: { name: "province_id", value: province_id },
+                                        } as any);
+
+                                        // รีเซ็ตอำเภอ/ตำบล/ไปรษณีย์ ให้สอดคล้องกับจังหวัดใหม่
+                                        setDistrict([]);
+                                        setSubDistrict([]);
+                                        setFormData(f => ({
+                                            ...f,
+                                            district_id: "",
+                                            sub_district_id: "",
+                                            zipcode: "",
+                                        }));
+
+                                        // โหลดอำเภอตามจังหวัดที่เลือก
+                                        if (province_id) {
+                                            await fetchDistrictByProvinceId(province_id);
+                                        }
+                                    }}
+
+                                    placeholder="-- เลือกจังหวัด --"
+                                    isClearable
+                                    menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            borderColor:
+                                                error && !formData.province_id
+                                                    ? "#d32f2f"
+                                                    : state.isFocused
+                                                        ? "#3b82f6"
+                                                        : "#d1d5db",
+                                            boxShadow: "none",
+                                            "&:hover": {
+                                                borderColor: error && !formData.province_id ? "#d32f2f" : "#9ca3af",
+                                            },
+                                        }),
+                                        menu: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                            border: "1px solid #e5e7eb",
+                                        }),
+                                        menuPortal: (base) => ({
+                                            ...base,
+                                            zIndex: 2100,
+                                        }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected
+                                                ? "#e5f2ff"
+                                                : state.isFocused
+                                                    ? "#f3f4f6"
+                                                    : "#fff",
+                                            color: "#111827",
+                                        }),
+                                        menuList: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            paddingTop: 0,
+                                            paddingBottom: 0,
+                                        }),
+                                        singleValue: (base) => ({
+                                            ...base,
+                                            color: "#111827",
+                                        }),
+                                    }}
+                                />
+
+                                {/* helperText */}
+                                {error && !formData.province_id && (
+                                    <span
+                                        style={{
+                                            color: "#d32f2f",
+                                            fontSize: "12px",
+                                            marginTop: 4,
+                                            display: "block",
+                                        }}
+                                    >
+                                        กรุณาเลือกจังหวัด
+                                    </span>
+                                )}
+                            </Box>
+
+                            <Box>
+                                <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
+                                    อำเภอ/เขต
+                                </label>
+                                <Select menuPlacement="auto"
+                                    options={districts.map(d => ({
+                                        value: d.district_id,
+                                        label: d.name_th || d.district_id,
+                                    }))}
+
+                                    value={
+                                        districts
+                                            .map(d => ({ value: d.district_id, label: d.name_th || d.district_id }))
+                                            .find(opt => opt.value === formData.district_id) || null
+                                    }
+
+                                    onChange={async (selected: Option | null) => {
+                                        const district_id = selected?.value ?? "";
+
+                                        // อัปเดต district_id ในฟอร์ม
+                                        handleChange({
+                                            target: { name: "district_id", value: district_id },
+                                        } as any);
+
+                                        // รีเซ็ต subdistrict/zipcode ให้สอดคล้องกับเขตใหม่
+                                        setSubDistrict([]);
+                                        setFormData(f => ({
+                                            ...f,
+                                            sub_district_id: "",
+                                            zipcode: "",
+                                        }));
+
+                                        // โหลดตำบลตาม district
+                                        if (district_id) {
+                                            await fetchSubDistrictByDistrictId(district_id);
+                                        }
+                                    }}
+                                    placeholder="-- เลือกอำเภอ/เขต --"
+                                    isClearable
+                                    isDisabled={!formData.province_id}
+                                    menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            borderColor:
+                                                error && !formData.district_id
+                                                    ? "#d32f2f"
+                                                    : state.isFocused
+                                                        ? "#3b82f6"
+                                                        : "#d1d5db",
+                                            boxShadow: "none",
+                                            "&:hover": {
+                                                borderColor: error && !formData.district_id ? "#d32f2f" : "#9ca3af",
+                                            },
+                                        }),
+                                        menu: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                            border: "1px solid #e5e7eb",
+                                        }),
+                                        menuPortal: (base) => ({ ...base, zIndex: 2100 }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected
+                                                ? "#e5f2ff"
+                                                : state.isFocused
+                                                    ? "#f3f4f6"
+                                                    : "#fff",
+                                            color: "#111827",
+                                        }),
+                                        menuList: (base) => ({ ...base, backgroundColor: "#fff", paddingTop: 0, paddingBottom: 0 }),
+                                        singleValue: (base) => ({ ...base, color: "#111827" }),
+                                    }}
+                                />
+
+                                {error && !formData.district_id && (
+                                    <span style={{ color: "#d32f2f", fontSize: 12, marginTop: 4, display: "block" }}>
+                                        กรุณาเลือกอำเภอ/เขต
+                                    </span>
+                                )}
+                            </Box>
+
+                            <Box>
+                                <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
+                                    ตำบล/แขวง
+                                </label>
+                                <Select menuPlacement="auto"
+                                    options={subdistrictOptions}
+                                    value={
+                                        subdistrictOptions.find(opt => opt.value === formData.sub_district_id) || null
+                                    }
+                                    onChange={(selected: (typeof subdistrictOptions)[number] | null) => {
+                                        const sub_district_id = selected?.value ?? "";
+                                        const zipcode = selected?.zipcode ?? "";
+
+                                        // อัปเดตค่าในฟอร์ม
+                                        handleChange({ target: { name: "sub_district_id", value: sub_district_id } } as any);
+
+                                        // ใส่รหัสไปรษณีย์อัตโนมัติ (ถ้า clear ให้เป็นค่าว่าง)
+                                        handleChange({ target: { name: "zipcode", value: zipcode } } as any);
+                                    }}
+                                    placeholder="-- เลือกตำบล/แขวง --"
+                                    isClearable
+                                    isDisabled={!formData.district_id}
+                                    menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            borderColor:
+                                                error && !formData.sub_district_id
+                                                    ? "#d32f2f"
+                                                    : state.isFocused
+                                                        ? "#3b82f6"
+                                                        : "#d1d5db",
+                                            boxShadow: "none",
+                                            "&:hover": {
+                                                borderColor: error && !formData.sub_district_id ? "#d32f2f" : "#9ca3af",
+                                            },
+                                        }),
+                                        menu: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                            border: "1px solid #e5e7eb",
+                                        }),
+                                        menuPortal: (base) => ({ ...base, zIndex: 2100 }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected
+                                                ? "#e5f2ff"
+                                                : state.isFocused
+                                                    ? "#f3f4f6"
+                                                    : "#fff",
+                                            color: "#111827",
+                                        }),
+                                        menuList: (base) => ({ ...base, backgroundColor: "#fff", paddingTop: 0, paddingBottom: 0 }),
+                                        singleValue: (base) => ({ ...base, color: "#111827" }),
+                                    }}
+                                />
+                                {error && !formData.sub_district_id && (
+                                    <span style={{ color: "#d32f2f", fontSize: 12, marginTop: 4, display: "block" }}>
+                                        กรุณาเลือกตำบล/แขวง
+                                    </span>
+                                )}
+                            </Box>
+
+                            <TextField
+                                label="รหัสไปรษณีย์"
+                                size="small"
+                                fullWidth
+                                name="zipcode"
+                                inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
+                                value={formData.zipcode ?? ""}
+                                onChange={handleChange}
+                                sx={{ alignSelf: "end" }}
+                            />
+                        </Box>
+
+                        {/* แถว 3: โทรศัพท์, โทรสาร, ช่องว่าง 2 ช่อง */}
+                        <Box
+                            sx={{
+                                mt: 2,
+                                display: "grid",
+                                gap: 2,
+                                gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
+                            }}
+                        >
+                            <TextField label="โทรศัพท์" size="small" fullWidth name="phone"
+                                inputProps={{ inputMode: "tel" }}
+                                value={formData.phone ?? ""} onChange={handleChange} />
+                            <TextField label="โทรสาร" size="small" fullWidth name="fax"
+                                inputProps={{ inputMode: "tel" }}
+                                value={formData.fax ?? ""} onChange={handleChange} />
+                            <Box />
+                            <Box />
+                        </Box>
+                    </Box>
+
+                    <Box sx={{ mt: 3, mb: 3 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                            เจ้าของหรือผู้ครอบครองและผู้ออกแบบด้านวิศวกรรมโครงสร้าง
+                        </Typography>
+
+                        {/* แถวที่ 1: ชื่อ, เลขที่, หมู่ที่, ตรอก/ซอย, ถนน */}
+                        <Box
+                            sx={{
+                                display: "grid",
+                                gap: 2,
+                                gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(5, 1fr)" },
+                            }}
+                        >
+                            <TextField label="ชื่อ" size="small" fullWidth name="owner_name"
+                                value={formData.owner_name ?? ""} onChange={handleChange} />
+                            <TextField label="เลขที่" size="small" fullWidth name="owner_address_no"
+                                value={formData.owner_address_no ?? ""} onChange={handleChange} />
+                            <TextField label="หมู่ที่" size="small" fullWidth name="owner_moo"
+                                value={formData.owner_moo ?? ""} onChange={handleChange} />
+                            <TextField label="ตรอก/ซอย" size="small" fullWidth name="owner_alley"
+                                value={formData.owner_alley ?? ""} onChange={handleChange} />
+                            <TextField label="ถนน" size="small" fullWidth name="owner_road"
+                                value={formData.owner_road ?? ""} onChange={handleChange} />
+                        </Box>
+
+                        {/* แถวที่ 2: จังหวัด, อำเภอ/เขต, ตำบล/แขวง, รหัสไปรษณีย์ + ช่องว่างท้ายสุด */}
+                        <Box
+                            sx={{
+                                mt: 2,
+                                display: "grid",
+                                gap: 2,
+                                gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(5, 1fr)" },
+                            }}
+                        >
+                            <Box>
+                                <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
+                                    จังหวัด
+                                </label>
+                                <Select menuPlacement="auto"
+                                    options={provincesOwn.map(p => ({
+                                        value: p.province_id,
+                                        label: p.name_th || p.province_id,
+                                    }))}
+
+                                    value={
+                                        provincesOwn
+                                            .map(p => ({
+                                                value: p.province_id,
+                                                label: p.name_th || p.province_id,
+                                            }))
+                                            .find(opt => opt.value === formData.owner_province_id) || null
+                                    }
+
+                                    onChange={async (selected: Option | null) => {
+                                        const owner_province_id = selected?.value ?? "";
+
+                                        // อัปเดตค่า owner_province_id เดิมด้วย handleChange
+                                        handleChange({
+                                            target: { name: "owner_province_id", value: owner_province_id },
+                                        } as any);
+
+                                        // รีเซ็ตอำเภอ/ตำบล/ไปรษณีย์ ให้สอดคล้องกับจังหวัดใหม่
+                                        setOwnDistrict([]);
+                                        setOwnSubDistrict([]);
+                                        setFormData(f => ({
+                                            ...f,
+                                            owner_district_id: "",
+                                            owner_sub_district_id: "",
+                                            owner_zipcode: "",
+                                        }));
+
+                                        // โหลดอำเภอตามจังหวัดที่เลือก
+                                        if (owner_province_id) {
+                                            await fetchOwnDistrictByProvinceId(owner_province_id);
+                                        }
+                                    }}
+
+                                    placeholder="-- เลือกจังหวัด --"
+                                    isClearable
+                                    menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            borderColor:
+                                                error && !formData.owner_province_id
+                                                    ? "#d32f2f"
+                                                    : state.isFocused
+                                                        ? "#3b82f6"
+                                                        : "#d1d5db",
+                                            boxShadow: "none",
+                                            "&:hover": {
+                                                borderColor: error && !formData.owner_province_id ? "#d32f2f" : "#9ca3af",
+                                            },
+                                        }),
+                                        menu: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                            border: "1px solid #e5e7eb",
+                                        }),
+                                        menuPortal: (base) => ({
+                                            ...base,
+                                            zIndex: 2100,
+                                        }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected
+                                                ? "#e5f2ff"
+                                                : state.isFocused
+                                                    ? "#f3f4f6"
+                                                    : "#fff",
+                                            color: "#111827",
+                                        }),
+                                        menuList: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            paddingTop: 0,
+                                            paddingBottom: 0,
+                                        }),
+                                        singleValue: (base) => ({
+                                            ...base,
+                                            color: "#111827",
+                                        }),
+                                    }}
+                                />
+
+                                {/* helperText */}
+                                {error && !formData.owner_province_id && (
+                                    <span
+                                        style={{
+                                            color: "#d32f2f",
+                                            fontSize: "12px",
+                                            marginTop: 4,
+                                            display: "block",
+                                        }}
+                                    >
+                                        กรุณาเลือกจังหวัด
+                                    </span>
+                                )}
+                            </Box>
+
+                            <Box>
+                                <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
+                                    อำเภอ/เขต
+                                </label>
+                                <Select menuPlacement="auto"
+                                    options={districtsOwn.map(d => ({
+                                        value: d.district_id,
+                                        label: d.name_th || d.district_id,
+                                    }))}
+
+                                    value={
+                                        districtsOwn
+                                            .map(d => ({ value: d.district_id, label: d.name_th || d.district_id }))
+                                            .find(opt => opt.value === formData.owner_district_id) || null
+                                    }
+
+                                    onChange={async (selected: Option | null) => {
+                                        const owner_district_id = selected?.value ?? "";
+
+                                        // อัปเดต owner_district_id ในฟอร์ม
+                                        handleChange({
+                                            target: { name: "owner_district_id", value: owner_district_id },
+                                        } as any);
+
+                                        // รีเซ็ต owner_sub_district_id/owner_zipcode ให้สอดคล้องกับเขตใหม่
+                                        setOwnSubDistrict([]);
+                                        setFormData(f => ({
+                                            ...f,
+                                            owner_sub_district_id: "",
+                                            owner_zipcode: "",
+                                        }));
+
+                                        // โหลดตำบลตาม district
+                                        if (owner_district_id) {
+                                            await fetchOwnSubDistrictByDistrictId(owner_district_id);
+                                        }
+                                    }}
+                                    placeholder="-- เลือกอำเภอ/เขต --"
+                                    isClearable
+                                    isDisabled={!formData.owner_province_id}
+                                    menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            borderColor:
+                                                error && !formData.owner_district_id
+                                                    ? "#d32f2f"
+                                                    : state.isFocused
+                                                        ? "#3b82f6"
+                                                        : "#d1d5db",
+                                            boxShadow: "none",
+                                            "&:hover": {
+                                                borderColor: error && !formData.owner_district_id ? "#d32f2f" : "#9ca3af",
+                                            },
+                                        }),
+                                        menu: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                            border: "1px solid #e5e7eb",
+                                        }),
+                                        menuPortal: (base) => ({ ...base, zIndex: 2100 }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected
+                                                ? "#e5f2ff"
+                                                : state.isFocused
+                                                    ? "#f3f4f6"
+                                                    : "#fff",
+                                            color: "#111827",
+                                        }),
+                                        menuList: (base) => ({ ...base, backgroundColor: "#fff", paddingTop: 0, paddingBottom: 0 }),
+                                        singleValue: (base) => ({ ...base, color: "#111827" }),
+                                    }}
+                                />
+
+                                {error && !formData.owner_district_id && (
+                                    <span style={{ color: "#d32f2f", fontSize: 12, marginTop: 4, display: "block" }}>
+                                        กรุณาเลือกอำเภอ/เขต
+                                    </span>
+                                )}
+                            </Box>
+
+                            <Box>
+                                <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
+                                    ตำบล/แขวง
+                                </label>
+                                <Select menuPlacement="auto"
+                                    options={subdistrictOwnOptions}
+                                    value={
+                                        subdistrictOwnOptions.find(opt => opt.value === formData.owner_sub_district_id) || null
+                                    }
+                                    onChange={(selected: (typeof subdistrictOwnOptions)[number] | null) => {
+                                        const owner_sub_district_id = selected?.value ?? "";
+                                        const owner_zipcode = selected?.owner_zipcode ?? "";
+
+                                        // อัปเดตค่าในฟอร์ม
+                                        handleChange({ target: { name: "owner_sub_district_id", value: owner_sub_district_id } } as any);
+
+                                        // ใส่รหัสไปรษณีย์อัตโนมัติ (ถ้า clear ให้เป็นค่าว่าง)
+                                        handleChange({ target: { name: "owner_zipcode", value: owner_zipcode } } as any);
+                                    }}
+                                    placeholder="-- เลือกตำบล/แขวง --"
+                                    isClearable
+                                    isDisabled={!formData.owner_district_id}
+                                    menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            borderColor:
+                                                error && !formData.owner_sub_district_id
+                                                    ? "#d32f2f"
+                                                    : state.isFocused
+                                                        ? "#3b82f6"
+                                                        : "#d1d5db",
+                                            boxShadow: "none",
+                                            "&:hover": {
+                                                borderColor: error && !formData.owner_sub_district_id ? "#d32f2f" : "#9ca3af",
+                                            },
+                                        }),
+                                        menu: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                            border: "1px solid #e5e7eb",
+                                        }),
+                                        menuPortal: (base) => ({ ...base, zIndex: 2100 }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected
+                                                ? "#e5f2ff"
+                                                : state.isFocused
+                                                    ? "#f3f4f6"
+                                                    : "#fff",
+                                            color: "#111827",
+                                        }),
+                                        menuList: (base) => ({ ...base, backgroundColor: "#fff", paddingTop: 0, paddingBottom: 0 }),
+                                        singleValue: (base) => ({ ...base, color: "#111827" }),
+                                    }}
+                                />
+                                {error && !formData.owner_sub_district_id && (
+                                    <span style={{ color: "#d32f2f", fontSize: 12, marginTop: 4, display: "block" }}>
+                                        กรุณาเลือกตำบล/แขวง
+                                    </span>
+                                )}
+                            </Box>
+
+                            <TextField
+                                label="รหัสไปรษณีย์"
+                                size="small"
+                                fullWidth
+                                name="owner_zipcode"
+                                inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
+                                value={formData.owner_zipcode ?? ""}
+                                onChange={handleChange}
+                                sx={{ alignSelf: "end" }}
+                            />
+                            <Box /> {/* ช่องว่างท้ายสุด */}
+                        </Box>
+
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 2 }}>
+                            ข้อมูลติดต่อ
+                        </Typography>
+
+                        {/* ข้อมูลติดต่อ: โทรศัพท์, โทรสาร, อีเมล */}
+                        <Box
+                            sx={{
+                                mt: 1,
+                                display: "grid",
+                                gap: 2,
+                                gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
+                            }}
+                        >
+                            <TextField label="โทรศัพท์" size="small" fullWidth name="owner_phone"
+                                inputProps={{ inputMode: "tel" }}
+                                value={formData.owner_phone ?? ""} onChange={handleChange} />
+                            <TextField label="โทรสาร" size="small" fullWidth name="owner_fax"
+                                inputProps={{ inputMode: "tel" }}
+                                value={formData.owner_fax ?? ""} onChange={handleChange} />
+                            <TextField label="อีเมล" size="small" fullWidth name="owner_email" type="email"
+                                value={formData.owner_email ?? ""} onChange={handleChange} />
+                        </Box>
+
+                        {/* ผู้ออกแบบด้านวิศวกรรมโครงสร้าง, ใบอนุญาตทะเบียนเลขที่ */}
+                        <Box
+                            sx={{
+                                mt: 2,
+                                display: "grid",
+                                gap: 2,
+                                gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(2, 1fr)" },
+                            }}
+                        >
+                            <TextField label="ผู้ออกแบบด้านวิศวกรรมโครงสร้าง" size="small" fullWidth name="designer_name"
+                                value={formData.designer_name ?? ""} onChange={handleChange} />
+                            <TextField label="ใบอนุญาตทะเบียนเลขที่" size="small" fullWidth name="designer_license_no"
+                                value={formData.designer_license_no ?? ""} onChange={handleChange} />
+                        </Box>
+                    </Box>
+
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                        ข้อมูลแบบฟอร์ม
+                    </Typography>
+
                     <Box>
                         <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
                             การบริการ
                         </label>
-                        <Select
+                        <Select menuPlacement="auto"
                             options={services.map(c => ({ value: c.service_id, label: c.service_name }))}
                             value={services.map(c => ({ value: c.service_id, label: c.service_name }))
                                 .find(opt => opt.value === formData.service_id) || null}
@@ -649,7 +1588,7 @@ export default function EquipmentPage() {
                         <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
                             การตรวจ
                         </label>
-                        <Select
+                        <Select menuPlacement="auto"
                             options={zones.map(c => ({ value: c.zone_id, label: c.zone_name }))}
                             value={zones.map(c => ({ value: c.zone_id, label: c.zone_name }))
                                 .find(opt => opt.value === formData.zone_id) || null}
@@ -730,57 +1669,6 @@ export default function EquipmentPage() {
                 <DialogActions>
                     <Button onClick={handleClose}>ยกเลิก</Button>
                     <Button variant="contained" color="primary" onClick={handleSave}>
-                        บันทึก
-                    </Button>
-                </DialogActions>
-            </Dialog>
-            <Dialog
-                open={openDetail}
-                onClose={handleClose}
-                fullWidth
-                sx={{ zIndex: 1000 }}
-                PaperProps={{
-                    sx: {
-                        width: "95vw",   // กว้าง 95% ของจอ
-                        height: "95vh",  // สูง 95% ของจอ
-                        maxWidth: "95vw",
-                        maxHeight: "95vh",
-                        margin: 0,
-                    },
-                }}
-            >
-                <DialogTitle>Form Detail : {formData.equipment_name}</DialogTitle>
-                <DialogContent
-                    dividers
-                    sx={{
-                        height: "calc(95vh - 64px - 52px)",
-                        overflow: "hidden",
-                        p: 2,
-                    }}
-                >
-                    {typeof window !== "undefined" && storageRef.current && (
-                        <FormBuilder
-                            view={builderViewWithCss}
-                            formStorage={storageRef.current}
-                        />
-                    )}
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleClose}>ยกเลิก</Button>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={async () => {
-                            const schemaObj = storageRef.current?.getCurrentObject() ?? {};
-
-                            const payload = {
-                                equipment_id: formData.equipment_id,
-                                equipment_name: formData.equipment_name,
-                                schema: schemaObj,
-                            };
-                            handleClose();
-                        }}
-                    >
                         บันทึก
                     </Button>
                 </DialogActions>
