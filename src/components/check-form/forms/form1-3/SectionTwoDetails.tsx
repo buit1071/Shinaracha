@@ -1,5 +1,7 @@
 import * as React from "react";
 
+import type { ViewDataForm } from "@/interfaces/master";
+
 /* ---------- Reusable Image Upload (single) ---------- */
 function ImageField({
     label,
@@ -165,19 +167,23 @@ function ImageGallery({
     );
 }
 
+type Props = {
+    data: ViewDataForm | null;
+};
+
 /* ========================== SECTION TWO ========================== */
-export default function SectionTwoDetails() {
+export default function SectionTwoDetails({ data }: Props) {
     // 5.1 ข้อมูลป้ายและสถานที่ตั้ง
-    const [signName, setSignName] = React.useState("-");
-    const [addrNo, setAddrNo] = React.useState("-");
-    const [addrAlley, setAddrAlley] = React.useState("-");
-    const [addrRoad, setAddrRoad] = React.useState("-");
-    const [subDistrict, setSubDistrict] = React.useState("-");
-    const [district, setDistrict] = React.useState("-");
-    const [province, setProvince] = React.useState("-");
-    const [zip, setZip] = React.useState("-");
-    const [tel, setTel] = React.useState("-");
-    const [fax, setFax] = React.useState("-");
+    const [signName, setSignName] = React.useState("-"); //equipment_name
+    const [addrNo, setAddrNo] = React.useState("-"); //address_no
+    const [addrAlley, setAddrAlley] = React.useState("-"); //alley
+    const [addrRoad, setAddrRoad] = React.useState("-"); //road
+    const [subDistrict, setSubDistrict] = React.useState("-"); //sub_district_id
+    const [district, setDistrict] = React.useState("-"); //district_id
+    const [province, setProvince] = React.useState("-"); //province_id
+    const [zip, setZip] = React.useState("-"); //zipcode
+    const [tel, setTel] = React.useState("-"); //phone
+    const [fax, setFax] = React.useState("-"); //fax
     const [permitDay, setPermitDay] = React.useState("-");
     const [permitMonth, setPermitMonth] = React.useState("-");
     const [permitYear, setPermitYear] = React.useState("-");
@@ -201,7 +207,7 @@ export default function SectionTwoDetails() {
     const [recorder3, setRecorder3] = React.useState<string>("");
 
     // 5.2 ประเภทของป้าย
-    const [typeGround, setTypeGround] = React.useState<boolean>(false); // ✔
+    const [typeGround, setTypeGround] = React.useState<boolean>(false);
     const [typeRooftop, setTypeRooftop] = React.useState<boolean>(false);
     const [typeOnRoof, setTypeOnRoof] = React.useState<boolean>(false);
     const [typeOnBuilding, setTypeOnBuilding] = React.useState<boolean>(false);
@@ -209,21 +215,21 @@ export default function SectionTwoDetails() {
     const [typeOther, setTypeOther] = React.useState<string>("");
 
     // 5.3 ข้อมูลเจ้าของ/ผู้ออกแบบ และ 5.3.1 ชื่อผลิตภัณฑ์/ข้อความบนป้าย
-    const [productText, setProductText] = React.useState("-");
-    const [ownerName, setOwnerName] = React.useState("-");
-    const [ownerNo, setOwnerNo] = React.useState("-");
-    const [ownerMoo, setOwnerMoo] = React.useState("-");
-    const [ownerAlley, setOwnerAlley] = React.useState("-");
-    const [ownerRoad, setOwnerRoad] = React.useState("-");
-    const [ownerSub, setOwnerSub] = React.useState("-");
-    const [ownerDist, setOwnerDist] = React.useState("-");
-    const [ownerProv, setOwnerProv] = React.useState("-");
-    const [ownerZip, setOwnerZip] = React.useState("-");
-    const [ownerTel, setOwnerTel] = React.useState("-");
-    const [ownerFax, setOwnerFax] = React.useState("-");
-    const [ownerEmail, setOwnerEmail] = React.useState("-");
-    const [designerName, setDesignerName] = React.useState("-");
-    const [designerLicense, setDesignerLicense] = React.useState("-");
+    const [productText, setProductText] = React.useState("-"); //description
+    const [ownerName, setOwnerName] = React.useState("-"); //owner_name
+    const [ownerNo, setOwnerNo] = React.useState("-"); //owner_address_no
+    const [ownerMoo, setOwnerMoo] = React.useState("-"); //owner_moo
+    const [ownerAlley, setOwnerAlley] = React.useState("-"); //owner_alley
+    const [ownerRoad, setOwnerRoad] = React.useState("-"); //owner_road
+    const [ownerSub, setOwnerSub] = React.useState("-"); //owner_province_id
+    const [ownerDist, setOwnerDist] = React.useState("-"); //owner_district_id
+    const [ownerProv, setOwnerProv] = React.useState("-"); //owner_sub_district_id
+    const [ownerZip, setOwnerZip] = React.useState("-"); //owner_zipcode
+    const [ownerTel, setOwnerTel] = React.useState("-"); //owner_phone
+    const [ownerFax, setOwnerFax] = React.useState("-"); //owner_fax
+    const [ownerEmail, setOwnerEmail] = React.useState("-"); //owner_email
+    const [designerName, setDesignerName] = React.useState("-"); //designer_name
+    const [designerLicense, setDesignerLicense] = React.useState("-"); //designer_license_no
 
     // 5.4 วัสดุ/รายละเอียด
     const [matSteel, setMatSteel] = React.useState<boolean>(false);
@@ -240,6 +246,52 @@ export default function SectionTwoDetails() {
     const [chkFaces, setChkFaces] = React.useState(false);
     const [chkOpen, setChkOpen] = React.useState(false);
     const [chkOther, setChkOther] = React.useState(false);
+
+    const s = (v?: string | null) => (v && v.trim() !== "" ? v : "-");
+
+    React.useEffect(() => {
+        if (!data) {
+            // reset
+            setSignName("-"); setAddrNo("-"); setAddrAlley("-"); setAddrRoad("-");
+            setSubDistrict("-"); setDistrict("-"); setProvince("-"); setZip("-");
+            setTel("-"); setFax("-");
+
+            setProductText("-"); setOwnerName("-"); setOwnerNo("-"); setOwnerMoo("-");
+            setOwnerAlley("-"); setOwnerRoad("-"); setOwnerSub("-"); setOwnerDist("-");
+            setOwnerProv("-"); setOwnerZip("-"); setOwnerTel("-"); setOwnerFax("-");
+            setOwnerEmail("-"); setDesignerName("-"); setDesignerLicense("-");
+            return;
+        }
+
+        // 5.1
+        setSignName(s(data.equipment_name));
+        setAddrNo(s(data.address_no));
+        setAddrAlley(s(data.alley));
+        setAddrRoad(s(data.road));
+        setSubDistrict(s(data.sub_district_name_th));
+        setDistrict(s(data.district_name_th));
+        setProvince(s(data.province_name_th));
+        setZip(s(data.zipcode));
+        setTel(s(data.phone));
+        setFax(s(data.fax));
+
+        // 5.3
+        setProductText(s(data.description));
+        setOwnerName(s(data.owner_name));
+        setOwnerNo(s(data.owner_address_no));
+        setOwnerMoo(s(data.owner_moo));
+        setOwnerAlley(s(data.owner_alley));
+        setOwnerRoad(s(data.owner_road));
+        setOwnerSub(s(data.owner_sub_district_name_th));
+        setOwnerDist(s(data.owner_district_name_th));
+        setOwnerProv(s(data.owner_province_name_th));
+        setOwnerZip(s(data.owner_zipcode));
+        setOwnerTel(s(data.owner_phone));
+        setOwnerFax(s(data.owner_fax));
+        setOwnerEmail(s(data.owner_email));
+        setDesignerName(s(data.designer_name));
+        setDesignerLicense(s(data.designer_license_no));
+    }, [data]);
 
     return (
         <div className="text-black leading-7 space-y-8 p-2">

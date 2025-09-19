@@ -6,11 +6,19 @@ import SectionTwoDetails from "@/components/check-form/forms/form1-3/SectionTwoD
 import SectionThreeDetails from "@/components/check-form/forms/form1-3/SectionThreeDetails";
 import SectionFourDetails from "@/components/check-form/forms/form1-3/SectionFourDetails";
 import SectionFiveDetails from "@/components/check-form/forms/form1-3/SectionFiveDetails";
+import type { ViewDataForm } from "@/interfaces/master";
+import { showLoading } from "@/lib/loading";
 
-export default function Form1_3() {
+type Props = {
+    jobId: string;
+    equipment_id: string;
+};
+
+export default function Form1_3({ jobId, equipment_id }: Props) {
     const [coverSrc, setCoverSrc] = React.useState<string | null>(null);
     const [placeName, setPlaceName] = React.useState<string>("");
     const [openSections, setOpenSections] = React.useState<string[]>([]);
+    const [viewData, setViewData] = React.useState<ViewDataForm | null>(null);
 
     const toggle = (id: string) => {
         setOpenSections((prev) =>
@@ -24,6 +32,30 @@ export default function Form1_3() {
         const url = URL.createObjectURL(f);
         setCoverSrc(url);
     };
+
+    const fecthEquipmentDetail = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/equipment/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "ViewEquipment", job_id: jobId, equipment_id: equipment_id }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setViewData(data.data);
+            }
+        } catch (err) {
+            console.error("Fetch error:", err);
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    React.useEffect(() => {
+        if (!jobId) return;
+        fecthEquipmentDetail();
+    }, [jobId, equipment_id]);
 
     return (
         <>
@@ -177,7 +209,7 @@ export default function Form1_3() {
                     >
                         <div className="overflow-hidden">
                             <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
-                                <SectionTwoDetails />
+                                <SectionTwoDetails data={viewData} />
                             </div>
                         </div>
                     </div>

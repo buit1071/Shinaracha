@@ -1,9 +1,8 @@
 "use client";
 
 import * as React from "react";
-import Select, { SingleValue } from "react-select";
 import { showLoading } from "@/lib/loading";
-import type { SelectForm, EquipmentRow, ServiceRow, ZoneRow } from "@/interfaces/master";
+import type { EquipmentRow, ServiceRow } from "@/interfaces/master";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import IconButton from "@mui/material/IconButton";
 import {
@@ -28,11 +27,10 @@ type Option = { value: string; label: string };
 export default function CheckForm({ jobId, onBack }: Props) {
     const backToList = () => setView(null);
     const [jobName, setjobName] = React.useState<string>("");
-    const [forms, setForms] = React.useState<SelectForm[]>([]);
     const [selectedForm, setSelectedForm] = React.useState<Option | null>(null);
     const [rows, setRows] = React.useState<EquipmentRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
-    const [view, setView] = React.useState<null | { type: "detail"; id: string; name: string }>(null);
+    const [view, setView] = React.useState<null | { type: "detail"; id: string; equipment_id: string; name: string }>(null);
 
     const fetchJobName = async () => {
         try {
@@ -82,7 +80,7 @@ export default function CheckForm({ jobId, onBack }: Props) {
             console.warn("job not found:", zone_id);
             return;
         }
-        setView({ type: "detail", id: row.zone_id, name: row.equipment_name });
+        setView({ type: "detail", id: row.zone_id, equipment_id: row.equipment_id, name: row.equipment_name });
     }, [rows]);
 
     const columns: GridColDef<EquipmentRow>[] = [
@@ -149,7 +147,7 @@ export default function CheckForm({ jobId, onBack }: Props) {
         <>
             {view?.type === "detail" ? (
                 <>
-                    <CheckLabelForm formId={view.id} jobId={jobId} name={view.name} onBack={backToList} />
+                    <CheckLabelForm formId={view.id} jobId={jobId} equipment_id={view.equipment_id} name={view.name} onBack={backToList} />
                 </>
             ) : (
                 <>

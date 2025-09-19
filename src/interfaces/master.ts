@@ -340,18 +340,6 @@ export interface EquipmentBranchRow {
     updated_date?: string;
     order?: number;
 }
-export interface SelectForm {
-    job_id: string;
-    service_id: string;
-    zone_id: string;
-    zone_name?: string;
-    is_active: number;
-    created_by: string;
-    updated_by: string;
-    created_date?: string;
-    updated_date?: string;
-    order?: number;
-}
 // ค่าร่วมของ master ทุกตาราง
 export interface MasterBase {
     is_active: number;          // 1 = ใช้งาน, 0 = ปิดใช้งาน
@@ -361,7 +349,6 @@ export interface MasterBase {
     updated_date?: string;      // ISO string จาก DB
     order?: number;
 }
-
 /** จังหวัด */
 export interface MasterProvinceRow extends MasterBase {
     id: number;                 // PK (INT)
@@ -369,7 +356,6 @@ export interface MasterProvinceRow extends MasterBase {
     name_th: string;
     name_en?: string;
 }
-
 /** อำเภอ/เขต */
 export interface MasterDistrictRow extends MasterBase {
     id: number;                 // PK (INT)
@@ -378,7 +364,6 @@ export interface MasterDistrictRow extends MasterBase {
     name_th: string;
     name_en?: string;
 }
-
 /** ตำบล/แขวง */
 export interface MasterSubdistrictRow extends MasterBase {
     id: number;                 // PK (INT)
@@ -389,7 +374,56 @@ export interface MasterSubdistrictRow extends MasterBase {
     post_code?: string;         // ถ้าเก็บในตารางนี้ (บางระบบแยกเป็นตาราง postcodes)
 }
 
-/* ---- ช่วยสำหรับ dropdown/select ---- */
-export type ProvinceOption = { value: string; label: string };     // value = province_id
-export type DistrictOption = { value: string; label: string };     // value = district_id
-export type SubdistrictOption = { value: string; label: string };  // value = sub_district_id
+export interface ViewDataForm {
+    data_id: number;
+
+    job_id: string;
+    row_id: string;
+    equipment_id: string;
+
+    equipment_name: string;
+    image_limit: number;
+    description: string | null;
+
+    equipment_code: string;
+    service_id: string;
+    zone_id: string;
+
+    address_no: string;
+    moo: string;
+    alley: string;
+    road: string;
+
+    sub_district_id: string;
+    district_id: string;
+    province_id: string;
+    zipcode: string;
+
+    phone: string;
+    fax: string;
+
+    owner_name: string;
+    owner_address_no: string;
+    owner_moo: string;
+    owner_alley: string;
+    owner_road: string;
+    owner_province_id: string;
+    owner_district_id: string;
+    owner_sub_district_id: string;
+    owner_zipcode: string;
+    owner_phone: string;
+    owner_fax: string;
+    owner_email: string;
+
+    designer_name: string;
+    designer_license_no: string;
+
+    /** Thai names from master tables (may be null if not matched) */
+    sub_district_name_th: string | null;
+    district_name_th: string | null;
+    province_name_th: string | null;
+
+    owner_sub_district_name_th: string | null;
+    owner_district_name_th: string | null;
+    owner_province_name_th: string | null;
+}

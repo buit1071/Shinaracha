@@ -8,6 +8,7 @@ type GetBody =
     | { function: "SubDistrictOption" }
     | { function: "DistrictOptionByProvinceId", province_id: string }
     | { function: "SubDistrictOptionByDistrictId", district_id: string }
+    | { function: "ViewEquipment", job_id: string, equipment_id: string }
     ;
 
 export async function POST(req: Request) {
@@ -69,6 +70,17 @@ export async function POST(req: Request) {
                 [body.district_id]
             );
             return NextResponse.json({ success: true, data: rows });
+        }
+
+        if (fn === "ViewEquipment") {
+            const rows = await query(
+                `SELECT *
+     FROM view_data_form
+     WHERE job_id = ? AND equipment_id = ?
+     LIMIT 1`,
+                [body.job_id, body.equipment_id]
+            );
+            return NextResponse.json({ success: true, data: rows[0] ?? null });
         }
 
         // ไม่รู้จัก function
