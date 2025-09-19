@@ -500,11 +500,12 @@ export default function EquipmentPage() {
 
     const handleSave = async () => {
         if (
-            !formData.equipment_name ||
-            !formData.equipment_code ||
-            !formData.image_limit ||
-            !formData.service_id ||
-            !formData.zone_id
+            !formData.equipment_name || !formData.equipment_code || !formData.image_limit || !formData.address_no || !formData.moo ||
+            !formData.alley || !formData.road || !formData.sub_district_id || !formData.district_id || !formData.province_id ||
+            !formData.zipcode || !formData.phone || !formData.fax || !formData.owner_name || !formData.owner_address_no || !formData.owner_moo ||
+            !formData.owner_alley || !formData.owner_road || !formData.owner_province_id || !formData.owner_district_id || !formData.owner_sub_district_id ||
+            !formData.owner_zipcode || !formData.owner_phone || !formData.owner_fax || !formData.owner_email || !formData.designer_name ||
+            !formData.designer_license_no || !formData.service_id || !formData.zone_id
         ) {
             setError(true);
             return;
@@ -845,13 +846,25 @@ export default function EquipmentPage() {
                             }}
                         >
                             <TextField label="เลขที่" size="small" fullWidth name="address_no"
-                                value={formData.address_no ?? ""} onChange={handleChange} />
+                                value={formData.address_no ?? ""} onChange={handleChange}
+                                error={error && !formData.address_no}
+                                helperText={error && !formData.address_no ? "กรุณากรอกเลขที่" : ""}
+                            />
                             <TextField label="หมู่ที่" size="small" fullWidth name="moo"
-                                value={formData.moo ?? ""} onChange={handleChange} />
+                                value={formData.moo ?? ""} onChange={handleChange}
+                                error={error && !formData.moo}
+                                helperText={error && !formData.moo ? "กรุณากรอกหมู่ที่" : ""}
+                            />
                             <TextField label="ตรอก/ซอย" size="small" fullWidth name="alley"
-                                value={formData.alley ?? ""} onChange={handleChange} />
+                                value={formData.alley ?? ""} onChange={handleChange}
+                                error={error && !formData.alley}
+                                helperText={error && !formData.alley ? "กรุณากรอกตรอก/ซอย" : ""}
+                            />
                             <TextField label="ถนน" size="small" fullWidth name="road"
-                                value={formData.road ?? ""} onChange={handleChange} />
+                                value={formData.road ?? ""} onChange={handleChange}
+                                error={error && !formData.road}
+                                helperText={error && !formData.road ? "กรุณากรอกถนน" : ""}
+                            />
                         </Box>
 
                         {/* แถว 2: จังหวัด, อำเภอ/เขต, ตำบล/แขวง, รหัสไปรษณีย์  (เก็บเป็น *_id) */}
@@ -1124,11 +1137,17 @@ export default function EquipmentPage() {
                                 label="รหัสไปรษณีย์"
                                 size="small"
                                 fullWidth
+                                disabled
                                 name="zipcode"
                                 inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
                                 value={formData.zipcode ?? ""}
                                 onChange={handleChange}
                                 sx={{ alignSelf: "end" }}
+                                InputProps={{
+                                    sx: { height: 38 },
+                                }}
+                                error={error && !formData.zipcode}
+                                helperText={error && !formData.zipcode ? "กรุณากรอกรหัสไปรษณีย์" : ""}
                             />
                         </Box>
 
@@ -1143,10 +1162,16 @@ export default function EquipmentPage() {
                         >
                             <TextField label="โทรศัพท์" size="small" fullWidth name="phone"
                                 inputProps={{ inputMode: "tel" }}
-                                value={formData.phone ?? ""} onChange={handleChange} />
+                                value={formData.phone ?? ""} onChange={handleChange}
+                                error={error && !formData.phone}
+                                helperText={error && !formData.phone ? "กรุณากรอกโทรศัพท์" : ""}
+                            />
                             <TextField label="โทรสาร" size="small" fullWidth name="fax"
                                 inputProps={{ inputMode: "tel" }}
-                                value={formData.fax ?? ""} onChange={handleChange} />
+                                value={formData.fax ?? ""} onChange={handleChange}
+                                error={error && !formData.fax}
+                                helperText={error && !formData.fax ? "กรุณากรอกโทรสาร" : ""}
+                            />
                             <Box />
                             <Box />
                         </Box>
@@ -1166,15 +1191,30 @@ export default function EquipmentPage() {
                             }}
                         >
                             <TextField label="ชื่อ" size="small" fullWidth name="owner_name"
-                                value={formData.owner_name ?? ""} onChange={handleChange} />
+                                value={formData.owner_name ?? ""} onChange={handleChange}
+                                error={error && !formData.owner_name}
+                                helperText={error && !formData.owner_name ? "กรุณากรอกชื่อ" : ""}
+                            />
                             <TextField label="เลขที่" size="small" fullWidth name="owner_address_no"
-                                value={formData.owner_address_no ?? ""} onChange={handleChange} />
+                                value={formData.owner_address_no ?? ""} onChange={handleChange}
+                                error={error && !formData.owner_address_no}
+                                helperText={error && !formData.owner_address_no ? "กรุณากรอกเลขที่" : ""}
+                            />
                             <TextField label="หมู่ที่" size="small" fullWidth name="owner_moo"
-                                value={formData.owner_moo ?? ""} onChange={handleChange} />
+                                value={formData.owner_moo ?? ""} onChange={handleChange}
+                                error={error && !formData.owner_moo}
+                                helperText={error && !formData.owner_moo ? "กรุณากรอกหมู่ที่" : ""}
+                            />
                             <TextField label="ตรอก/ซอย" size="small" fullWidth name="owner_alley"
-                                value={formData.owner_alley ?? ""} onChange={handleChange} />
+                                value={formData.owner_alley ?? ""} onChange={handleChange}
+                                error={error && !formData.owner_alley}
+                                helperText={error && !formData.owner_alley ? "กรุณากรอกตรอก/ซอย" : ""}
+                            />
                             <TextField label="ถนน" size="small" fullWidth name="owner_road"
-                                value={formData.owner_road ?? ""} onChange={handleChange} />
+                                value={formData.owner_road ?? ""} onChange={handleChange}
+                                error={error && !formData.owner_road}
+                                helperText={error && !formData.owner_road ? "กรุณากรอกถนน" : ""}
+                            />
                         </Box>
 
                         {/* แถวที่ 2: จังหวัด, อำเภอ/เขต, ตำบล/แขวง, รหัสไปรษณีย์ + ช่องว่างท้ายสุด */}
@@ -1447,11 +1487,17 @@ export default function EquipmentPage() {
                                 label="รหัสไปรษณีย์"
                                 size="small"
                                 fullWidth
+                                disabled
                                 name="owner_zipcode"
                                 inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
                                 value={formData.owner_zipcode ?? ""}
                                 onChange={handleChange}
                                 sx={{ alignSelf: "end" }}
+                                InputProps={{
+                                    sx: { height: 38 },
+                                }}
+                                error={error && !formData.owner_zipcode}
+                                helperText={error && !formData.owner_zipcode ? "กรุณากรอกรหัสไปรษณีย์" : ""}
                             />
                             <Box /> {/* ช่องว่างท้ายสุด */}
                         </Box>
@@ -1471,12 +1517,21 @@ export default function EquipmentPage() {
                         >
                             <TextField label="โทรศัพท์" size="small" fullWidth name="owner_phone"
                                 inputProps={{ inputMode: "tel" }}
-                                value={formData.owner_phone ?? ""} onChange={handleChange} />
+                                value={formData.owner_phone ?? ""} onChange={handleChange}
+                                error={error && !formData.owner_phone}
+                                helperText={error && !formData.owner_phone ? "กรุณากรอกโทรศัพท์" : ""}
+                            />
                             <TextField label="โทรสาร" size="small" fullWidth name="owner_fax"
                                 inputProps={{ inputMode: "tel" }}
-                                value={formData.owner_fax ?? ""} onChange={handleChange} />
+                                value={formData.owner_fax ?? ""} onChange={handleChange}
+                                error={error && !formData.owner_fax}
+                                helperText={error && !formData.owner_fax ? "กรุณากรอกโทรสาร" : ""}
+                            />
                             <TextField label="อีเมล" size="small" fullWidth name="owner_email" type="email"
-                                value={formData.owner_email ?? ""} onChange={handleChange} />
+                                value={formData.owner_email ?? ""} onChange={handleChange}
+                                error={error && !formData.owner_email}
+                                helperText={error && !formData.owner_email ? "กรุณากรอกอีเมล" : ""}
+                            />
                         </Box>
 
                         {/* ผู้ออกแบบด้านวิศวกรรมโครงสร้าง, ใบอนุญาตทะเบียนเลขที่ */}
@@ -1489,9 +1544,15 @@ export default function EquipmentPage() {
                             }}
                         >
                             <TextField label="ผู้ออกแบบด้านวิศวกรรมโครงสร้าง" size="small" fullWidth name="designer_name"
-                                value={formData.designer_name ?? ""} onChange={handleChange} />
+                                value={formData.designer_name ?? ""} onChange={handleChange}
+                                error={error && !formData.designer_name}
+                                helperText={error && !formData.designer_name ? "กรุณากรอกผู้ออกแบบด้านวิศวกรรมโครงสร้าง" : ""}
+                            />
                             <TextField label="ใบอนุญาตทะเบียนเลขที่" size="small" fullWidth name="designer_license_no"
-                                value={formData.designer_license_no ?? ""} onChange={handleChange} />
+                                value={formData.designer_license_no ?? ""} onChange={handleChange}
+                                error={error && !formData.designer_license_no}
+                                helperText={error && !formData.designer_license_no ? "กรุณากรอกใบอนุญาตทะเบียนเลขที่" : ""}
+                            />
                         </Box>
                     </Box>
 
