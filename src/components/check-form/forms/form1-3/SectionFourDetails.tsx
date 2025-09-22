@@ -1,7 +1,7 @@
 import * as React from "react";
 
 /* ========= CONFIG ========= */
-type VisitKey = "v1";
+export type VisitKey = "v1";
 const VISITS: { key: VisitKey; label: string }[] = [{ key: "v1", label: "ครั้งที่ 1" }];
 
 const DottedInput: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({ className = "", ...props }) => (
@@ -71,16 +71,28 @@ const table2Groups: { title: string; rows: RowItem[] }[] = [
     },
     {
         title: "3. ระบบอุปกรณ์ประกอบอื่น ๆ (ถ้ามี)",
-        rows: [
-            "อุปกรณ์ยึดกันลม",
-            "อุปกรณ์กันนก/สัตว์รบกวน",
-            { label: "อุปกรณ์ประกอบอื่นที่เห็นสมควร (ระบุ)", inlineInput: true },
-        ],
+        rows: ["อุปกรณ์ยึดกันลม", "อุปกรณ์กันนก/สัตว์รบกวน", { label: "อุปกรณ์ประกอบอื่นที่เห็นสมควร (ระบุ)", inlineInput: true }],
     },
 ];
 
+export type SectionFourRow = {
+    visits?: Partial<Record<VisitKey, "ok" | "ng" | undefined>>; // สถานะต่อ visit
+    note?: string;
+    extra?: string;
+};
+
+export type SectionFourForm = {
+    table1: Record<string, SectionFourRow>; // key: t1-1, t1-2, ...
+    table2: Record<string, SectionFourRow>; // key: t2-<groupIndex>-<rowIndex>
+};
+
+type Props = {
+    value?: Partial<SectionFourForm>;
+    onChange?: (patch: Partial<SectionFourForm>) => void;
+};
+
 /* ========= COMPONENT ========= */
-export default function SectionFourDetails() {
+export default function SectionFourDetails({ value, onChange }: Props) {
     type RowState = { status?: "ok" | "ng"; note?: string; extra?: string };
     const [state, setState] = React.useState<Record<string, RowState>>({});
 
@@ -88,10 +100,23 @@ export default function SectionFourDetails() {
     const th = "border border-gray-300 px-3 py-2 text-gray-700";
     const TOTAL_COLS = 2 + VISITS.length * 2 + 1;
 
-    const toggle = (id: string, next: "ok" | "ng") =>
-        setState((p) => ({ ...p, [id]: { ...p[id], status: p[id]?.status === next ? undefined : next } }));
-    const setNote = (id: string, v: string) => setState((p) => ({ ...p, [id]: { ...p[id], note: v } }));
-    const setExtra = (id: string, v: string) => setState((p) => ({ ...p, [id]: { ...p[id], extra: v } }));
+    const v1 = value?.table1 ?? {};
+    const v2 = value?.table2 ?? {};
+
+    const emit = React.useCallback(
+        (group: "table1" | "table2", rowId: string, delta: Partial<SectionFourRow>) => {
+            if (!onChange) return;
+            onChange({ [group]: { [rowId]: delta } } as Partial<SectionFourForm>);
+        },
+        [onChange]
+    );
+
+    const toggle = (group: "table1" | "table2", rowId: string, visit: VisitKey, next: "ok" | "ng") => {
+        const row = group === "table1" ? v1[rowId] : v2[rowId];
+        const cur = row?.visits?.[visit];
+        const nextVal: "ok" | "ng" | undefined = cur === next ? undefined : next;
+        emit(group, rowId, { visits: { ...(row?.visits ?? {}), [visit]: nextVal } });
+    };
 
     const VisitHeader = () => (
         <>
@@ -103,6 +128,7 @@ export default function SectionFourDetails() {
             <th rowSpan={2} className={`${th} w-56 text-center`}>หมายเหตุ</th>
         </>
     );
+
     const SubHeader = () => (
         <>
             {VISITS.map((v) => (
@@ -113,12 +139,21 @@ export default function SectionFourDetails() {
             ))}
         </>
     );
-    const ResultCells: React.FC<{ id: string }> = ({ id }) => {
-        const s = state[id]?.status;
+
+    const ResultCells: React.FC<{ group: "table1" | "table2"; id: string }> = ({ group, id }) => {
+        const row = group === "table1" ? v1[id] : v2[id];
         return (
             <>
-                <td className={`${td} text-center`}><CheckTick checked={s === "ok"} onChange={() => toggle(id, "ok")} /></td>
-                <td className={`${td} text-center`}><CheckTick checked={s === "ng"} onChange={() => toggle(id, "ng")} /></td>
+                {VISITS.map((v) => (
+                    <React.Fragment key={`${id}-${v.key}`}>
+                        <td className={`${td} text-center`}>
+                            <CheckTick checked={row?.visits?.[v.key] === "ok"} onChange={() => toggle(group, id, v.key, "ok")} />
+                        </td>
+                        <td className={`${td} text-center`}>
+                            <CheckTick checked={row?.visits?.[v.key] === "ng"} onChange={() => toggle(group, id, v.key, "ng")} />
+                        </td>
+                    </React.Fragment>
+                ))}
             </>
         );
     };
@@ -138,6 +173,7 @@ export default function SectionFourDetails() {
                             const id = `t1-${i + 1}`;
                             const text = typeof row === "string" ? row : row.label;
                             const inline = typeof row !== "string" && row.inlineInput;
+                            const r = v1[id] ?? {};
                             return (
                                 <tr key={id} className="odd:bg-white even:bg-gray-50">
                                     <td className={`${td} text-center`}>{i + 1}</td>
@@ -147,18 +183,18 @@ export default function SectionFourDetails() {
                                             <DottedInput
                                                 className="ml-2 min-w-[220px]"
                                                 placeholder="โปรดระบุ"
-                                                value={state[id]?.extra ?? ""}
-                                                onChange={(e) => setExtra(id, e.target.value)}
+                                                value={r.extra ?? ""}
+                                                onChange={(e) => emit("table1", id, { extra: e.target.value })}
                                             />
                                         )}
                                     </td>
-                                    <ResultCells id={id} />
+                                    <ResultCells group="table1" id={id} />
                                     <td className={td}>
                                         <DottedInput
                                             className="w-full"
                                             placeholder="ระบุหมายเหตุ (ถ้ามี)"
-                                            value={state[id]?.note ?? ""}
-                                            onChange={(e) => setNote(id, e.target.value)}
+                                            value={r.note ?? ""}
+                                            onChange={(e) => emit("table1", id, { note: e.target.value })}
                                         />
                                     </td>
                                 </tr>
@@ -179,7 +215,7 @@ export default function SectionFourDetails() {
                     <tbody>
                         {table2Groups.map((g, gi) => (
                             <React.Fragment key={g.title}>
-                                {/* แถวหัวข้อย่อย (merge cell ทั้งแถว) */}
+                                {/* แถวหัวข้อย่อย */}
                                 <tr>
                                     <td colSpan={TOTAL_COLS} className="px-3 py-2 border border-gray-300 bg-gray-200 font-semibold">
                                         {`${gi + 1}. ${g.title}`}
@@ -190,6 +226,7 @@ export default function SectionFourDetails() {
                                     const id = `t2-${gi + 1}-${i + 1}`;
                                     const text = typeof row === "string" ? row : row.label;
                                     const inline = typeof row !== "string" && row.inlineInput;
+                                    const r = v2[id] ?? {};
                                     return (
                                         <tr key={id} className="odd:bg-white even:bg-gray-50">
                                             <td className={`${td} text-center`}>{i + 1}</td>
@@ -199,18 +236,18 @@ export default function SectionFourDetails() {
                                                     <DottedInput
                                                         className="ml-2 min-w-[220px]"
                                                         placeholder="โปรดระบุ"
-                                                        value={state[id]?.extra ?? ""}
-                                                        onChange={(e) => setExtra(id, e.target.value)}
+                                                        value={r.extra ?? ""}
+                                                        onChange={(e) => emit("table2", id, { extra: e.target.value })}
                                                     />
                                                 )}
                                             </td>
-                                            <ResultCells id={id} />
+                                            <ResultCells group="table2" id={id} />
                                             <td className={td}>
                                                 <DottedInput
                                                     className="w-full"
                                                     placeholder="ระบุหมายเหตุ (ถ้ามี)"
-                                                    value={state[id]?.note ?? ""}
-                                                    onChange={(e) => setNote(id, e.target.value)}
+                                                    value={r.note ?? ""}
+                                                    onChange={(e) => emit("table2", id, { note: e.target.value })}
                                                 />
                                             </td>
                                         </tr>

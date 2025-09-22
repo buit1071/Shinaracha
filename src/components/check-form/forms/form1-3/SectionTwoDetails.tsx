@@ -11,7 +11,7 @@ function ImageField({
     square = false,
     width = 600,
     height = 300,
-    className = "-",
+    className = "",
 }: {
     label: string;
     value: string | null;
@@ -167,99 +167,164 @@ function ImageGallery({
     );
 }
 
+export type SectionTwoForm = {
+    permitDay?: string;
+    permitMonth?: string;
+    permitYear?: string;
+
+    inspectDay2?: string;
+    inspectMonth2?: string;
+    inspectYear2?: string;
+
+    inspectDay3?: string;
+    inspectMonth3?: string;
+    inspectYear3?: string;
+
+    hasOriginalPlan?: boolean;
+    noOriginalPlan?: boolean;
+    noPermitInfo?: boolean;
+    noOld?: boolean;
+    signAge?: string;
+
+    mapSketch?: string | null;
+    shapeSketch?: string | null;
+    photosFront?: string | null;
+    photosSide?: string | null;
+    photosBase?: string | null;
+
+    recorder2?: string;
+    recorder3?: string;
+
+    // 5.2 ประเภทของป้าย
+    typeGround?: boolean;
+    typeRooftop?: boolean;
+    typeOnRoof?: boolean;
+    typeOnBuilding?: boolean;
+    typeOtherChecked?: boolean;
+    typeOther?: string;
+
+    // 5.4 วัสดุ / รายละเอียด
+    matSteel?: boolean;
+    matWood?: boolean;
+    matStainless?: boolean;
+    matRCC?: boolean;
+    matOtherChecked?: boolean;
+    matOther?: string;
+    panelMaterial?: string;
+    panelFaces?: string;
+    panelOpenings?: "" | "มี" | "ไม่มี";
+    panelOther?: string;
+    chkMat?: boolean;
+    chkFaces?: boolean;
+    chkOpen?: boolean;
+    chkOther?: boolean;
+};
+
 type Props = {
     data: ViewDataForm | null;
+    value?: Partial<SectionTwoForm>;
+    onChange?: (patch: Partial<SectionTwoForm>) => void;
 };
 
 /* ========================== SECTION TWO ========================== */
-export default function SectionTwoDetails({ data }: Props) {
-    // 5.1 ข้อมูลป้ายและสถานที่ตั้ง
-    const [signName, setSignName] = React.useState("-"); //equipment_name
-    const [addrNo, setAddrNo] = React.useState("-"); //address_no
-    const [addrAlley, setAddrAlley] = React.useState("-"); //alley
-    const [addrRoad, setAddrRoad] = React.useState("-"); //road
-    const [subDistrict, setSubDistrict] = React.useState("-"); //sub_district_id
-    const [district, setDistrict] = React.useState("-"); //district_id
-    const [province, setProvince] = React.useState("-"); //province_id
-    const [zip, setZip] = React.useState("-"); //zipcode
-    const [tel, setTel] = React.useState("-"); //phone
-    const [fax, setFax] = React.useState("-"); //fax
-    const [permitDay, setPermitDay] = React.useState("-");
-    const [permitMonth, setPermitMonth] = React.useState("-");
-    const [permitYear, setPermitYear] = React.useState("-");
-    const [inspectDay2, setInspectDay2] = React.useState("-");
-    const [inspectMonth2, setInspectMonth2] = React.useState("-");
-    const [inspectYear2, setInspectYear2] = React.useState("-");
-    const [inspectDay3, setInspectDay3] = React.useState("-");
-    const [inspectMonth3, setInspectMonth3] = React.useState("-");
-    const [inspectYear3, setInspectYear3] = React.useState("-");
-    const [hasOriginalPlan, setHasOriginalPlan] = React.useState<boolean>(false);
-    const [noOriginalPlan, setNoOriginalPlan] = React.useState<boolean>(false);
-    const [noPermitInfo, setNoPermitInfo] = React.useState<boolean>(false);
-    const [noOld, setNoOld] = React.useState<boolean>(false);
-    const [signAge, setSignAge] = React.useState<string>("");
-    const [mapSketch, setMapSketch] = React.useState<string | null>(null);
-    const [shapeSketch, setShapeSketch] = React.useState<string | null>(null);
-    const [photosFront, setPhotosFront] = React.useState<string[]>([]);
-    const [photosSide, setPhotosSide] = React.useState<string[]>([]);
-    const [photosBase, setPhotosBase] = React.useState<string[]>([]);
-    const [recorder2, setRecorder2] = React.useState<string>("");
-    const [recorder3, setRecorder3] = React.useState<string>("");
+export default function SectionTwoDetails({ data, value, onChange }: Props) {
+    const onChangeRef = React.useRef(onChange);
+    React.useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+
+    // 5.1 ข้อมูลป้ายและสถานที่ตั้ง (จาก viewData เท่านั้น — ไม่ส่งกลับ)
+    const [signName, setSignName] = React.useState(""); // equipment_name
+    const [addrNo, setAddrNo] = React.useState("");     // address_no
+    const [addrAlley, setAddrAlley] = React.useState(""); // alley
+    const [addrRoad, setAddrRoad] = React.useState("");   // road
+    const [subDistrict, setSubDistrict] = React.useState(""); // sub_district_id
+    const [district, setDistrict] = React.useState("");       // district_id
+    const [province, setProvince] = React.useState("");       // province_id
+    const [zip, setZip] = React.useState("");                 // zipcode
+    const [tel, setTel] = React.useState("");                 // phone
+    const [fax, setFax] = React.useState("");                 // fax
+
+    // ===== ฟิลด์ที่ “จะส่งกลับ” =====
+    // 5.1 (ส่วนของการอนุญาต + อายุป้าย + แผน/แบบ ฯลฯ) — ผู้ใช้กรอก/ติ๊กเอง
+    const [permitDay, setPermitDay] = React.useState(value?.permitDay ?? "");
+    const [permitMonth, setPermitMonth] = React.useState(value?.permitMonth ?? "");
+    const [permitYear, setPermitYear] = React.useState(value?.permitYear ?? "");
+
+    const [inspectDay2, setInspectDay2] = React.useState(value?.inspectDay2 ?? "");
+    const [inspectMonth2, setInspectMonth2] = React.useState(value?.inspectMonth2 ?? "");
+    const [inspectYear2, setInspectYear2] = React.useState(value?.inspectYear2 ?? "");
+
+    const [inspectDay3, setInspectDay3] = React.useState(value?.inspectDay3 ?? "");
+    const [inspectMonth3, setInspectMonth3] = React.useState(value?.inspectMonth3 ?? "");
+    const [inspectYear3, setInspectYear3] = React.useState(value?.inspectYear3 ?? "");
+
+    const [hasOriginalPlan, setHasOriginalPlan] = React.useState<boolean>(value?.hasOriginalPlan ?? false);
+    const [noOriginalPlan, setNoOriginalPlan] = React.useState<boolean>(value?.noOriginalPlan ?? false);
+    const [noPermitInfo, setNoPermitInfo] = React.useState<boolean>(value?.noPermitInfo ?? false);
+    const [noOld, setNoOld] = React.useState<boolean>(value?.noOld ?? false);
+    const [signAge, setSignAge] = React.useState<string>(value?.signAge ?? "");
+
+    const [mapSketch, setMapSketch] = React.useState<string | null>(value?.mapSketch ?? null);
+    const [shapeSketch, setShapeSketch] = React.useState<string | null>(value?.shapeSketch ?? null);
+    const [photosFront, setPhotosFront] = React.useState<string | null>(value?.photosFront ?? null);
+    const [photosSide, setPhotosSide] = React.useState<string | null>(value?.photosSide ?? null);
+    const [photosBase, setPhotosBase] = React.useState<string | null>(value?.photosBase ?? null);
+    const [recorder2, setRecorder2] = React.useState<string>(value?.recorder2 ?? "");
+    const [recorder3, setRecorder3] = React.useState<string>(value?.recorder3 ?? "");
 
     // 5.2 ประเภทของป้าย
-    const [typeGround, setTypeGround] = React.useState<boolean>(false);
-    const [typeRooftop, setTypeRooftop] = React.useState<boolean>(false);
-    const [typeOnRoof, setTypeOnRoof] = React.useState<boolean>(false);
-    const [typeOnBuilding, setTypeOnBuilding] = React.useState<boolean>(false);
-    const [typeOtherChecked, setTypeOtherChecked] = React.useState(false);
-    const [typeOther, setTypeOther] = React.useState<string>("");
+    const [typeGround, setTypeGround] = React.useState<boolean>(value?.typeGround ?? false);
+    const [typeRooftop, setTypeRooftop] = React.useState<boolean>(value?.typeRooftop ?? false);
+    const [typeOnRoof, setTypeOnRoof] = React.useState<boolean>(value?.typeOnRoof ?? false);
+    const [typeOnBuilding, setTypeOnBuilding] = React.useState<boolean>(value?.typeOnBuilding ?? false);
+    const [typeOtherChecked, setTypeOtherChecked] = React.useState<boolean>(value?.typeOtherChecked ?? false);
+    const [typeOther, setTypeOther] = React.useState<string>(value?.typeOther ?? "");
 
-    // 5.3 ข้อมูลเจ้าของ/ผู้ออกแบบ และ 5.3.1 ชื่อผลิตภัณฑ์/ข้อความบนป้าย
-    const [productText, setProductText] = React.useState("-"); //description
-    const [ownerName, setOwnerName] = React.useState("-"); //owner_name
-    const [ownerNo, setOwnerNo] = React.useState("-"); //owner_address_no
-    const [ownerMoo, setOwnerMoo] = React.useState("-"); //owner_moo
-    const [ownerAlley, setOwnerAlley] = React.useState("-"); //owner_alley
-    const [ownerRoad, setOwnerRoad] = React.useState("-"); //owner_road
-    const [ownerSub, setOwnerSub] = React.useState("-"); //owner_province_id
-    const [ownerDist, setOwnerDist] = React.useState("-"); //owner_district_id
-    const [ownerProv, setOwnerProv] = React.useState("-"); //owner_sub_district_id
-    const [ownerZip, setOwnerZip] = React.useState("-"); //owner_zipcode
-    const [ownerTel, setOwnerTel] = React.useState("-"); //owner_phone
-    const [ownerFax, setOwnerFax] = React.useState("-"); //owner_fax
-    const [ownerEmail, setOwnerEmail] = React.useState("-"); //owner_email
-    const [designerName, setDesignerName] = React.useState("-"); //designer_name
-    const [designerLicense, setDesignerLicense] = React.useState("-"); //designer_license_no
+    // 5.3 (จาก viewData — ไม่ส่งกลับ)
+    const [productText, setProductText] = React.useState("");  // description
+    const [ownerName, setOwnerName] = React.useState("");      // owner_name
+    const [ownerNo, setOwnerNo] = React.useState("");          // owner_address_no
+    const [ownerMoo, setOwnerMoo] = React.useState("");        // owner_moo
+    const [ownerAlley, setOwnerAlley] = React.useState("");    // owner_alley
+    const [ownerRoad, setOwnerRoad] = React.useState("");      // owner_road
+    const [ownerSub, setOwnerSub] = React.useState("");        // owner_province_id
+    const [ownerDist, setOwnerDist] = React.useState("");      // owner_district_id
+    const [ownerProv, setOwnerProv] = React.useState("");      // owner_sub_district_id
+    const [ownerZip, setOwnerZip] = React.useState("");        // owner_zipcode
+    const [ownerTel, setOwnerTel] = React.useState("");        // owner_phone
+    const [ownerFax, setOwnerFax] = React.useState("");        // owner_fax
+    const [ownerEmail, setOwnerEmail] = React.useState("");    // owner_email
+    const [designerName, setDesignerName] = React.useState(""); // designer_name
+    const [designerLicense, setDesignerLicense] = React.useState(""); // designer_license_no
 
     // 5.4 วัสดุ/รายละเอียด
-    const [matSteel, setMatSteel] = React.useState<boolean>(false);
-    const [matWood, setMatWood] = React.useState<boolean>(false);
-    const [matStainless, setMatStainless] = React.useState<boolean>(false);
-    const [matRCC, setMatRCC] = React.useState<boolean>(false);
-    const [matOtherChecked, setMatOtherChecked] = React.useState(false);
-    const [matOther, setMatOther] = React.useState<string>("");
-    const [panelMaterial, setPanelMaterial] = React.useState("-");
-    const [panelFaces, setPanelFaces] = React.useState<string>("-");
-    const [panelOpenings, setPanelOpenings] = React.useState<"" | "มี" | "ไม่มี">("");
-    const [panelOther, setPanelOther] = React.useState<string>("-");
-    const [chkMat, setChkMat] = React.useState(false);
-    const [chkFaces, setChkFaces] = React.useState(false);
-    const [chkOpen, setChkOpen] = React.useState(false);
-    const [chkOther, setChkOther] = React.useState(false);
+    const [matSteel, setMatSteel] = React.useState<boolean>(value?.matSteel ?? false);
+    const [matWood, setMatWood] = React.useState<boolean>(value?.matWood ?? false);
+    const [matStainless, setMatStainless] = React.useState<boolean>(value?.matStainless ?? false);
+    const [matRCC, setMatRCC] = React.useState<boolean>(value?.matRCC ?? false);
+    const [matOtherChecked, setMatOtherChecked] = React.useState<boolean>(value?.matOtherChecked ?? false);
+    const [matOther, setMatOther] = React.useState<string>(value?.matOther ?? "");
+    const [panelMaterial, setPanelMaterial] = React.useState<string>(value?.panelMaterial ?? "");
+    const [panelFaces, setPanelFaces] = React.useState<string>(value?.panelFaces ?? "");
+    const [panelOpenings, setPanelOpenings] = React.useState<"" | "มี" | "ไม่มี">(value?.panelOpenings ?? "");
+    const [panelOther, setPanelOther] = React.useState<string>(value?.panelOther ?? "");
+    const [chkMat, setChkMat] = React.useState<boolean>(value?.chkMat ?? false);
+    const [chkFaces, setChkFaces] = React.useState<boolean>(value?.chkFaces ?? false);
+    const [chkOpen, setChkOpen] = React.useState<boolean>(value?.chkOpen ?? false);
+    const [chkOther, setChkOther] = React.useState<boolean>(value?.chkOther ?? false);
 
-    const s = (v?: string | null) => (v && v.trim() !== "" ? v : "-");
+    const s = (v?: string | null) => (v && v.trim() !== "" ? v : "");
 
     React.useEffect(() => {
         if (!data) {
             // reset
-            setSignName("-"); setAddrNo("-"); setAddrAlley("-"); setAddrRoad("-");
-            setSubDistrict("-"); setDistrict("-"); setProvince("-"); setZip("-");
-            setTel("-"); setFax("-");
+            setSignName(""); setAddrNo(""); setAddrAlley(""); setAddrRoad("");
+            setSubDistrict(""); setDistrict(""); setProvince(""); setZip("");
+            setTel(""); setFax("");
 
-            setProductText("-"); setOwnerName("-"); setOwnerNo("-"); setOwnerMoo("-");
-            setOwnerAlley("-"); setOwnerRoad("-"); setOwnerSub("-"); setOwnerDist("-");
-            setOwnerProv("-"); setOwnerZip("-"); setOwnerTel("-"); setOwnerFax("-");
-            setOwnerEmail("-"); setDesignerName("-"); setDesignerLicense("-");
+            setProductText(""); setOwnerName(""); setOwnerNo(""); setOwnerMoo("");
+            setOwnerAlley(""); setOwnerRoad(""); setOwnerSub(""); setOwnerDist("");
+            setOwnerProv(""); setOwnerZip(""); setOwnerTel(""); setOwnerFax("");
+            setOwnerEmail(""); setDesignerName(""); setDesignerLicense("");
             return;
         }
 
@@ -292,6 +357,59 @@ export default function SectionTwoDetails({ data }: Props) {
         setDesignerName(s(data.designer_name));
         setDesignerLicense(s(data.designer_license_no));
     }, [data]);
+
+    React.useEffect(() => {
+        const patch: Partial<SectionTwoForm> = {
+            permitDay, permitMonth, permitYear,
+            inspectDay2, inspectMonth2, inspectYear2,
+            inspectDay3, inspectMonth3, inspectYear3,
+            hasOriginalPlan, noOriginalPlan, noPermitInfo, noOld,
+            signAge,
+            mapSketch, shapeSketch,
+            photosFront, photosSide, photosBase,
+            recorder2, recorder3,
+
+            typeGround, typeRooftop, typeOnRoof, typeOnBuilding,
+            typeOtherChecked, typeOther,
+
+            matSteel, matWood, matStainless, matRCC,
+            matOtherChecked, matOther,
+            panelMaterial, panelFaces, panelOpenings, panelOther,
+            chkMat, chkFaces, chkOpen, chkOther,
+        };
+        onChange?.(patch);
+    }, [
+        permitDay, permitMonth, permitYear,
+        inspectDay2, inspectMonth2, inspectYear2,
+        inspectDay3, inspectMonth3, inspectYear3,
+        hasOriginalPlan, noOriginalPlan, noPermitInfo, noOld,
+        signAge,
+        mapSketch, shapeSketch,
+        photosFront, photosSide, photosBase,
+        recorder2, recorder3,
+        typeGround, typeRooftop, typeOnRoof, typeOnBuilding,
+        typeOtherChecked, typeOther,
+        matSteel, matWood, matStainless, matRCC,
+        matOtherChecked, matOther,
+        panelMaterial, panelFaces, panelOpenings, panelOther,
+        chkMat, chkFaces, chkOpen, chkOther,
+        onChange,
+    ]);
+
+    // adapter: ImageGallery -> state (เอาไฟล์แรกถ้ามาเป็น array)
+    const pickFirst = (v: string[] | string | null | undefined) =>
+        Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
+
+    // onChange handlers
+    const handleFrontChange = (v: string[] | string | null | undefined) => {
+        setPhotosFront(pickFirst(v));
+    };
+    const handleSideChange = (v: string[] | string | null | undefined) => {
+        setPhotosSide(pickFirst(v));
+    };
+    const handleBaseChange = (v: string[] | string | null | undefined) => {
+        setPhotosBase(pickFirst(v));
+    };
 
     return (
         <div className="text-black leading-7 space-y-8 p-2">
@@ -409,7 +527,7 @@ export default function SectionTwoDetails({ data }: Props) {
                             className="mx-2 w-12 bg-transparent border-0 border-b border-dashed border-gray-400 
                  focus:outline-none focus:ring-0 text-center placeholder-gray-400"
                             value={permitDay}
-                            onChange={(e) => setPermitDay(e.target.value.replace(/\D/g, "-"))}
+                            onChange={(e) => setPermitDay(e.target.value.replace(/\D/g, ""))}
                         />
                         <span>เดือน</span>
                         <input
@@ -427,7 +545,7 @@ export default function SectionTwoDetails({ data }: Props) {
                             className="ml-2 w-16 bg-transparent border-0 border-b border-dashed border-gray-400 
                  focus:outline-none focus:ring-0 text-center placeholder-gray-400"
                             value={permitYear}
-                            onChange={(e) => setPermitYear(e.target.value.replace(/\D/g, "-"))}
+                            onChange={(e) => setPermitYear(e.target.value.replace(/\D/g, ""))}
                         />
                     </div>
 
@@ -475,7 +593,7 @@ export default function SectionTwoDetails({ data }: Props) {
                                 onChange={(e) => {
                                     const v = e.target.checked;
                                     setNoOld(v);
-                                    if (!v) setSignAge("-");
+                                    if (!v) setSignAge("");
                                 }}
                             />
                             <span>อายุของป้าย</span>
@@ -486,7 +604,7 @@ export default function SectionTwoDetails({ data }: Props) {
                     focus:outline-none focus:ring-0
                     ${noOld ? 'border-gray-400' : 'border-gray-200 text-gray-400'}`}
                                 value={signAge}
-                                onChange={(e) => setSignAge(e.target.value.replace(/\D/g, "-"))}
+                                onChange={(e) => setSignAge(e.target.value.replace(/\D/g, ""))}
                                 disabled={!noOld}
                             />
                             <span>ปี</span>
@@ -504,7 +622,7 @@ export default function SectionTwoDetails({ data }: Props) {
                         className="w-10 bg-transparent border-0 border-b border-dashed border-gray-400
                focus:outline-none focus:ring-0 text-center"
                         value={inspectDay2}
-                        onChange={(e) => setInspectDay2(e.target.value.replace(/\D/g, "-"))}
+                        onChange={(e) => setInspectDay2(e.target.value.replace(/\D/g, ""))}
                     />
                     <span>เดือน</span>
                     {/* เดือน */}
@@ -524,7 +642,7 @@ export default function SectionTwoDetails({ data }: Props) {
                         className="w-16 bg-transparent border-0 border-b border-dashed border-gray-400
                focus:outline-none focus:ring-0 text-center"
                         value={inspectYear2}
-                        onChange={(e) => setInspectYear2(e.target.value.replace(/\D/g, "-"))}
+                        onChange={(e) => setInspectYear2(e.target.value.replace(/\D/g, ""))}
                     />
                     <span>บันทึกโดย</span>
                     <input
@@ -555,7 +673,7 @@ export default function SectionTwoDetails({ data }: Props) {
                             className="w-10 bg-transparent border-0 border-b border-dashed border-gray-400
                focus:outline-none focus:ring-0 text-center"
                             value={inspectDay3}
-                            onChange={(e) => setInspectDay3(e.target.value.replace(/\D/g, "-"))}
+                            onChange={(e) => setInspectDay3(e.target.value.replace(/\D/g, ""))}
                         />
                         <span>เดือน</span>
                         {/* เดือน */}
@@ -575,7 +693,7 @@ export default function SectionTwoDetails({ data }: Props) {
                             className="w-16 bg-transparent border-0 border-b border-dashed border-gray-400
                focus:outline-none focus:ring-0 text-center"
                             value={inspectYear3}
-                            onChange={(e) => setInspectYear3(e.target.value.replace(/\D/g, "-"))}
+                            onChange={(e) => setInspectYear3(e.target.value.replace(/\D/g, ""))}
                         />
                         <span>บันทึกโดย</span>
                         <input
@@ -600,20 +718,20 @@ export default function SectionTwoDetails({ data }: Props) {
                 <div className="grid md:grid-cols-3 gap-6">
                     <ImageGallery
                         label="รูปถ่ายป้าย - ด้านหน้าป้าย"
-                        values={photosFront}
-                        onChange={setPhotosFront}
+                        values={photosFront ? [photosFront] : []}
+                        onChange={handleFrontChange}
                         single
                     />
                     <ImageGallery
                         label="รูปถ่ายป้าย - ด้านข้างของป้าย"
-                        values={photosSide}
-                        onChange={setPhotosSide}
+                        values={photosSide ? [photosSide] : []}
+                        onChange={handleSideChange}
                         single
                     />
                     <ImageGallery
                         label="รูปถ่ายป้าย - ส่วนฐานของป้าย"
-                        values={photosBase}
-                        onChange={setPhotosBase}
+                        values={photosBase ? [photosBase] : []}
+                        onChange={handleBaseChange}
                         single
                     />
                 </div>
@@ -647,7 +765,7 @@ export default function SectionTwoDetails({ data }: Props) {
                             onChange={(e) => {
                                 const v = e.target.checked;
                                 setTypeOtherChecked(v);
-                                if (!v) setTypeOther("-"); // เอาติ๊กออก → เคลียร์ค่า
+                                if (!v) setTypeOther(""); // เอาติ๊กออก → เคลียร์ค่า
                             }}
                         />
                         <label htmlFor="typeOther" className="select-none">อื่นๆ (โปรดระบุ)</label>
@@ -813,7 +931,7 @@ export default function SectionTwoDetails({ data }: Props) {
                                 onChange={(e) => {
                                     const v = e.target.checked;
                                     setChkMat(v);
-                                    if (!v) setPanelMaterial("-");
+                                    if (!v) setPanelMaterial("");
                                 }}
                             />
                             <span>วัสดุของป้าย (โปรดระบุ)</span>
@@ -837,7 +955,7 @@ export default function SectionTwoDetails({ data }: Props) {
                                 onChange={(e) => {
                                     const v = e.target.checked;
                                     setChkFaces(v);
-                                    if (!v) setPanelFaces("-");
+                                    if (!v) setPanelFaces("");
                                 }}
                             />
                             <span>จำนวนด้านที่ติดป้าย ป้าย (โปรดระบุจำนวนด้าน)</span>
@@ -903,7 +1021,7 @@ export default function SectionTwoDetails({ data }: Props) {
                                 onChange={(e) => {
                                     const v = e.target.checked;
                                     setChkOther(v);
-                                    if (!v) setPanelOther("-");
+                                    if (!v) setPanelOther("");
                                 }}
                             />
                             <span>อื่น ๆ (โปรดระบุ)</span>

@@ -1,7 +1,7 @@
 import * as React from "react";
 
 /* ========================== SECTION THREE (Light) ========================== */
-type FreqKey = "2w" | "1m" | "4m" | "6m" | "1y";
+export type FreqKey = "2w" | "1m" | "4m" | "6m" | "1y";
 const FREQUENCIES: { key: FreqKey; label: string }[] = [
     { key: "2w", label: "2 สัปดาห์" },
     { key: "1m", label: "1 เดือน" },
@@ -36,42 +36,38 @@ const RadioTick: React.FC<{
         disabled={disabled}
         aria-checked={checked}
         className={[
-            // ซ่อนรูปร่างเดิม
             "appearance-none",
-            // กล่องให้เหมือน checkbox
             "h-5 w-5 rounded-[4px] border border-gray-400 bg-white",
-            // ทำเครื่องหมาย ✓ ด้วย pseudo-element
             "relative before:content-['✓'] before:text-white before:text-[14px]",
             "before:absolute before:inset-0 before:flex before:items-center before:justify-center",
             "before:opacity-0",
-            // เมื่อเลือก → พื้นแดง ขอบแดง และโชว์ ✓ สีขาว
             "checked:bg-red-600 checked:border-red-600 checked:before:opacity-100",
-            // โฮเวอร์/โฟกัส
             "cursor-pointer focus:outline-none focus:ring-0",
-            disabled ? "opacity-50 cursor-not-allowed" : ""
+            disabled ? "opacity-50 cursor-not-allowed" : "",
         ].join(" ")}
     />
 );
 
-export default function SectionThreeDetails() {
-    const [freq, setFreq] = React.useState<Record<string, FreqKey | undefined>>({});
+export type SectionThreeRow = {
+    freq?: FreqKey;   // ความถี่ที่เลือก
+    note?: string;    // หมายเหตุ (คอลัมน์ขวาสุด)
+    extra?: string;   // ช่อง "โปรดระบุ" (เฉพาะบางแถว)
+};
+
+export type SectionThreeForm = {
+    section1: Record<string, SectionThreeRow>; // key = "s1-1", "s1-2", ...
+    section2: Record<string, SectionThreeRow>; // key = "s2-<title>-<index>" (ของคุณเดิม)
+};
+
+type Props = {
+    value?: Partial<SectionThreeForm>;
+    onChange?: (patch: Partial<SectionThreeForm>) => void;
+};
+
+export default function SectionThreeDetails({ value, onChange }: Props) {
     const td = "border border-gray-300 px-2 py-2 align-top text-gray-900";
     const th = "border border-gray-300 px-3 py-2 text-gray-700";
     const TOTAL_COLS = FREQUENCIES.length + 3;
-
-    const FreqCells: React.FC<{ rowId: string }> = ({ rowId }) => (
-        <>
-            {FREQUENCIES.map((f) => (
-                <td key={f.key} className={`${td} text-center`}>
-                    <RadioTick
-                        name={`freq-${rowId}`}
-                        checked={freq[rowId] === f.key}
-                        onChange={() => setFreq((p) => ({ ...p, [rowId]: f.key }))}
-                    />
-                </td>
-            ))}
-        </>
-    );
 
     const section1Rows = [
         "การซ่อมแซม, ติดตั้งและปรับปรุงบำรุงรักษา",
@@ -97,27 +93,66 @@ export default function SectionThreeDetails() {
                 "สายดิน/จุดต่อกราวด์",
                 "งานเดินสาย/การรัดยึด",
                 "ระบบตั้งเวลา/เปิด-ปิดอัตโนมัติ",
-                { label: "อื่น ๆ (โปรดระบุ)", inlineInput: true }, // ✅ พิมพ์ได้
+                { label: "อื่น ๆ (โปรดระบุ)", inlineInput: true },
             ],
         },
         {
             title: "2. ระบบไฟฟ้าควบคุม/อาณัติสัญญาณ (ถ้ามี)",
-            rows: [
-                "หน่วยควบคุม/จอแสดงผล",
-                "เซนเซอร์/ระบบตรวจจับ",
-                "ระบบป้องกันไฟกระชาก",
-            ],
+            rows: ["หน่วยควบคุม/จอแสดงผล", "เซนเซอร์/ระบบตรวจจับ", "ระบบป้องกันไฟกระชาก"],
         },
         {
             title: "3. ระบบอุปกรณ์ประกอบอื่น ๆ (ถ้ามี)",
-            rows: [
-                "อุปกรณ์ยึดกันลม",
-                "อุปกรณ์กันนก/สัตว์รบกวน",
-                { label: "อุปกรณ์ประกอบอื่นที่เห็นสมควร (ระบุ)", inlineInput: true }, // ✅ พิมพ์ได้
-            ],
+            rows: ["อุปกรณ์ยึดกันลม", "อุปกรณ์กันนก/สัตว์รบกวน", { label: "อุปกรณ์ประกอบอื่นที่เห็นสมควร (ระบุ)", inlineInput: true }],
         },
     ];
 
+    const [freq, setFreq] = React.useState<Record<string, FreqKey | undefined>>({});
+    const [note, setNote] = React.useState<Record<string, string>>({});
+    const [extra, setExtra] = React.useState<Record<string, string>>({});
+
+    React.useEffect(() => {
+        const f: Record<string, FreqKey | undefined> = {};
+        const n: Record<string, string> = {};
+        const e: Record<string, string> = {};
+        Object.entries(value?.section1 ?? {}).forEach(([id, row]) => {
+            if (row.freq) f[id] = row.freq;
+            if (row.note) n[id] = row.note;
+            if (row.extra) e[id] = row.extra;
+        });
+        Object.entries(value?.section2 ?? {}).forEach(([id, row]) => {
+            if (row.freq) f[id] = row.freq;
+            if (row.note) n[id] = row.note;
+            if (row.extra) e[id] = row.extra;
+        });
+        setFreq(f);
+        setNote(n);
+        setExtra(e);
+    }, [value?.section1, value?.section2]);
+
+    const emit = React.useCallback(
+        (group: "section1" | "section2", rowId: string, delta: Partial<SectionThreeRow>) => {
+            if (!onChange) return;
+            onChange({ [group]: { [rowId]: delta } } as Partial<SectionThreeForm>);
+        },
+        [onChange]
+    );
+
+    const FreqCells: React.FC<{ group: "section1" | "section2"; rowId: string }> = ({ group, rowId }) => (
+        <>
+            {FREQUENCIES.map((f) => (
+                <td key={f.key} className={`${td} text-center`}>
+                    <RadioTick
+                        name={`freq-${rowId}`}
+                        checked={freq[rowId] === f.key}
+                        onChange={() => {
+                            setFreq((p) => ({ ...p, [rowId]: f.key }));
+                            emit(group, rowId, { freq: f.key });
+                        }}
+                    />
+                </td>
+            ))}
+        </>
+    );
     return (
         <section className="space-y-8 text-gray-900 p-2">
             {/* ตารางที่ 1 */}
@@ -146,7 +181,7 @@ export default function SectionThreeDetails() {
                                 <tr key={rowId} className="odd:bg-white even:bg-gray-50">
                                     <td className={`${td} text-center`}>{i + 1}</td>
                                     <td className={td}>{txt}</td>
-                                    <FreqCells rowId={rowId} />
+                                    <FreqCells group="section1" rowId={rowId} />
                                     <td className={td}><DottedInput className="w-full" /></td>
                                 </tr>
                             );
@@ -210,7 +245,7 @@ export default function SectionThreeDetails() {
                                                 )}
                                             </td>
 
-                                            <FreqCells rowId={rowId} />
+                                            <FreqCells group="section2" rowId={rowId} />
                                             <td className={td}><DottedInput className="w-full" /></td>
                                         </tr>
                                     );

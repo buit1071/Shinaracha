@@ -2,10 +2,10 @@ import * as React from "react";
 
 import CompanyHeader from "@/components/check-form/forms/form1-3/CompanyHeader";
 import SectionOneDetails from "@/components/check-form/forms/form1-3/SectionOneDetails";
-import SectionTwoDetails from "@/components/check-form/forms/form1-3/SectionTwoDetails";
-import SectionThreeDetails from "@/components/check-form/forms/form1-3/SectionThreeDetails";
-import SectionFourDetails from "@/components/check-form/forms/form1-3/SectionFourDetails";
-import SectionFiveDetails from "@/components/check-form/forms/form1-3/SectionFiveDetails";
+import SectionTwoDetails, { SectionTwoForm } from "@/components/check-form/forms/form1-3/SectionTwoDetails";
+import SectionThreeDetails, { SectionThreeForm } from "@/components/check-form/forms/form1-3/SectionThreeDetails";
+import SectionFourDetails, { SectionFourForm, SectionFourRow } from "@/components/check-form/forms/form1-3/SectionFourDetails";
+import SectionFiveDetails, { SectionFiveForm, SectionFiveRow } from "@/components/check-form/forms/form1-3/SectionFiveDetails";
 import type { ViewDataForm } from "@/interfaces/master";
 import { showLoading } from "@/lib/loading";
 
@@ -14,11 +14,98 @@ type Props = {
     equipment_id: string;
 };
 
+type FormData = {
+    cover?: File;
+    placeName?: string;
+    sectionTwo?: Partial<SectionTwoForm>;
+    sectionThree?: Partial<SectionThreeForm>
+    sectionFour?: Partial<SectionFourForm>
+    sectionFive?: Partial<SectionFiveForm>
+};
+
 export default function Form1_3({ jobId, equipment_id }: Props) {
+    const [formData, setFormData] = React.useState<FormData>({});
     const [coverSrc, setCoverSrc] = React.useState<string | null>(null);
-    const [placeName, setPlaceName] = React.useState<string>("");
     const [openSections, setOpenSections] = React.useState<string[]>([]);
     const [viewData, setViewData] = React.useState<ViewDataForm | null>(null);
+
+    const onSectionTwoChange = React.useCallback(
+        (patch: Partial<SectionTwoForm>) => {
+            setFormData(prev => ({
+                ...prev,
+                sectionTwo: { ...(prev.sectionTwo ?? {}), ...patch },
+            }));
+        },
+        []
+    );
+
+    const onSectionFourChange = React.useCallback((patch: Partial<SectionFourForm>) => {
+        setFormData(prev => {
+            type GroupKey = keyof SectionFourForm;             // "table1" | "table2"
+            type GroupRows = Record<string, SectionFourRow>;
+            type GroupPatch = Partial<Record<string, Partial<SectionFourRow>>>;
+
+            const prevS4: Partial<SectionFourForm> = prev.sectionFour ?? {};
+
+            const mergeGroup = (group: GroupKey): GroupRows => {
+                const cur: GroupRows = (prevS4[group] as GroupRows) ?? {};
+                const p: GroupPatch = (patch[group] as GroupPatch) ?? {};
+                const next: GroupRows = { ...cur };
+                for (const rowId of Object.keys(p)) {
+                    const rowPatch: Partial<SectionFourRow> = p[rowId] ?? {};
+                    const prevRow: SectionFourRow = next[rowId] ?? {};
+                    next[rowId] = {
+                        ...prevRow,
+                        ...rowPatch,
+                        visits: { ...(prevRow.visits ?? {}), ...(rowPatch.visits ?? {}) },
+                    };
+                }
+                return next;
+            };
+
+            return {
+                ...prev,
+                sectionFour: {
+                    table1: mergeGroup("table1"),
+                    table2: mergeGroup("table2"),
+                },
+            };
+        });
+    }, []);
+
+    const onSectionFiveChange = React.useCallback((patch: Partial<SectionFiveForm>) => {
+        setFormData(prev => {
+            const cur = prev.sectionFive ?? { rows: {}, meta: {} };
+
+            // ---- merge rows (ทีละแถว) ----
+            const curRows = cur.rows ?? {};
+            const pRows = patch.rows ?? {};
+            const nextRows: Record<string, SectionFiveRow> = { ...curRows };
+            Object.keys(pRows).forEach((id) => {
+                const rowPatch = pRows[id] ?? {};
+                const prevRow = curRows[id] ?? {};
+                nextRows[id] = { ...prevRow, ...rowPatch };     // ✅ รวมคีย์เดิมกับคีย์ที่เปลี่ยน
+            });
+
+            // ---- merge meta (รวม object ซ้อนชั้นด้วย) ----
+            const curMeta = cur.meta ?? {};
+            const pMeta = patch.meta ?? {};
+            const mergedMeta = {
+                ...curMeta,
+                ...pMeta,
+                inspectDate: { ...(curMeta.inspectDate ?? {}), ...(pMeta.inspectDate ?? {}) },
+                ownerDate: { ...(curMeta.ownerDate ?? {}), ...(pMeta.ownerDate ?? {}) },
+                inspectorDate: { ...(curMeta.inspectorDate ?? {}), ...(pMeta.inspectorDate ?? {}) },
+                licIssue: { ...(curMeta.licIssue ?? {}), ...(pMeta.licIssue ?? {}) },
+                licExpire: { ...(curMeta.licExpire ?? {}), ...(pMeta.licExpire ?? {}) },
+            };
+
+            return {
+                ...prev,
+                sectionFive: { rows: nextRows, meta: mergedMeta },
+            };
+        });
+    }, []);
 
     const toggle = (id: string) => {
         setOpenSections((prev) =>
@@ -29,8 +116,15 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
     const onPickCover = (e: React.ChangeEvent<HTMLInputElement>) => {
         const f = e.target.files?.[0];
         if (!f) return;
+
+        if (coverSrc) URL.revokeObjectURL(coverSrc);
+
         const url = URL.createObjectURL(f);
         setCoverSrc(url);
+        setFormData(prev => ({
+            ...prev,
+            cover: f,
+        }));
     };
 
     const fecthEquipmentDetail = async () => {
@@ -57,10 +151,26 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
         fecthEquipmentDetail();
     }, [jobId, equipment_id]);
 
+    React.useEffect(() => {
+        if (formData.cover) {
+            if (coverSrc) URL.revokeObjectURL(coverSrc);
+            const url = URL.createObjectURL(formData.cover);
+            setCoverSrc(url);
+            return () => URL.revokeObjectURL(url);
+        }
+    }, [formData.cover]);
+
     return (
         <>
             {/* ระยะขอบกระดาษ */}
-            <div className="p-2">
+            <div className="p-2 relative">
+                <button
+                    type="button"
+                    className="absolute right-2.5 w-[100px] h-10 bg-sky-600 hover:bg-sky-700 active:bg-sky-700 text-white rounded-[5px] inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                >
+                    <img src="/images/IconWord.png" alt="Word" className="h-5 w-5 object-contain" />
+                    <span className="leading-none">Export</span>
+                </button>
                 <div className="w-full h-[5vh] grid place-items-center">
                     <span className="text-black md:text-3xl font-bold tracking-wide">
                         หน้าปกรายงาน
@@ -111,11 +221,14 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
                         </label>
                         {coverSrc && (
                             <button
-                                onClick={() => setCoverSrc(null)}
+                                onClick={() => {
+                                    URL.revokeObjectURL(coverSrc);
+                                    setCoverSrc(null);
+                                    setFormData(prev => ({ ...prev, cover: undefined }));
+                                }}
                                 className="ml-2 inline-flex items-center rounded-md px-3 py-2 text-sm
-             border border-red-500 text-red-600
-             hover:bg-red-50 cursor-pointer
-             focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1"
+               border border-red-500 text-red-600 hover:bg-red-50 cursor-pointer
+               focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1"
                             >
                                 ล้างรูป
                             </button>
@@ -130,9 +243,11 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
                 <div className="pt-10 text-center">
                     <div className="text-xl text-gray-700 mb-2">ชื่อสถานที่ตรวจ</div>
                     <input
-                        value={placeName}
-                        onChange={(e) => setPlaceName(e.target.value)}
-                        placeholder="เช่น อาคาร เทสโก้ โลตัส สาขา ชุมแพ"
+                        value={formData.placeName ?? ""}
+                        onChange={(e) =>
+                            setFormData(prev => ({ ...prev, placeName: e.target.value }))
+                        }
+                        placeholder=""
                         className="w-full max-w-[640px] mx-auto text-center text-2xl md:text-3xl font-medium 
              border-b outline-none focus:border-gray-800 transition px-2 pb-2
              text-black caret-black"
@@ -209,7 +324,11 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
                     >
                         <div className="overflow-hidden">
                             <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
-                                <SectionTwoDetails data={viewData} />
+                                <SectionTwoDetails
+                                    data={viewData}
+                                    value={formData.sectionTwo ?? {}}
+                                    onChange={onSectionTwoChange}
+                                />
                             </div>
                         </div>
                     </div>
@@ -241,7 +360,18 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
                     >
                         <div className="overflow-hidden">
                             <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
-                                <SectionThreeDetails />
+                                <SectionThreeDetails
+                                    value={formData.sectionThree ?? { section1: {}, section2: {} }}
+                                    onChange={(patch) =>
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            sectionThree: {
+                                                section1: { ...(prev.sectionThree?.section1 ?? {}), ...(patch.section1 ?? {}) },
+                                                section2: { ...(prev.sectionThree?.section2 ?? {}), ...(patch.section2 ?? {}) },
+                                            },
+                                        }))
+                                    }
+                                />
                             </div>
                         </div>
                     </div>
@@ -273,7 +403,10 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
                     >
                         <div className="overflow-hidden">
                             <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
-                                <SectionFourDetails />
+                                <SectionFourDetails
+                                    value={formData.sectionFour ?? { table1: {}, table2: {} }}
+                                    onChange={onSectionFourChange}
+                                />
                             </div>
                         </div>
                     </div>
@@ -305,7 +438,10 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
                     >
                         <div className="overflow-hidden">
                             <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
-                                <SectionFiveDetails />
+                                <SectionFiveDetails
+                                    value={formData.sectionFive ?? { rows: {}, meta: {} }}
+                                    onChange={onSectionFiveChange}
+                                />
                             </div>
                         </div>
                     </div>

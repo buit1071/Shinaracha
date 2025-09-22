@@ -119,17 +119,6 @@ export default function CheckForm({ jobId, onBack }: Props) {
             align: "center",
             resizable: false,
         },
-        {
-            field: "actions",
-            headerName: "Action",
-            sortable: false,
-            filterable: false,
-            disableColumnMenu: true,
-            width: 150,           // 👈 ควบคุมขนาดตายตัว
-            headerAlign: "center",
-            align: "center",
-            resizable: false,
-        },
     ];
 
     const filteredRows = rows
