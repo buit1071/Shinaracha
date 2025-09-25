@@ -168,56 +168,51 @@ function ImageGallery({
 }
 
 export type SectionTwoForm = {
-    permitDay?: string;
-    permitMonth?: string;
-    permitYear?: string;
-
-    inspectDay2?: string;
-    inspectMonth2?: string;
-    inspectYear2?: string;
-
-    inspectDay3?: string;
-    inspectMonth3?: string;
-    inspectYear3?: string;
-
-    hasOriginalPlan?: boolean;
-    noOriginalPlan?: boolean;
-    noPermitInfo?: boolean;
-    noOld?: boolean;
+    // ===== เดิม (ฟิลด์ที่ผู้ใช้กรอกเอง) =====
+    permitDay?: string; permitMonth?: string; permitYear?: string;
+    inspectDay2?: string; inspectMonth2?: string; inspectYear2?: string;
+    inspectDay3?: string; inspectMonth3?: string; inspectYear3?: string;
+    hasOriginalPlan?: boolean; noOriginalPlan?: boolean; noPermitInfo?: boolean; noOld?: boolean;
     signAge?: string;
+    mapSketch?: string | null; shapeSketch?: string | null;
+    photosFront?: string | null; photosSide?: string | null; photosBase?: string | null;
+    recorder2?: string; recorder3?: string;
+    // 5.2
+    typeGround?: boolean; typeRooftop?: boolean; typeOnRoof?: boolean; typeOnBuilding?: boolean;
+    typeOtherChecked?: boolean; typeOther?: string;
+    // 5.4
+    matSteel?: boolean; matWood?: boolean; matStainless?: boolean; matRCC?: boolean;
+    matOtherChecked?: boolean; matOther?: string;
+    panelMaterial?: string; panelFaces?: string; panelOpenings?: "" | "มี" | "ไม่มี"; panelOther?: string;
+    chkMat?: boolean; chkFaces?: boolean; chkOpen?: boolean; chkOther?: boolean;
 
-    mapSketch?: string | null;
-    shapeSketch?: string | null;
-    photosFront?: string | null;
-    photosSide?: string | null;
-    photosBase?: string | null;
+    // ===== ใหม่: ฟิลด์จาก viewData (read-only ฝั่ง UI แต่เก็บไว้ใน formData) =====
+    signName?: string;        // equipment_name
+    addrNo?: string;          // address_no
+    addrAlley?: string;       // alley
+    addrRoad?: string;        // road
+    subDistrict?: string;     // sub_district_name_th
+    district?: string;        // district_name_th
+    province?: string;        // province_name_th
+    zip?: string;             // zipcode
+    tel?: string;             // phone
+    fax?: string;             // fax
 
-    recorder2?: string;
-    recorder3?: string;
-
-    // 5.2 ประเภทของป้าย
-    typeGround?: boolean;
-    typeRooftop?: boolean;
-    typeOnRoof?: boolean;
-    typeOnBuilding?: boolean;
-    typeOtherChecked?: boolean;
-    typeOther?: string;
-
-    // 5.4 วัสดุ / รายละเอียด
-    matSteel?: boolean;
-    matWood?: boolean;
-    matStainless?: boolean;
-    matRCC?: boolean;
-    matOtherChecked?: boolean;
-    matOther?: string;
-    panelMaterial?: string;
-    panelFaces?: string;
-    panelOpenings?: "" | "มี" | "ไม่มี";
-    panelOther?: string;
-    chkMat?: boolean;
-    chkFaces?: boolean;
-    chkOpen?: boolean;
-    chkOther?: boolean;
+    productText?: string;     // description
+    ownerName?: string;       // owner_name
+    ownerNo?: string;         // owner_address_no
+    ownerMoo?: string;        // owner_moo
+    ownerAlley?: string;      // owner_alley
+    ownerRoad?: string;       // owner_road
+    ownerSub?: string;        // owner_sub_district_name_th
+    ownerDist?: string;       // owner_district_name_th
+    ownerProv?: string;       // owner_province_name_th
+    ownerZip?: string;        // owner_zipcode
+    ownerTel?: string;        // owner_phone
+    ownerFax?: string;        // owner_fax
+    ownerEmail?: string;      // owner_email
+    designerName?: string;    // designer_name
+    designerLicense?: string; // designer_license_no
 };
 
 type Props = {
@@ -315,20 +310,29 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
     const s = (v?: string | null) => (v && v.trim() !== "" ? v : "");
 
     React.useEffect(() => {
+        // reset ฝั่งโชว์
         if (!data) {
-            // reset
             setSignName(""); setAddrNo(""); setAddrAlley(""); setAddrRoad("");
             setSubDistrict(""); setDistrict(""); setProvince(""); setZip("");
             setTel(""); setFax("");
-
             setProductText(""); setOwnerName(""); setOwnerNo(""); setOwnerMoo("");
             setOwnerAlley(""); setOwnerRoad(""); setOwnerSub(""); setOwnerDist("");
             setOwnerProv(""); setOwnerZip(""); setOwnerTel(""); setOwnerFax("");
             setOwnerEmail(""); setDesignerName(""); setDesignerLicense("");
+
+            // ส่งเคลียร์ขึ้น parent ด้วย (กันค้างค่าเก่า)
+            onChangeRef.current?.({
+                signName: "", addrNo: "", addrAlley: "", addrRoad: "",
+                subDistrict: "", district: "", province: "", zip: "", tel: "", fax: "",
+                productText: "", ownerName: "", ownerNo: "", ownerMoo: "",
+                ownerAlley: "", ownerRoad: "", ownerSub: "", ownerDist: "",
+                ownerProv: "", ownerZip: "", ownerTel: "", ownerFax: "",
+                ownerEmail: "", designerName: "", designerLicense: "",
+            });
             return;
         }
 
-        // 5.1
+        // เซ็ตฝั่งโชว์จาก data
         setSignName(s(data.equipment_name));
         setAddrNo(s(data.address_no));
         setAddrAlley(s(data.alley));
@@ -340,7 +344,6 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
         setTel(s(data.phone));
         setFax(s(data.fax));
 
-        // 5.3
         setProductText(s(data.description));
         setOwnerName(s(data.owner_name));
         setOwnerNo(s(data.owner_address_no));
@@ -356,7 +359,37 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
         setOwnerEmail(s(data.owner_email));
         setDesignerName(s(data.designer_name));
         setDesignerLicense(s(data.designer_license_no));
-    }, [data]);
+
+        // ✅ ส่ง patch เข้า parent “ครั้งเดียว” ตาม data
+        onChangeRef.current?.({
+            signName: s(data.equipment_name),
+            addrNo: s(data.address_no),
+            addrAlley: s(data.alley),
+            addrRoad: s(data.road),
+            subDistrict: s(data.sub_district_name_th),
+            district: s(data.district_name_th),
+            province: s(data.province_name_th),
+            zip: s(data.zipcode),
+            tel: s(data.phone),
+            fax: s(data.fax),
+
+            productText: s(data.description),
+            ownerName: s(data.owner_name),
+            ownerNo: s(data.owner_address_no),
+            ownerMoo: s(data.owner_moo),
+            ownerAlley: s(data.owner_alley),
+            ownerRoad: s(data.owner_road),
+            ownerSub: s(data.owner_sub_district_name_th),
+            ownerDist: s(data.owner_district_name_th),
+            ownerProv: s(data.owner_province_name_th),
+            ownerZip: s(data.owner_zipcode),
+            ownerTel: s(data.owner_phone),
+            ownerFax: s(data.owner_fax),
+            ownerEmail: s(data.owner_email),
+            designerName: s(data.designer_name),
+            designerLicense: s(data.designer_license_no),
+        });
+    }, [data]); // 👈 dep แค่ data พอ
 
     React.useEffect(() => {
         const patch: Partial<SectionTwoForm> = {

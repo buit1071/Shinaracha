@@ -8,6 +8,7 @@ import SectionFourDetails, { SectionFourForm, SectionFourRow } from "@/component
 import SectionFiveDetails, { SectionFiveForm, SectionFiveRow } from "@/components/check-form/forms/form1-3/SectionFiveDetails";
 import type { ViewDataForm } from "@/interfaces/master";
 import { showLoading } from "@/lib/loading";
+import { exportToDocx } from "@/utils/exportToDocx";
 
 type Props = {
     jobId: string;
@@ -166,6 +167,7 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
             <div className="p-2 relative">
                 <button
                     type="button"
+                    onClick={() => exportToDocx(formData)}
                     className="absolute right-2.5 w-[100px] h-10 bg-sky-600 hover:bg-sky-700 active:bg-sky-700 text-white rounded-[5px] inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
                 >
                     <img src="/images/IconWord.png" alt="Word" className="h-5 w-5 object-contain" />
@@ -332,6 +334,7 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
                             </div>
                         </div>
                     </div>
+                    <pre className="mt-4 bg-gray-100 p-3 rounded text-xs text-black">{JSON.stringify(formData.sectionTwo, null, 2)}</pre>
                 </section>
 
                 {/* ส่วนที่ 3 */}
