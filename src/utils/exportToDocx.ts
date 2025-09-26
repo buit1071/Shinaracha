@@ -6,7 +6,6 @@ import {
     Packer,
     Paragraph,
     TextRun,
-    AlignmentType,
     ImageRun,
     Table,
     TableRow,
@@ -17,12 +16,17 @@ import {
     Header,
     Footer,
     HeightRule,
-    UnderlineType,
+    AlignmentType,
+    TextDirection
+} from "docx";
+import {
+    AlignmentType as DocxAlignment,
+    TextDirection as DocxTextDirection
 } from "docx";
 import { saveAs } from "file-saver";
 
 import { SectionTwoForm } from "@/components/check-form/forms/form1-3/SectionTwoDetails";
-import { SectionThreeForm } from "@/components/check-form/forms/form1-3/SectionThreeDetails";
+import { SectionThreeForm, SectionThreeRow, FreqKey } from "@/components/check-form/forms/form1-3/SectionThreeDetails";
 import { SectionFourForm } from "@/components/check-form/forms/form1-3/SectionFourDetails";
 import { SectionFiveForm } from "@/components/check-form/forms/form1-3/SectionFiveDetails";
 
@@ -207,8 +211,8 @@ async function loadAsPngBytesAndSize(url: string): Promise<{ bytes: Uint8Array; 
 /* ---------------- Helpers: standard paragraph styles ---------------- */
 const TAB = 720; // 0.5 inch = 720 twips
 const FONT_TH = "Cordia New";
-const SIZE_15PT = 30; // 15pt = 30 half-points
-const SIZE_18PT = 36; // 15pt = 30 half-points
+const SIZE_16PT = 32; // 15pt = 30 half-points
+const SIZE_18PT = 36; // 18pt = 30 half-points
 const SIZE_TITLE = 56;
 const PX_PER_INCH = 96;
 
@@ -226,7 +230,7 @@ function p(text: string) {
     return new Paragraph({
         indent: { firstLine: 720 }, // 0.5"
         spacing: { before: 0, after: 90, line: 240 }, // ~1.15x
-        children: [new TextRun({ text, font: FONT_TH, size: SIZE_15PT })],
+        children: [new TextRun({ text, font: FONT_TH, size: SIZE_16PT })],
     });
 }
 
@@ -235,7 +239,7 @@ function pn(text: string, tabs: number = 1) {
     return new Paragraph({
         indent: { left: Math.max(0, Math.round(tabs * TAB)) }, // ย่อซ้ายตามจำนวนแท็บ
         spacing: { before: 0, after: 80, line: 240 },
-        children: [new TextRun({ text, font: FONT_TH, size: SIZE_15PT })],
+        children: [new TextRun({ text, font: FONT_TH, size: SIZE_16PT })],
     });
 }
 
@@ -399,9 +403,11 @@ type FormDataLite = {
 };
 
 type DocNode = Paragraph | Table;
+type DocxAlign = (typeof DocxAlignment)[keyof typeof DocxAlignment];
+type DocxText = (typeof DocxTextDirection)[keyof typeof DocxTextDirection];
 
 const valueRun = (v?: string) =>
-    new TextRun({ text: v ?? "", font: FONT_TH, size: SIZE_15PT });
+    new TextRun({ text: v ?? "", font: FONT_TH, size: SIZE_16PT });
 
 const spacer = () => new TextRun({ text: "    " }); // ช่องไฟคั่นคู่/สามช่อง
 
@@ -416,7 +422,7 @@ function line(
         spacing: { before: 80, after: 0, line: 240 },
         indent: indentTabs ? { left: indentTabs * TAB } : undefined,
         children: [
-            new TextRun({ text: label + "  ", font: FONT_TH, size: SIZE_15PT, bold: true }),
+            new TextRun({ text: label + "  ", font: FONT_TH, size: SIZE_16PT, bold: true }),
             valueRun(value), // ← ไม่มี underline แล้ว
         ],
     });
@@ -432,13 +438,13 @@ function pairLine(
         spacing: { before: 80, after: 0, line: 240 },
         indent: indentTabs ? { left: indentTabs * TAB } : undefined,
         children: [
-            new TextRun({ text: l1 + "  ", font: FONT_TH, size: SIZE_15PT, bold: true }),
+            new TextRun({ text: l1 + "  ", font: FONT_TH, size: SIZE_16PT, bold: true }),
             valueRun(v1),
             spacer(),
-            new TextRun({ text: l2 + "  ", font: FONT_TH, size: SIZE_15PT, bold: true }),
+            new TextRun({ text: l2 + "  ", font: FONT_TH, size: SIZE_16PT, bold: true }),
             valueRun(v2),
             spacer(),
-            new TextRun({ text: l3 + "  ", font: FONT_TH, size: SIZE_15PT, bold: true }),
+            new TextRun({ text: l3 + "  ", font: FONT_TH, size: SIZE_16PT, bold: true }),
             valueRun(v3),
         ],
     });
@@ -459,8 +465,8 @@ function checkboxLine(checked: boolean, label: string, tabs = 0) {
         spacing: { before: 80, after: 0, line: 240 },
         indent: tabs ? { left: tabs * TAB } : undefined,
         children: [
-            new TextRun({ text: checked ? "☑ " : "☐ ", font: FONT_TH, size: SIZE_15PT }),
-            new TextRun({ text: label, font: FONT_TH, size: SIZE_15PT }),
+            new TextRun({ text: checked ? "☑ " : "☐ ", font: FONT_TH, size: SIZE_16PT }),
+            new TextRun({ text: label, font: FONT_TH, size: SIZE_16PT }),
         ],
     });
 }
@@ -536,7 +542,7 @@ async function buildPhotosSection(
                 alignment: AlignmentType.CENTER,
                 spacing: { before: 240, after: 240 },
                 children: [
-                    new TextRun({ text: caption, font: FONT_TH, size: SIZE_15PT, bold: true }),
+                    new TextRun({ text: caption, font: FONT_TH, size: SIZE_16PT, bold: true }),
                 ],
             }),
         ];
@@ -618,10 +624,10 @@ async function buildSectionTwo(formData: FormDataLite) {
 
     // ใบอนุญาต
     const permit = pnChildren([
-        new TextRun({ text: "ได้รับใบอนุญาตก่อสร้างจากเจ้าพนักงานท้องถิ่น เมื่อวันที่ ", font: FONT_TH, size: SIZE_15PT }),
-        new TextRun({ text: s(s2.permitDay) + " ", font: FONT_TH, size: SIZE_15PT }),
-        new TextRun({ text: s(s2.permitMonth) + " ", font: FONT_TH, size: SIZE_15PT }),
-        new TextRun({ text: s(s2.permitYear), font: FONT_TH, size: SIZE_15PT }),
+        new TextRun({ text: "ได้รับใบอนุญาตก่อสร้างจากเจ้าพนักงานท้องถิ่น เมื่อวันที่ ", font: FONT_TH, size: SIZE_16PT }),
+        new TextRun({ text: s(s2.permitDay) + " ", font: FONT_TH, size: SIZE_16PT }),
+        new TextRun({ text: s(s2.permitMonth) + " ", font: FONT_TH, size: SIZE_16PT }),
+        new TextRun({ text: s(s2.permitYear), font: FONT_TH, size: SIZE_16PT }),
     ], 0);
 
     // กล่องติ๊ก (disabled)
@@ -699,9 +705,45 @@ async function buildSectionTwo(formData: FormDataLite) {
     const T2 = checkboxLine(!!s2.typeRooftop, "ป้ายบนดาดฟ้าอาคาร", 2);
     const T3 = checkboxLine(!!s2.typeOnRoof, "ป้ายบนหลังคา", 2);
     const T4 = checkboxLine(!!s2.typeOnBuilding, "ป้ายบนส่วนหนึ่งส่วนใดของอาคาร", 2);
-    const T5 = checkboxLine(!!s2.typeOtherChecked, `${s2.typeOtherChecked && s2.typeOther ? s2.typeOther : ""}`, 2);
+    const T5 = checkboxLine(!!s2.typeOtherChecked, `${s2.typeOtherChecked && s2.typeOther ? s2.typeOther : "อื่นๆ (โปรดระบุ)"}`, 2);
 
     const h2_53 = pn("5.3 ชื่อเจ้าของหรือผู้ครอบครองป้าย และผู้ออกแบบด้านวิศวกรรมโครงสร้าง", 1);
+    const des = pn(`5.3.1 ชื่อผลิตภัณฑ์โฆษณาหรือข้อความในป้าย ${s2.productText}`, 2);
+    const des1 = pn("5.3.2 เจ้าของหรือผู้ครอบครองป้าย", 2);
+
+    const des1L1 = line("ชื่อ", s(s2.ownerName), 36, 3);
+    const des1L2 = pairLine("สถานที่ติดต่อเลขที่", s(s2.ownerNo), "หมู่ที่", s(s2.ownerMoo), "ตรอก/ซอย", s(s2.ownerAlley), 3);
+    const des1L3 = pairLine("ถนน", s(s2.ownerRoad), "ตำบล/แขวง", s(s2.ownerSub), "อำเภอ/เขต", s(s2.ownerDist), 3);
+    const des1L4 = pairLine("จังหวัด", s(s2.ownerProv), "รหัสไปรษณีย์", s(s2.ownerZip), "โทรศัพท์", s(s2.ownerTel), 3);
+    const des1L5 = pairLine("โทรสาร", s(s2.ownerFax), "อีเมล์", s(s2.ownerEmail), "", "", 3);
+
+    const des2 = pn("5.3.3 ผู้ออกแบบด้านวิศวกรรมโครงสร้าง", 2);
+    const des2L1 = pairLine("ชื่อ", s(s2.designerName), "ใบอนุญาตทะเบียนเลขที่", s(s2.designerLicense), "", "", 3);
+
+    const h2_54 = pn("5.4 ประเภทของวัสดุและรายละเอียดของแผ่นป้าย (สามารถระบุมากกว่า 1 ข้อได้)", 1);
+    const D1 = pn("5.4.1 ประเภทวัสดุของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย", 2);
+    const D1T1 = checkboxLine(!!s2.matSteel, "เหล็กโครงสร้างรูปพรรณ", 3);
+    const D1T2 = checkboxLine(!!s2.matWood, "ไม้", 3);
+    const D1T3 = checkboxLine(!!s2.matStainless, "สเตนเลส", 3);
+    const D1T4 = checkboxLine(!!s2.matRCC, "คอนกรีตเสริมเหล็ก", 3);
+    const D1T5 = checkboxLine(!!s2.matOtherChecked, `${s2.matOtherChecked && s2.matOther ? s2.matOther : "อื่นๆ (โปรดระบุ)"}`, 3);
+
+    const D2 = pn("5.4.2 รายละเอียดของแผ่นป้าย", 2);
+    const D2T1 = checkboxLine(!!s2.chkMat, `วัสดุของป้าย ${s2.chkMat && s2.panelMaterial ? s2.panelMaterial : "(โปรดระบุ)"}`, 3);
+    const D2T2 = checkboxLine(!!s2.chkFaces, `จำนวนด้านที่ติดป้าย ป้าย ${s2.chkFaces && s2.panelFaces ? s2.panelFaces : "(โปรดระบุจำนวนด้าน)"} ด้าน`, 3);
+    const D2T3 = checkboxLine(!!s2.chkOpen, "การเจาะช่องเปิดในป้าย", 3);
+    const D2T4 = new Paragraph({
+        spacing: { before: 80, after: 0, line: 240 },
+        indent: { left: 4 * TAB },
+        children: [
+            new TextRun({ text: (s2.chkOpen && s2.panelOpenings === "มี") ? "☑ " : "☐ ", font: FONT_TH, size: SIZE_16PT }),
+            new TextRun({ text: "มี", font: FONT_TH, size: SIZE_16PT }),
+            new TextRun({ text: "    " }), // ช่องไฟเล็กน้อย
+            new TextRun({ text: (s2.chkOpen && s2.panelOpenings === "ไม่มี") ? "☑ " : "☐ ", font: FONT_TH, size: SIZE_16PT }),
+            new TextRun({ text: "ไม่มี", font: FONT_TH, size: SIZE_16PT }),
+        ],
+    });
+    const D2T5 = checkboxLine(!!s2.chkOther, `${s2.chkOther && s2.panelOther ? s2.panelOther : "อื่นๆ (โปรดระบุ)"}`, 3);
 
     return [
         h2, intro, h2_51, L1, L2, L3, L4, permit, C1, C2, C3, C4,
@@ -709,8 +751,346 @@ async function buildSectionTwo(formData: FormDataLite) {
         Inspect, Hmap, ...MapImg, BR1, inspect3Line, hShape, ...ShapeImg, ...photosSection,
         PAGEBREAK,
         h2_52, T1, T2, T3, T4, T5,
-        h2_53
+        h2_53, des, des1, des1L1, des1L2, des1L3, des1L4, des1L5, des2, des2L1,
+        PAGEBREAK,
+        h2_54, D1, D1T1, D1T2, D1T3, D1T4, D1T5, D2, D2T1, D2T2, D2T3, D2T4, D2T5,
+        PAGEBREAK,
     ];
+}
+
+function buildS3_Table1(section1: Record<string, SectionThreeRow> | undefined) {
+    const rows: TableRow[] = [];
+
+    // ===== สัดส่วนคอลัมน์ (เปอร์เซ็นต์) =====
+    const PCT = { IDX: 5, ITEM: 40, FREQ_TOTAL: 25, NOTE: 30 } as const;
+    const FREQ_SUB_PCT = PCT.FREQ_TOTAL / FREQ_DEF.length; // = 5%
+
+    // ===== Header แถวบน =====
+    rows.push(
+        new TableRow({
+            // เดิม: height: { value: 520, rule: HeightRule.ATLEAST },
+            height: { value: 400, rule: HeightRule.ATLEAST }, // ← ขยับเส้นลง (ลอง 700–900 ตามชอบ)
+            cantSplit: true,
+            children: [
+                thCell("ลำดับ", 5, { rowSpan: 2 }, TextDirection.TOP_TO_BOTTOM_RIGHT_TO_LEFT),
+                thCell("รายการตรวจบำรุงรักษา", 40, { rowSpan: 2 }),
+                thCell("ความถี่ในการตรวจสอบ", 25, { columnSpan: FREQ_DEF.length }),
+                thCell("หมายเหตุ", 30, { rowSpan: 2 }),
+            ],
+        })
+    );
+
+    // ===== Header แถวล่าง (ชื่อคอลัมน์ความถี่ - แนวตั้ง) =====
+    rows.push(
+        new TableRow({
+            height: { value: 1000, rule: HeightRule.ATLEAST },
+            cantSplit: true,
+            children: FREQ_DEF.map((f) =>
+                thCell(
+                    f.label.replace(/\s+/g, "\u00A0"),
+                    25 / FREQ_DEF.length,
+                    undefined,
+                    TextDirection.TOP_TO_BOTTOM_RIGHT_TO_LEFT
+                )
+            ),
+        })
+    );
+
+    // ===== แถวข้อมูล =====
+    S1_ROWS.forEach((label, idx) => {
+        const id = `s1-${idx + 1}`;
+        const data = section1?.[id] || {};
+        const freqKey = data.freq as FreqKey | undefined;
+
+        rows.push(
+            new TableRow({
+                height: { value: 160, rule: HeightRule.ATLEAST }, // กระชับลง
+                cantSplit: true,
+                children: [
+                    tdCellCompact(cellPCompact(String(idx + 1), { align: AlignmentType.CENTER }), PCT.IDX),
+                    tdCellCompact(cellPCompact(label), PCT.ITEM),
+                    ...FREQ_DEF.map((f) => tickCellCompact(freqKey === f.key, FREQ_SUB_PCT)),
+                    tdCellCompact(
+                        data.note && data.note.trim() !== "" ? cellPCompact(data.note) : dottedNoteCompact(),
+                        PCT.NOTE
+                    ),
+                ],
+            })
+        );
+    });
+
+    return new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE }, // ตาราง 100%
+        layout: "fixed",
+        borders: {
+            top: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            bottom: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            left: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            right: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            insideHorizontal: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+            insideVertical: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+        },
+        rows,
+    });
+}
+
+type RowItem = string | { label: string; inlineInput?: boolean };
+
+const S2_GROUPS: { title: string; rows: RowItem[] }[] = [
+    {
+        title: "1. ระบบไฟฟ้าแสงสว่าง",
+        rows: [
+            "สภาพสายไฟฟ้า",
+            "สภาพท่อร้อยสาย รางเดินสาย และรางเคเบิล",
+            "สภาพเครื่องป้องกันกระแสเกิน",
+            "สภาพเครื่องตัดไฟรั่ว",
+            "การต่อลงดินของบริภัณฑ์ ตัวนำต่อลงดิน และความต่อเนื่องลงดินของท่อร้อยสาย รางเดินสาย รางเคเบิล",
+        ],
+    },
+    {
+        title: "2. ระบบไฟฟ้าควบคุม/อาณัติสัญญาณ (ถ้ามี)",
+        rows: [
+            "ตรวจสอบระบบตัวนำล่อฟ้า ตัวนำต่อลงดิน",
+            "ตรวจสอบระบบรากสายดิน",
+            "ตรวจสอบจุดต่อประสานศักย์",
+        ],
+    },
+    {
+        title: "3. ระบบอุปกรณ์ประกอบอื่น ๆ (ถ้ามี)",
+        rows: [
+            "สภาพบันไดขึ้นลง",
+            "สภาพราวจับ และราวกันตก",
+            { label: "อุปกรณ์ประกอบอื่นตามที่เห็นสมควร (ระบุ)", inlineInput: true },
+        ],
+    },
+];
+
+// paragraph แบบกระชับ
+const cellPCompact = (
+    text: string,
+    opts?: { bold?: boolean; align?: DocxAlign }
+) =>
+    new Paragraph({
+        alignment: opts?.align,
+        spacing: { before: 10, after: 10, line: 200 }, // << บีบระยะ
+        children: [new TextRun({ text, font: FONT_TH, size: SIZE_16PT, bold: !!opts?.bold })],
+    });
+
+// td แบบกระชับ (ลด margin บน/ล่าง)
+const tdCellCompact = (children: Paragraph[] | Paragraph, wPct?: number) =>
+    new TableCell({
+        width: wPct ? { size: wPct, type: WidthType.PERCENTAGE } : undefined,
+        verticalAlign: VerticalAlign.CENTER,
+        margins: { top: 20, bottom: 20, left: 100, right: 100 }, // << ลดจากเดิมเยอะ
+        children: Array.isArray(children) ? children : [children],
+    });
+
+// ช่อง ✓ แบบกระชับ
+const tickCellCompact = (checked: boolean, wPct: number) =>
+    tdCellCompact(
+        new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 0, after: 0 }, // << ไม่มีช่องไฟเกิน
+            children: [new TextRun({ text: checked ? "✓" : "", font: FONT_TH, size: SIZE_16PT, bold: true })],
+        }),
+        wPct
+    );
+
+// เส้นปะกระชับ
+const dottedNoteCompact = () =>
+    new Paragraph({
+        spacing: { before: 6, after: 6 }, // << บางลง
+        children: [new TextRun({ text: " ", font: FONT_TH, size: SIZE_16PT })],
+        border: { bottom: { style: BorderStyle.DASHED, size: 8, color: "000000" } },
+    });
+
+function buildS3_Table2(section2: Record<string, SectionThreeRow> | undefined) {
+    const rows: TableRow[] = [];
+
+    // สัดส่วนคอลัมน์ (%)
+    const PCT = { IDX: 5, ITEM: 40, FREQ_TOTAL: 25, NOTE: 30 } as const;
+    const FREQ_SUB_PCT = PCT.FREQ_TOTAL / FREQ_DEF.length; // = 5%
+    const TOTAL_SPAN = 1 /*IDX*/ + 1 /*ITEM*/ + FREQ_DEF.length /*FREQ*/ + 1 /*NOTE*/; // = 8 คอลัมน์
+
+    // ===== Header แถวบน (ลดความสูง) =====
+    rows.push(
+        new TableRow({
+            height: { value: 300, rule: HeightRule.ATLEAST },
+            cantSplit: true,
+            children: [
+                thCell("ลำดับ", PCT.IDX, { rowSpan: 2 }, TextDirection.TOP_TO_BOTTOM_RIGHT_TO_LEFT),
+                thCell("รายการตรวจบำรุงรักษา", PCT.ITEM, { rowSpan: 2 }),
+                thCell("ความถี่ในการตรวจสอบ", PCT.FREQ_TOTAL, { columnSpan: FREQ_DEF.length }),
+                thCell("หมายเหตุ", PCT.NOTE, { rowSpan: 2 }),
+            ],
+        })
+    );
+
+    // ===== Header แถวล่าง (ความถี่แนวตั้ง, ไม่ตัดบรรทัด) =====
+    rows.push(
+        new TableRow({
+            height: { value: 1000, rule: HeightRule.ATLEAST },
+            cantSplit: true,
+            children: FREQ_DEF.map((f) =>
+                thCell(
+                    f.label.replace(/\s+/g, "\u00A0"),          // keep space but no wrap
+                    FREQ_SUB_PCT,
+                    undefined,
+                    TextDirection.TOP_TO_BOTTOM_RIGHT_TO_LEFT   // หมุน 90°
+                )
+            ),
+        })
+    );
+
+    // ===== เนื้อหา =====
+    S2_GROUPS.forEach((group, gi) => {
+        const displayTitle = group.title.replace(/^\d+\.\s*/, "");
+
+        // --- แถวหัวกลุ่ม (merge cell ยาว + พื้นหลังอ่อน) ---
+        rows.push(
+            new TableRow({
+                height: { value: 200, rule: HeightRule.ATLEAST },  // กระชับ
+                cantSplit: true,
+                children: [
+                    new TableCell({
+                        columnSpan: TOTAL_SPAN,                         // << รวมทั้งแถว (ไม่มีเส้นคั่นตรงที่ขีดสีแดง)
+                        verticalAlign: VerticalAlign.CENTER,
+                        shading: { fill: "F3F3F3" },                   // << พื้นหลังอ่อน
+                        margins: { top: 60, bottom: 60, left: 120, right: 120 },
+                        children: [cellP(`${gi + 1}. ${displayTitle}`, { bold: true })],
+                    }),
+                ],
+            })
+        );
+
+        // --- แถวรายการย่อย ---
+        group.rows.forEach((r, ri) => {
+            const label = typeof r === "string" ? r : r.label;
+            const id = `s2-${group.title}-${ri + 1}`;
+            const data = section2?.[id] || {};
+            const freqKey = data.freq as FreqKey | undefined;
+
+            const itemParas: Paragraph[] = [cellP(label)];
+            if (typeof r !== "string" && r.inlineInput) {
+                const extra = (data as any).extra?.toString().trim() || "";
+                itemParas.push(
+                    extra
+                        ? cellP(extra)
+                        : new Paragraph({
+                            children: [new TextRun({ text: " ", font: FONT_TH, size: SIZE_16PT })],
+                            border: { bottom: { style: BorderStyle.DASHED, size: 8, color: "000000" } },
+                            spacing: { before: 30 },
+                        })
+                );
+            }
+
+            rows.push(
+                new TableRow({
+                    height: { value: 200, rule: HeightRule.ATLEAST },  // << เดิม 200 ลดลงอีก
+                    children: [
+                        tdCellCompact(cellPCompact(""), PCT.IDX),         // คอลัมน์ลำดับ (แถวลูก) เว้นว่าง
+                        tdCellCompact([cellPCompact(label), ...(typeof r !== "string" && r.inlineInput
+                            ? (() => {
+                                const extra = (data as any).extra?.toString().trim() || "";
+                                return extra
+                                    ? [cellPCompact(extra)]
+                                    : [new Paragraph({
+                                        spacing: { before: 6, after: 0 },
+                                        children: [new TextRun({ text: " ", font: FONT_TH, size: SIZE_16PT })],
+                                        border: { bottom: { style: BorderStyle.DASHED, size: 8, color: "000000" } },
+                                    })];
+                            })()
+                            : [])], PCT.ITEM),
+                        ...FREQ_DEF.map((f) => tickCellCompact(freqKey === f.key, FREQ_SUB_PCT)),
+                        tdCellCompact(
+                            data.note && String(data.note).trim() !== "" ? cellPCompact(String(data.note)) : dottedNoteCompact(),
+                            PCT.NOTE
+                        ),
+                    ],
+                })
+            );
+        });
+    });
+
+    return new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        layout: "fixed",
+        borders: {
+            top: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            bottom: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            left: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            right: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            insideHorizontal: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+            insideVertical: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+        },
+        rows,
+    });
+}
+
+// ย่อหน้าข้อความทั่วไป
+const cellP = (text: string, opts?: { bold?: boolean; align?: DocxAlign }) =>
+    new Paragraph({
+        alignment: opts?.align,
+        spacing: { before: 60, after: 60, line: 260 },
+        children: [new TextRun({ text, font: FONT_TH, size: SIZE_16PT, bold: !!opts?.bold })],
+    });
+
+// เซลล์หัวตาราง (รองรับกำหนดความกว้างเป็นเปอร์เซ็นต์)
+const thCell = (
+    text: string,
+    wPct?: number,
+    extra?: Partial<ConstructorParameters<typeof TableCell>[0]>,
+    textDirection?: DocxText
+) =>
+    new TableCell({
+        width: wPct ? { size: wPct, type: WidthType.PERCENTAGE } : undefined,
+        verticalAlign: VerticalAlign.CENTER,
+        textDirection,
+        shading: { fill: "ECECEC" },
+        margins: { top: 60, bottom: 60, left: 60, right: 60 },
+        children: [
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 40, after: 40, line: 220 },
+                keepLines: true,
+                children: [new TextRun({ text, font: FONT_TH, size: SIZE_16PT, bold: true })],
+            }),
+        ],
+        ...extra,
+    });
+
+// ความถี่
+const FREQ_DEF: { key: FreqKey; label: string }[] = [
+    { key: "2w", label: "2 สัปดาห์" },
+    { key: "1m", label: "1 เดือน" },
+    { key: "4m", label: "4 เดือน" },
+    { key: "6m", label: "6 เดือน" },
+    { key: "1y", label: "1 ปี" },
+];
+
+// รายการตรวจ (ตามเดิม)
+const S1_ROWS = [
+    "การต่อเติม ดัดแปลง ปรับปรุงขนาดของป้าย",
+    "การเปลี่ยนแปลงน้ำหนักของแผ่นป้าย",
+    "การเปลี่ยนแปลงสภาพการใช้งานของป้าย",
+    "การเปลี่ยนแปลงวัสดุของป้าย",
+    "การชำรุดสึกหรอของป้าย",
+    "การวิบัติของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย",
+    "การทรุดตัวของฐานรากของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย (กรณีป้ายที่ตั้งบนพื้นดิน)",
+    "การเชื่อมยึดระหว่างแผ่นป้ายกับสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย  การเชื่อมยึดระหว่างชิ้นส่วนต่าง ๆ ของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้ายและการเชื่อมยึดระหว่าง  สิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้ายกับฐานรากหรืออาคาร",
+];
+
+async function buildSectionThree(formData: FormDataLite) {
+    const s3 = formData.sectionThree ?? {};
+    const PAGEBREAK = new Paragraph({ pageBreakBefore: true });
+    const h3 = heading("ส่วนที่ 3 ช่วงเวลา ความถี่ในการตรวจสอบประจำปีของผู้ตรวจสอบอาคาร และแนวทางการตรวจสอบตามแผน", true);
+    const h3_1 = pn("1. ความถี่ในการตรวจบำรุงรักษาป้ายด้านความมั่นคงแข็งแรงของป้าย", 1);
+    const h3_2 = pn("2. ความถี่ในการตรวจบำรุงรักษาระบบอุปกรณ์ประกอบต่าง ๆ ของป้าย", 1);
+
+    const table1 = buildS3_Table1(s3.section1);
+    const table2 = buildS3_Table2(s3.section2);
+
+    return [h3, h3_1, table1, PAGEBREAK, h3_2, table2];
 }
 
 /* ---------------- Export main ---------------- */
@@ -793,9 +1173,9 @@ export async function exportToDocx(formData: FormDataLite) {
         children: [new Paragraph({ spacing: { after: 240 } }), ...buildSectionOne()],
     } as const;
 
-    const sec2Children = await buildSectionTwo(formData);
 
     //ส่วนที่ 2
+    const sec2Children = await buildSectionTwo(formData);
     const contentsectionTwo = {
         headers: { default: header },
         footers: { default: footer },
@@ -805,7 +1185,18 @@ export async function exportToDocx(formData: FormDataLite) {
         children: sec2Children,
     } as const;
 
-    const doc = new Document({ sections: [coverSection, contentSectionOne, contentsectionTwo] });
+    //ส่วนที่ 3
+    const sec3Children = await buildSectionThree(formData);
+    const contentsectionThree = {
+        headers: { default: header },
+        footers: { default: footer },
+        properties: {
+            page: { size: { width: PAGE.widthTwips, height: PAGE.heightTwips }, margin: PAGE.margin },
+        },
+        children: sec3Children,
+    } as const;
+
+    const doc = new Document({ sections: [coverSection, contentSectionOne, contentsectionTwo, contentsectionThree] });
     const blob = await Packer.toBlob(doc);
 
     const safe = (s: string) =>

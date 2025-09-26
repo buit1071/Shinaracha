@@ -334,7 +334,6 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
                             </div>
                         </div>
                     </div>
-                    <pre className="mt-4 bg-gray-100 p-3 rounded text-xs text-black">{JSON.stringify(formData.sectionTwo, null, 2)}</pre>
                 </section>
 
                 {/* ส่วนที่ 3 */}
@@ -346,7 +345,7 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
                         className="w-full grid h-[5vh] select-none cursor-pointer"
                     >
                         <span className="flex items-center justify-between gap-2 text-black md:text-xl font-bold tracking-wide rounded-xl bg-white px-4 py-2 border shadow-md hover:shadow-lg">
-                            ส่วนที่ 3 ช่วงเวลา และความถี่ในการตรวจสอบประจำปีของผู้ตรวจสอบอาคาร
+                            ส่วนที่ 3 ช่วงเวลา ความถี่ในการตรวจสอบประจำปีของผู้ตรวจสอบอาคาร และแนวทางการตรวจสอบตามแผน
                             <svg
                                 className={`w-4 h-4 transition-transform ${openSections.includes("section3") ? "rotate-180" : ""}`}
                                 viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
@@ -378,6 +377,7 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
                             </div>
                         </div>
                     </div>
+                    <pre className="mt-4 bg-gray-100 p-3 rounded text-xs text-black">{JSON.stringify(formData.sectionThree, null, 2)}</pre>
                 </section>
 
                 {/* ส่วนที่ 4 */}

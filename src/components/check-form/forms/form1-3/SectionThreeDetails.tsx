@@ -70,14 +70,14 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
     const TOTAL_COLS = FREQUENCIES.length + 3;
 
     const section1Rows = [
-        "การซ่อมแซม, ติดตั้งและปรับปรุงบำรุงรักษา",
-        "การเปลี่ยนแปลงน้ำหนักรวมบนป้าย",
-        "การเปลี่ยนแปลงส่วนประกอบสำคัญ",
-        "การตรวจสอบรอยเชื่อม/สลักเกลียว",
-        "การยึด-ค้ำยันโครงสร้าง",
-        "การป้องกันสนิม/สีทนสนิม/สังกะสี (ถ้ามี)",
-        "การเก็บกวาด/สิ่งกีดขวางรอบฐานป้าย",
-        "การซ่อม/ดัดแปลงส่วนที่มีผลต่อความมั่นคง (ระบุข้อกำหนด/มาตรฐาน)",
+        "การต่อเติม ดัดแปลง ปรับปรุงขนาดของป้าย",
+        "การเปลี่ยนแปลงน้ำหนักของแผ่นป้าย",
+        "การเปลี่ยนแปลงสภาพการใช้งานของป้าย",
+        "การเปลี่ยนแปลงวัสดุของป้าย",
+        "การชำรุดสึกหรอของป้า",
+        "การวิบัติของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย",
+        "การทรุดตัวของฐานรากของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย (กรณีป้ายที่ตั้งบนพื้นดิน)",
+        "การเชื่อมยึดระหว่างแผ่นป้ายกับสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย  การเชื่อมยึดระหว่างชิ้นส่วนต่าง ๆ ของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้ายและการเชื่อมยึดระหว่าง  สิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้ายกับฐานรากหรืออาคาร",
     ];
 
     type RowItem = string | { label: string; inlineInput?: boolean };
@@ -86,23 +86,20 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
         {
             title: "1. ระบบไฟฟ้าแสงสว่าง",
             rows: [
-                "สภาพหลอดไฟ",
-                "ตู้คอนโทรล/สายไฟ/อุปกรณ์",
-                "สลักกุญแจ/บันทึกการเปิดตู้",
-                "อุปกรณ์ป้องกัน (RCD/MCCB ฯลฯ)",
-                "สายดิน/จุดต่อกราวด์",
-                "งานเดินสาย/การรัดยึด",
-                "ระบบตั้งเวลา/เปิด-ปิดอัตโนมัติ",
-                { label: "อื่น ๆ (โปรดระบุ)", inlineInput: true },
+                "สภาพสายไฟฟ้า",
+                "สภาพท่อร้อยสาย รางเดินสาย และรางเคเบิล",
+                "สภาพเครื่องป้องกันกระแสเกิน",
+                "สภาพเครื่องตัดไฟรั่ว",
+                "การต่อลงดินของบริภัณฑ์ ตัวนำต่อลงดิน และความต่อเนื่องลงดินของท่อร้อยสาย รางเดินสาย รางเคเบิล",
             ],
         },
         {
             title: "2. ระบบไฟฟ้าควบคุม/อาณัติสัญญาณ (ถ้ามี)",
-            rows: ["หน่วยควบคุม/จอแสดงผล", "เซนเซอร์/ระบบตรวจจับ", "ระบบป้องกันไฟกระชาก"],
+            rows: ["ตรวจสอบระบบตัวนำล่อฟ้า ตัวนำต่อลงดิน", "ตรวจสอบระบบรากสายดิน", "ตรวจสอบจุดต่อประสานศักย์"],
         },
         {
             title: "3. ระบบอุปกรณ์ประกอบอื่น ๆ (ถ้ามี)",
-            rows: ["อุปกรณ์ยึดกันลม", "อุปกรณ์กันนก/สัตว์รบกวน", { label: "อุปกรณ์ประกอบอื่นที่เห็นสมควร (ระบุ)", inlineInput: true }],
+            rows: ["สภาพบันไดขึ้นลง", "สภาพราวจับ และราวกันตก", { label: "อุปกรณ์ประกอบอื่นตามที่เห็นสมควร (ระบุ)", inlineInput: true }],
         },
     ];
 
@@ -132,9 +129,22 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
     const emit = React.useCallback(
         (group: "section1" | "section2", rowId: string, delta: Partial<SectionThreeRow>) => {
             if (!onChange) return;
-            onChange({ [group]: { [rowId]: delta } } as Partial<SectionThreeForm>);
+
+            // รวมค่าปัจจุบันของแถวนี้จาก local state ทั้ง 3 ฟิลด์
+            const current: SectionThreeRow = {
+                freq: freq[rowId],
+                note: note[rowId] ?? "",
+                extra: extra[rowId] ?? "",
+            };
+
+            // merge แล้วส่งออก (กันพาเรนต์เขียนทับค่าเดิมหาย)
+            onChange({
+                [group]: {
+                    [rowId]: { ...current, ...delta },
+                },
+            } as Partial<SectionThreeForm>);
         },
-        [onChange]
+        [onChange, freq, note, extra] // <-- ต้องใส่ใน deps ด้วย
     );
 
     const FreqCells: React.FC<{ group: "section1" | "section2"; rowId: string }> = ({ group, rowId }) => (
@@ -182,7 +192,17 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                                     <td className={`${td} text-center`}>{i + 1}</td>
                                     <td className={td}>{txt}</td>
                                     <FreqCells group="section1" rowId={rowId} />
-                                    <td className={td}><DottedInput className="w-full" /></td>
+                                    <td className={td}>
+                                        <DottedInput
+                                            className="w-full"
+                                            value={note[rowId] ?? ""}
+                                            onChange={(e) => {
+                                                const v = e.currentTarget.value;
+                                                setNote((p) => ({ ...p, [rowId]: v }));
+                                                emit("section1", rowId, { note: v });
+                                            }}
+                                        />
+                                    </td>
                                 </tr>
                             );
                         })}
@@ -239,6 +259,12 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                                                             <DottedInput
                                                                 className="flex-1 min-w-[220px]"
                                                                 placeholder="โปรดระบุ"
+                                                                value={extra[rowId] ?? ""}
+                                                                onChange={(e) => {
+                                                                    const v = e.currentTarget.value;
+                                                                    setExtra((p) => ({ ...p, [rowId]: v }));
+                                                                    emit("section2", rowId, { extra: v });
+                                                                }}
                                                             />
                                                         )}
                                                     </div>
@@ -246,7 +272,17 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                                             </td>
 
                                             <FreqCells group="section2" rowId={rowId} />
-                                            <td className={td}><DottedInput className="w-full" /></td>
+                                            <td className={td}>
+                                                <DottedInput
+                                                    className="w-full"
+                                                    value={note[rowId] ?? ""}
+                                                    onChange={(e) => {
+                                                        const v = e.currentTarget.value;
+                                                        setNote((p) => ({ ...p, [rowId]: v }));
+                                                        emit("section2", rowId, { note: v });
+                                                    }}
+                                                />
+                                            </td>
                                         </tr>
                                     );
                                 })}
