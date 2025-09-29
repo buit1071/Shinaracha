@@ -14,12 +14,9 @@ export type SectionFiveMeta = {
     inspectDate?: { d?: string; m?: string; y?: string };
 
     ownerName?: string;
-    ownerDate?: { d?: string; m?: string; y?: string };
 
     inspectorName?: string;
-    inspectorDate?: { d?: string; m?: string; y?: string };
 
-    insType?: "juristic" | "individual";
     licenseNo?: string;
     issuer?: string;
     company?: string;
@@ -78,6 +75,27 @@ const SUMMARY_ROWS: SumRow[] = [
     { id: "r5", label: "อุปกรณ์ประกอบอื่น ๆ" },
     { id: "r6", label: "อื่น ๆ", allowExtra: true },
 ];
+
+export const THAI_MONTHS = [
+    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
+] as const;
+export type ThaiMonth = typeof THAI_MONTHS[number];
+
+const currentThaiYear = new Date().getFullYear() + 543;
+const YEAR_START = 2568;
+const YEAR_END = currentThaiYear + 20;
+export const YEARS = Array.from({ length: YEAR_END - YEAR_START + 1 }, (_, i) => String(YEAR_START + i));
+
+export function getDaysInMonthThai(
+    thaiYear: string | number | null | undefined,
+    thaiMonth: ThaiMonth | "" | null | undefined
+): number {
+    const idx = thaiMonth ? THAI_MONTHS.indexOf(thaiMonth) : -1;
+    const y = typeof thaiYear === "number" ? thaiYear : parseInt(thaiYear ?? "", 10);
+    if (idx < 0 || Number.isNaN(y)) return 31;
+    return new Date(y - 543, idx + 1, 0).getDate(); // วันสุดท้ายของเดือน
+}
 
 /* =========== COMPONENT =========== */
 export default function SectionFiveDetails({ value, onChange }: Props) {
@@ -182,30 +200,65 @@ export default function SectionFiveDetails({ value, onChange }: Props) {
                         value={vMeta.siteName ?? ""}
                         onChange={(e) => setMeta({ siteName: e.target.value })}
                     />
+
                     <span className="mx-2">ณ วันที่</span>
-                    <DottedInput
-                        className="w-12 text-center"
+                    {/* วัน */}
+                    <select
+                        className="w-12 text-center bg-transparent border-0 border-b border-dashed border-gray-400
+               focus:outline-none focus:ring-0 cursor-pointer"
                         value={vMeta.inspectDate?.d ?? ""}
-                        onChange={(e) => setMetaDate("inspectDate", { ...(vMeta.inspectDate ?? {}), d: e.target.value.replace(/\D/g, "") })}
-                    />
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                            setMetaDate("inspectDate", { ...(vMeta.inspectDate ?? {}), d: e.target.value })
+                        }
+                    >
+                        <option value="" disabled></option>
+                        {Array.from({ length: getDaysInMonthThai(vMeta.inspectDate?.y, vMeta.inspectDate?.m as any) }, (_, i) => {
+                            const d = String(i + 1);
+                            return <option key={d} value={d}>{d}</option>;
+                        })}
+                    </select>
+
                     <span className="mx-2">เดือน</span>
-                    <DottedInput
-                        className="w-24 text-center"
+                    {/* เดือน */}
+                    <select
+                        className="w-24 text-center bg-transparent border-0 border-b border-dashed border-gray-400
+               focus:outline-none focus:ring-0 cursor-pointer"
                         value={vMeta.inspectDate?.m ?? ""}
-                        onChange={(e) => setMetaDate("inspectDate", { ...(vMeta.inspectDate ?? {}), m: e.target.value })}
-                    />
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                            const m = e.target.value as ThaiMonth | "";
+                            const maxDay = getDaysInMonthThai(vMeta.inspectDate?.y, m);
+                            const d = vMeta.inspectDate?.d ? Math.min(Number(vMeta.inspectDate.d), maxDay) : "";
+                            setMetaDate("inspectDate", { ...(vMeta.inspectDate ?? {}), m, d: d ? String(d) : "" });
+                        }}
+                    >
+                        <option value="" disabled></option>
+                        {THAI_MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
+                    </select>
+
                     <span className="mx-2">พ.ศ.</span>
-                    <DottedInput
-                        className="w-16 text-center"
+                    {/* ปี */}
+                    <select
+                        className="w-16 text-center bg-transparent border-0 border-b border-dashed border-gray-400
+               focus:outline-none focus:ring-0 cursor-pointer"
                         value={vMeta.inspectDate?.y ?? ""}
-                        onChange={(e) => setMetaDate("inspectDate", { ...(vMeta.inspectDate ?? {}), y: e.target.value.replace(/\D/g, "") })}
-                    />
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                            const y = e.target.value;
+                            const maxDay = getDaysInMonthThai(y, vMeta.inspectDate?.m as any);
+                            const d = vMeta.inspectDate?.d ? Math.min(Number(vMeta.inspectDate.d), maxDay) : "";
+                            setMetaDate("inspectDate", { ...(vMeta.inspectDate ?? {}), y, d: d ? String(d) : "" });
+                        }}
+                    >
+                        <option value="" disabled></option>
+                        {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+                    </select>
+
                     <span className="mx-2">รอบที่</span>
                     <DottedInput
                         className="w-12 text-center"
                         value={vMeta.roundNo ?? ""}
                         onChange={(e) => setMeta({ roundNo: e.target.value.replace(/\D/g, "") })}
                     />
+
                     <div className="mt-2">
                         ในส่วนของโครงสร้าง ความมั่นคงแข็งแรงของป้าย พร้อมอุปกรณ์ประกอบป้าย
                         มีสภาพมั่นคงแข็งแรงเพียงพอใช้งานต่อไป และปลอดภัยต่อทรัพย์สิน
@@ -224,26 +277,6 @@ export default function SectionFiveDetails({ value, onChange }: Props) {
                             />
                             เจ้าของอาคาร/ผู้จัดการนิติบุคคลอาคารชุด
                         </div>
-                        <div className="text-center mt-2">
-                            วันที่
-                            <DottedInput
-                                className="w-10 text-center"
-                                value={vMeta.ownerDate?.d ?? ""}
-                                onChange={(e) => setMetaDate("ownerDate", { ...(vMeta.ownerDate ?? {}), d: e.target.value.replace(/\D/g, "") })}
-                            />
-                            เดือน
-                            <DottedInput
-                                className="w-20 text-center"
-                                value={vMeta.ownerDate?.m ?? ""}
-                                onChange={(e) => setMetaDate("ownerDate", { ...(vMeta.ownerDate ?? {}), m: e.target.value })}
-                            />
-                            พ.ศ.
-                            <DottedInput
-                                className="w-16 text-center"
-                                value={vMeta.ownerDate?.y ?? ""}
-                                onChange={(e) => setMetaDate("ownerDate", { ...(vMeta.ownerDate ?? {}), y: e.target.value.replace(/\D/g, "") })}
-                            />
-                        </div>
                     </div>
 
                     <div className="text-sm">
@@ -256,26 +289,6 @@ export default function SectionFiveDetails({ value, onChange }: Props) {
                             />
                             ผู้ตรวจสอบอาคาร
                         </div>
-                        <div className="text-center mt-2">
-                            วันที่
-                            <DottedInput
-                                className="w-10 text-center"
-                                value={vMeta.inspectorDate?.d ?? ""}
-                                onChange={(e) => setMetaDate("inspectorDate", { ...(vMeta.inspectorDate ?? {}), d: e.target.value.replace(/\D/g, "") })}
-                            />
-                            เดือน
-                            <DottedInput
-                                className="w-20 text-center"
-                                value={vMeta.inspectorDate?.m ?? ""}
-                                onChange={(e) => setMetaDate("inspectorDate", { ...(vMeta.inspectorDate ?? {}), m: e.target.value })}
-                            />
-                            พ.ศ.
-                            <DottedInput
-                                className="w-16 text-center"
-                                value={vMeta.inspectorDate?.y ?? ""}
-                                onChange={(e) => setMetaDate("inspectorDate", { ...(vMeta.inspectorDate ?? {}), y: e.target.value.replace(/\D/g, "") })}
-                            />
-                        </div>
                     </div>
                 </div>
             </div>
@@ -283,27 +296,6 @@ export default function SectionFiveDetails({ value, onChange }: Props) {
             {/* ========== รายละเอียดผู้ตรวจสอบ ========== */}
             <div className="space-y-3">
                 <div className="font-semibold">รายละเอียดผู้ตรวจสอบ</div>
-
-                <div className="flex items-center gap-6 text-sm">
-                    <label className="inline-flex items-center gap-2">
-                        <input
-                            type="radio"
-                            className="accent-black"
-                            checked={(vMeta.insType ?? "juristic") === "juristic"}
-                            onChange={() => setMeta({ insType: "juristic" })}
-                        />
-                        ผู้ตรวจสอบอาคารประเภทนิติบุคคล
-                    </label>
-                    <label className="inline-flex items-center gap-2">
-                        <input
-                            type="radio"
-                            className="accent-black"
-                            checked={vMeta.insType === "individual"}
-                            onChange={() => setMeta({ insType: "individual" })}
-                        />
-                        ผู้ตรวจสอบอาคารประเภทบุคคลธรรมดา
-                    </label>
-                </div>
 
                 <div className="text-sm leading-7">
                     ใบอนุญาตเลขที่
@@ -317,43 +309,102 @@ export default function SectionFiveDetails({ value, onChange }: Props) {
                         <DottedInput className="min-w-[360px]" value={vMeta.address ?? ""} onChange={(e) => setMeta({ address: e.target.value })} />
                     </div>
 
-                    <div className="mt-2">
+                    <div className="mt-2 text-sm">
                         ออกให้ ณ วันที่
-                        <DottedInput
-                            className="w-10 text-center"
+                        {/* วัน (ออกให้) */}
+                        <select
+                            className="w-10 bg-transparent border-0 border-b border-dashed border-gray-400 focus:outline-none focus:ring-0 text-center cursor-pointer"
                             value={vMeta.licIssue?.d ?? ""}
-                            onChange={(e) => setMetaDate("licIssue", { ...(vMeta.licIssue ?? {}), d: e.target.value.replace(/\D/g, "") })}
-                        />
+                            onChange={(e) =>
+                                setMetaDate("licIssue", { ...(vMeta.licIssue ?? {}), d: e.target.value })
+                            }
+                        >
+                            <option value="" disabled></option>
+                            {Array.from({ length: getDaysInMonthThai(vMeta.licIssue?.y, vMeta.licIssue?.m as any) }, (_, i) => {
+                                const d = String(i + 1);
+                                return <option key={d} value={d}>{d}</option>;
+                            })}
+                        </select>
+
                         เดือน
-                        <DottedInput
-                            className="w-20 text-center"
+                        {/* เดือน (ออกให้) */}
+                        <select
+                            className="w-20 bg-transparent border-0 border-b border-dashed border-gray-400 focus:outline-none focus:ring-0 text-center cursor-pointer"
                             value={vMeta.licIssue?.m ?? ""}
-                            onChange={(e) => setMetaDate("licIssue", { ...(vMeta.licIssue ?? {}), m: e.target.value })}
-                        />
+                            onChange={(e) => {
+                                const m = e.target.value as ThaiMonth | "";
+                                const maxDay = getDaysInMonthThai(vMeta.licIssue?.y, m);
+                                const d = vMeta.licIssue?.d ? Math.min(Number(vMeta.licIssue.d), maxDay) : "";
+                                setMetaDate("licIssue", { ...(vMeta.licIssue ?? {}), m, d: d ? String(d) : "" });
+                            }}
+                        >
+                            <option value="" disabled></option>
+                            {THAI_MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+
                         พ.ศ.
-                        <DottedInput
-                            className="w-16 text-center"
+                        {/* ปี (ออกให้) */}
+                        <select
+                            className="w-16 bg-transparent border-0 border-b border-dashed border-gray-400 focus:outline-none focus:ring-0 text-center cursor-pointer"
                             value={vMeta.licIssue?.y ?? ""}
-                            onChange={(e) => setMetaDate("licIssue", { ...(vMeta.licIssue ?? {}), y: e.target.value.replace(/\D/g, "") })}
-                        />
+                            onChange={(e) => {
+                                const y = e.target.value;
+                                const maxDay = getDaysInMonthThai(y, vMeta.licIssue?.m as any);
+                                const d = vMeta.licIssue?.d ? Math.min(Number(vMeta.licIssue.d), maxDay) : "";
+                                setMetaDate("licIssue", { ...(vMeta.licIssue ?? {}), y, d: d ? String(d) : "" });
+                            }}
+                        >
+                            <option value="" disabled></option>
+                            {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+
                         และใช้ได้ถึงวันที่
-                        <DottedInput
-                            className="w-10 text-center"
+                        {/* วัน (หมดอายุ) */}
+                        <select
+                            className="w-10 bg-transparent border-0 border-b border-dashed border-gray-400 focus:outline-none focus:ring-0 text-center cursor-pointer"
                             value={vMeta.licExpire?.d ?? ""}
-                            onChange={(e) => setMetaDate("licExpire", { ...(vMeta.licExpire ?? {}), d: e.target.value.replace(/\D/g, "") })}
-                        />
+                            onChange={(e) =>
+                                setMetaDate("licExpire", { ...(vMeta.licExpire ?? {}), d: e.target.value })
+                            }
+                        >
+                            <option value="" disabled></option>
+                            {Array.from({ length: getDaysInMonthThai(vMeta.licExpire?.y, vMeta.licExpire?.m as any) }, (_, i) => {
+                                const d = String(i + 1);
+                                return <option key={d} value={d}>{d}</option>;
+                            })}
+                        </select>
+
                         เดือน
-                        <DottedInput
-                            className="w-20 text-center"
+                        {/* เดือน (หมดอายุ) */}
+                        <select
+                            className="w-20 bg-transparent border-0 border-b border-dashed border-gray-400 focus:outline-none focus:ring-0 text-center cursor-pointer"
                             value={vMeta.licExpire?.m ?? ""}
-                            onChange={(e) => setMetaDate("licExpire", { ...(vMeta.licExpire ?? {}), m: e.target.value })}
-                        />
+                            onChange={(e) => {
+                                const m = e.target.value as ThaiMonth | "";
+                                const maxDay = getDaysInMonthThai(vMeta.licExpire?.y, m);
+                                const d = vMeta.licExpire?.d ? Math.min(Number(vMeta.licExpire.d), maxDay) : "";
+                                setMetaDate("licExpire", { ...(vMeta.licExpire ?? {}), m, d: d ? String(d) : "" });
+                            }}
+                        >
+                            <option value="" disabled></option>
+                            {THAI_MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+
                         พ.ศ.
-                        <DottedInput
-                            className="w-16 text-center"
+                        {/* ปี (หมดอายุ) */}
+                        <select
+                            className="w-16 bg-transparent border-0 border-b border-dashed border-gray-400 focus:outline-none focus:ring-0 text-center cursor-pointer"
                             value={vMeta.licExpire?.y ?? ""}
-                            onChange={(e) => setMetaDate("licExpire", { ...(vMeta.licExpire ?? {}), y: e.target.value.replace(/\D/g, "") })}
-                        />
+                            onChange={(e) => {
+                                const y = e.target.value;
+                                const maxDay = getDaysInMonthThai(y, vMeta.licExpire?.m as any);
+                                const d = vMeta.licExpire?.d ? Math.min(Number(vMeta.licExpire.d), maxDay) : "";
+                                setMetaDate("licExpire", { ...(vMeta.licExpire ?? {}), y, d: d ? String(d) : "" });
+                            }}
+                        >
+                            <option value="" disabled></option>
+                            {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
                     </div>
                 </div>
             </div>

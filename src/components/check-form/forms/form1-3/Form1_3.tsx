@@ -95,8 +95,6 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
                 ...curMeta,
                 ...pMeta,
                 inspectDate: { ...(curMeta.inspectDate ?? {}), ...(pMeta.inspectDate ?? {}) },
-                ownerDate: { ...(curMeta.ownerDate ?? {}), ...(pMeta.ownerDate ?? {}) },
-                inspectorDate: { ...(curMeta.inspectorDate ?? {}), ...(pMeta.inspectorDate ?? {}) },
                 licIssue: { ...(curMeta.licIssue ?? {}), ...(pMeta.licIssue ?? {}) },
                 licExpire: { ...(curMeta.licExpire ?? {}), ...(pMeta.licExpire ?? {}) },
             };
@@ -377,7 +375,6 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
                             </div>
                         </div>
                     </div>
-                    <pre className="mt-4 bg-gray-100 p-3 rounded text-xs text-black">{JSON.stringify(formData.sectionThree, null, 2)}</pre>
                 </section>
 
                 {/* ส่วนที่ 4 */}
@@ -448,6 +445,7 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
                             </div>
                         </div>
                     </div>
+                    <pre className="mt-4 bg-gray-100 p-3 rounded text-xs text-black">{JSON.stringify(formData.sectionFive, null, 2)}</pre>
                 </section>
             </div>
         </>

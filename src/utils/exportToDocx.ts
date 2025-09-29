@@ -753,8 +753,7 @@ async function buildSectionTwo(formData: FormDataLite) {
         h2_52, T1, T2, T3, T4, T5,
         h2_53, des, des1, des1L1, des1L2, des1L3, des1L4, des1L5, des2, des2L1,
         PAGEBREAK,
-        h2_54, D1, D1T1, D1T2, D1T3, D1T4, D1T5, D2, D2T1, D2T2, D2T3, D2T4, D2T5,
-        PAGEBREAK,
+        h2_54, D1, D1T1, D1T2, D1T3, D1T4, D1T5, D2, D2T1, D2T2, D2T3, D2T4, D2T5
     ];
 }
 
@@ -1092,6 +1091,466 @@ async function buildSectionThree(formData: FormDataLite) {
 
     return [h3, h3_1, table1, PAGEBREAK, h3_2, table2];
 }
+type VisitVal = "ok" | "ng";
+type T1Row = string | { label: string; inlineInput?: boolean };
+
+const S4_T1_ROWS: T1Row[] = [
+    "การต่อเติม ดัดแปลง ปรับปรุงบำรุงรักษา",
+    "การเปลี่ยนแปลงน้ำหนักของแผ่นป้าย",
+    "การเปลี่ยนแปลงสภาพการใช้งานของป้าย",
+    "การเปลี่ยนแปลงวัสดุของป้าย",
+    "การชำรุดสึกหรอของป้าย",
+    "การบัง/ยึดของสิ่งที่สร้างขึ้นหรือติดตั้งป้ายและจุดยึดเหนี่ยว",
+    { label: "การซ่อม/ดัดแปลงที่มีผลต่อความมั่นคง (ระบุ)", inlineInput: true },
+];
+
+const ROUNDS = [{ key: "v1", label: "ครั้งที่ 1" }] as const;
+const PCT4 = { IDX: 5, ITEM: 55, ROUND_TOTAL: 20, NOTE: 20 } as const;
+const SUB_PCT = PCT4.ROUND_TOTAL / 2;
+
+function buildS4_Table1(
+    table1: Record<string, { visits?: Record<string, VisitVal>; note?: string; extra?: string }> | undefined
+) {
+    const rows: TableRow[] = [];
+
+    // Header แถวบน
+    rows.push(
+        new TableRow({
+            height: { value: 260, rule: HeightRule.ATLEAST },
+            cantSplit: true,
+            children: [
+                thCell("ลำดับ", PCT4.IDX, { rowSpan: 2 }, TextDirection.TOP_TO_BOTTOM_RIGHT_TO_LEFT),
+                thCell("รายการตรวจสอบ", PCT4.ITEM, { rowSpan: 2 }),
+                ...ROUNDS.map((r) => thCell(r.label, PCT4.ROUND_TOTAL, { columnSpan: 2 })), // 2 ช่องย่อย
+                thCell("หมายเหตุ", PCT4.NOTE, { rowSpan: 2 }),
+            ],
+        })
+    );
+
+    // Header แถวล่าง — ใช้ได้ / ใช้ไม่ได้
+    rows.push(
+        new TableRow({
+            height: { value: 220, rule: HeightRule.ATLEAST },
+            cantSplit: true,
+            children: ROUNDS.flatMap(() => [
+                thCell("ใช้ได้", SUB_PCT),
+                thCell("ใช้ไม่ได้", SUB_PCT),
+            ]),
+        })
+    );
+
+    // เนื้อหา
+    S4_T1_ROWS.forEach((row, idx) => {
+        const id = `t1-${idx + 1}`;
+        const data = table1?.[id] || {};
+        const v1 = (data.visits?.["v1"] as VisitVal | undefined) ?? undefined;
+
+        // รายการ (รองรับ inlineInput บรรทัดถัดไป)
+        const label = typeof row === "string" ? row : row.label;
+        const paras: Paragraph[] = [cellPCompact(label)];
+        if (typeof row !== "string" && row.inlineInput) {
+            const extra = (data.extra ?? "").toString().trim();
+            paras.push(extra ? cellPCompact(extra) : dottedNoteCompact());
+        }
+
+        rows.push(
+            new TableRow({
+                height: { value: 160, rule: HeightRule.ATLEAST },
+                cantSplit: true,
+                children: [
+                    tdCellCompact(cellPCompact(String(idx + 1), { align: AlignmentType.CENTER }), PCT4.IDX),
+                    tdCellCompact(paras, PCT4.ITEM),
+                    // ครั้งที่ 1: ✓ เฉพาะช่องที่ตรงกับค่า
+                    tdCellCompact(
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [new TextRun({ text: v1 === "ok" ? "✓" : "", font: FONT_TH, size: SIZE_16PT, bold: true })],
+                        }),
+                        SUB_PCT
+                    ),
+                    tdCellCompact(
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [new TextRun({ text: v1 === "ng" ? "✓" : "", font: FONT_TH, size: SIZE_16PT, bold: true })],
+                        }),
+                        SUB_PCT
+                    ),
+                    tdCellCompact(
+                        data.note && String(data.note).trim() !== "" ? cellPCompact(String(data.note)) : dottedNoteCompact(),
+                        PCT4.NOTE
+                    ),
+                ],
+            })
+        );
+    });
+
+    return new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        layout: "fixed",
+        borders: {
+            top: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            bottom: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            left: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            right: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            insideHorizontal: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+            insideVertical: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+        },
+        rows,
+    });
+}
+
+type T2Row = string | { label: string; inlineInput?: boolean };
+const S4_T2_GROUPS: { title: string; rows: T2Row[] }[] = [
+    {
+        title: "1. ระบบไฟฟ้าแสงสว่าง",
+        rows: [
+            "สภาพหลอดไฟฟ้า",
+            "ตู้คอนโทรล/สายไฟ/อุปกรณ์",
+            "สลักกุญแจ/บันทึกการเปิดตู้",
+            "อุปกรณ์ป้องกัน (RCD/MCCB ฯๆ)",
+            "สายดิน/จุดต่อกราวด์",
+            "งานเดินสาย/การจัดยึด",
+            "ระบบตั้งเวลา/เปิด–ปิดอัตโนมัติ",
+            { label: "อื่น ๆ (โปรดระบุ)", inlineInput: true },
+        ],
+    },
+    {
+        title: "2. ระบบไฟฟ้าควบคุม/อาณัติสัญญาณ (ถ้ามี)",
+        rows: ["หน่วยควบคุม/จอแสดงผล", "เซนเซอร์/ระบบตรวจจับ", "ระบบป้องกันไฟกระชาก"],
+    },
+    {
+        title: "3. ระบบอุปกรณ์ประกอบอื่น ๆ (ถ้ามี)",
+        rows: ["อุปกรณ์ที่สมบูรณ์", "อุปกรณ์กันตก/ราวจับ", { label: "อุปกรณ์ประกอบอื่นที่เห็นสมควร (ระบุ)", inlineInput: true }],
+    },
+];
+
+const S4_ROUNDS = [{ key: "v1", label: "ครั้งที่ 1" }] as const;
+
+// ค่าคอลัมน์ (%)
+const ROUND_SUB_PCT = PCT4.ROUND_TOTAL / 2;
+const TOTAL_SPAN_S4T2 = 1 + 1 + S4_ROUNDS.length * 2 + 1;
+
+function buildS4_Table2(
+    table2: Record<string, { visits?: Record<string, VisitVal>; note?: string; extra?: string }> | undefined
+) {
+    const rows: TableRow[] = [];
+
+    // ===== Header แถวบน =====
+    rows.push(
+        new TableRow({
+            height: { value: 260, rule: HeightRule.ATLEAST },
+            cantSplit: true,
+            children: [
+                thCell("ลำดับ", PCT4.IDX, { rowSpan: 2 }, TextDirection.TOP_TO_BOTTOM_RIGHT_TO_LEFT),
+                thCell("รายการตรวจสอบ", PCT4.ITEM, { rowSpan: 2 }),
+                ...S4_ROUNDS.map((r) => thCell(r.label, PCT4.ROUND_TOTAL, { columnSpan: 2 })),
+                thCell("หมายเหตุ", PCT4.NOTE, { rowSpan: 2 }),
+            ],
+        })
+    );
+
+    // ===== Header แถวล่าง (ใช้ได้/ใช้ไม่ได้) =====
+    rows.push(
+        new TableRow({
+            height: { value: 220, rule: HeightRule.ATLEAST },
+            cantSplit: true,
+            children: S4_ROUNDS.flatMap(() => [thCell("ใช้ได้", ROUND_SUB_PCT), thCell("ใช้ไม่ได้", ROUND_SUB_PCT)]),
+        })
+    );
+
+    // ===== เนื้อหาเป็นกลุ่ม =====
+    S4_T2_GROUPS.forEach((group, gi) => {
+        // หัวกลุ่ม: รวมทั้งแถว + พื้นหลังอ่อน
+        rows.push(
+            new TableRow({
+                height: { value: 240, rule: HeightRule.ATLEAST },
+                cantSplit: true,
+                children: [
+                    new TableCell({
+                        columnSpan: TOTAL_SPAN_S4T2,
+                        verticalAlign: VerticalAlign.CENTER,
+                        shading: { fill: "F3F3F3" },
+                        margins: { top: 60, bottom: 60, left: 120, right: 120 },
+                        children: [cellPCompact(`${group.title}`, { bold: true })],
+                    }),
+                ],
+            })
+        );
+
+        // แถวรายการย่อย (เลขลำดับรีเซ็ตภายในกลุ่ม)
+        group.rows.forEach((r, ri) => {
+            const label = typeof r === "string" ? r : r.label;
+            const id = `t2-${gi + 1}-${ri + 1}`; // t2-{group}-{row}
+            const data = table2?.[id] || {};
+            const v1 = (data.visits?.["v1"] as VisitVal | undefined) ?? undefined;
+
+            const paras: Paragraph[] = [cellPCompact(label)];
+            if (typeof r !== "string" && r.inlineInput) {
+                const extra = (data.extra ?? "").toString().trim();
+                paras.push(extra ? cellPCompact(extra) : dottedNoteCompact());
+            }
+
+            rows.push(
+                new TableRow({
+                    height: { value: 160, rule: HeightRule.ATLEAST },
+                    cantSplit: true,
+                    children: [
+                        tdCellCompact(cellPCompact(String(ri + 1), { align: AlignmentType.CENTER }), PCT4.IDX),
+                        tdCellCompact(paras, PCT4.ITEM),
+                        // ครั้งที่ 1: ✓ ตำแหน่งเดียว
+                        tdCellCompact(
+                            new Paragraph({
+                                alignment: AlignmentType.CENTER,
+                                children: [new TextRun({ text: v1 === "ok" ? "✓" : "", font: FONT_TH, size: SIZE_16PT, bold: true })],
+                            }),
+                            ROUND_SUB_PCT
+                        ),
+                        tdCellCompact(
+                            new Paragraph({
+                                alignment: AlignmentType.CENTER,
+                                children: [new TextRun({ text: v1 === "ng" ? "✓" : "", font: FONT_TH, size: SIZE_16PT, bold: true })],
+                            }),
+                            ROUND_SUB_PCT
+                        ),
+                        tdCellCompact(
+                            data.note && String(data.note).trim() !== "" ? cellPCompact(String(data.note)) : dottedNoteCompact(),
+                            PCT4.NOTE
+                        ),
+                    ],
+                })
+            );
+        });
+    });
+
+    return new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        layout: "fixed",
+        borders: {
+            top: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            bottom: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            left: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            right: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            insideHorizontal: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+            insideVertical: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+        },
+        rows,
+    });
+}
+
+async function buildSectionFour(formData: FormDataLite) {
+    const PAGEBREAK = new Paragraph({ pageBreakBefore: true });
+    const h4 = heading("ส่วนที่ 4 ผลการตรวจสอบสภาพป้ายและอุปกรณ์ต่าง ๆ ของป้าย", true);
+    const h4_1 = pn("ส่วนที่ 4 เป็นผลการตรวจสอบสภาพป้าย และอุปกรณ์ต่าง ๆ ของป้ายตามที่ตรวจสอบได้ด้วยสายตา", 2);
+    const h4_1_1 = pn("หรือตรวจพร้อมกับใช้เครื่องมือวัดพื้นฐาน เช่นตลับเมตร เป็นต้น หรือเครื่องมือชนิดพกพาเท่านั้น จะไม่รวมถึง", 1);
+    const h4_1_2 = pn("การทดสอบที่ใช่เครื่องมือพิเศษเฉพาะ", 1);
+    const h4_2 = pn("การตรวจสอบป้ายและอุปกรณ์ประกอบต่าง ๆ ของป้าย ผู้ตรวจสอบจะต้องพิจารณาตามหลักเกณฑ์", 2);
+    const h4_2_1 = pn("หรือมาตรฐานที่ได้กำหนดไว้ในกฎหมายว่าด้วยการควบคุมอาคาร หรือกฎหมายอื่นที่เกี่ยวข้อง ที่ใช้บังคับอยู่", 1);
+    const h4_2_2 = pn("ในขณะที่มีการก่อสร้างป้ายนั้น และคำนึงถึงหลักเกณฑ์ หรือมาตรฐานความปลอดภัยของสถาบันทางราชการ", 1);
+    const h4_2_3 = pn("สภาวิศวกร หรือสภาสถาปนิก โดยจะตรวจตามรายการที่กำหนดในส่วนนี้ประกอบกับรายละเอียดการตรวจสอบ", 1);
+    const h4_2_4 = pn("บำรุงรักษาป้ายที่เจ้าของป้ายหรือผู้ดูแลป้ายได้ดำเนินการตรวจสอบไว้แล้วตามที่ผู้ตรวจสอบกำหนด", 1);
+    const h4_3 = pn("ผู้ตรวจสอบป้ายประจำปีจะต้องตรวจสอบสภาพป้ายและระบบอุปกรณ์ประกอบต่าง ๆ ของป้าย", 2);
+    const h4_3_1 = pn("แต่ละรายการตามความถี่ที่ผู้ตรวจสอบกำหนด จำนวนครั้งที่ตรวจสอบในแต่ละปีตามความถี่ในการตรวจสอบ", 1);
+    const h4_3_2 = pn("คือ ตรวจสอบทุก ๆ 6 เดือน จำนวนครั้งที่ต้องตรวจสอบในแต่ละปีเท่ากับ 2 ครั้ง (รอบ 6 เดือน และ 12 เดือน)", 1);
+
+    const h4_4 = pn("1. การตรวจสอบความมั่นคงแข็งแรงของป้าย", 1);
+    const h4_5 = pn("2. การตรวจสอบบำรุงรักษาระบบและอุปกรณ์ประกอบต่าง ๆ ของป้าย", 1);
+    const table1 = buildS4_Table1(formData.sectionFour?.table1);
+    const table2 = buildS4_Table2(formData.sectionFour?.table2);
+
+    const GAP = new Paragraph({ children: [new TextRun({ text: " " })] });
+
+    return [
+        h4, h4_1, h4_1_1, h4_1_2, h4_2, h4_2_1, h4_2_2, h4_2_3, h4_2_4, h4_3, h4_3_1, h4_3_2,
+        GAP,
+        h4_4, table1,
+        PAGEBREAK,
+        h4_5, table2
+    ];
+}
+
+type S5Status = "ok" | "ng";
+type S5Row = { status?: S5Status; fixed?: boolean; note?: string; extra?: string };
+const S5_ITEMS: { key: keyof Record<string, S5Row>; label: string; inlineInput?: boolean }[] = [
+    { key: "r1", label: "สิ่งที่สร้างขึ้นส่วนหนึ่งยึดหรือสัมผัสป้าย" },
+    { key: "r2", label: "แผ่นป้าย" },
+    { key: "r3", label: "ระบบไฟฟ้าแสงสว่าง" },
+    { key: "r4", label: "ระบบไฟฟ้าควบคุม" },
+    { key: "r5", label: "อุปกรณ์ประกอบอื่น ๆ" },
+    { key: "r6", label: "อื่น ๆ", inlineInput: true },   // ระบุ
+];
+const PCT5 = { IDX: 5, ITEM: 50, OK: 5, NG: 5, FIXED: 5, NOTE: 30 } as const;
+function buildS5_Table(rowsData: Record<string, S5Row>) {
+    const rows: TableRow[] = [];
+
+    // แถวหัวเรื่องรวมทั้งแถว
+    rows.push(
+        new TableRow({
+            cantSplit: true,
+            children: [
+                new TableCell({
+                    columnSpan: 6,
+                    shading: { fill: "F3F3F3" },
+                    margins: { top: 80, bottom: 80, left: 120, right: 120 },
+                    children: [
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [new TextRun({ text: "สรุปผลการตรวจสอบป้ายและอุปกรณ์ประกอบต่าง ๆ ของป้าย", font: FONT_TH, size: SIZE_16PT, bold: true })],
+                        }),
+                    ],
+                }),
+            ],
+        })
+    );
+
+    // ===== Header (แนวตั้งทุกคอลัมน์ ยกเว้น รายการตรวจสอบ/หมายเหตุ) =====
+    rows.push(
+        new TableRow({
+            height: { value: 1000, rule: HeightRule.ATLEAST },
+            cantSplit: true,
+            children: [
+                thCell("ลำดับที่", PCT5.IDX, undefined, TextDirection.TOP_TO_BOTTOM_RIGHT_TO_LEFT),
+                thCell("รายการตรวจสอบ", PCT5.ITEM),
+                thCell("ใช้ได้", PCT5.OK, undefined, TextDirection.TOP_TO_BOTTOM_RIGHT_TO_LEFT),
+                thCell("ใช้ไม่ได้", PCT5.NG, undefined, TextDirection.TOP_TO_BOTTOM_RIGHT_TO_LEFT),
+                thCell("แก้ไขแล้ว", PCT5.FIXED, undefined, TextDirection.TOP_TO_BOTTOM_RIGHT_TO_LEFT),
+                thCell("หมายเหตุ", PCT5.NOTE),
+            ],
+        })
+    );
+
+    // ===== เนื้อหา =====
+    S5_ITEMS.forEach((it, i) => {
+        const d = rowsData?.[it.key as string] || {};
+        const ok = d.status === "ok";
+        const ng = d.status === "ng";
+        const fx = !!d.fixed;
+
+        // inline “ระบุ” (มีค่าจะต่อท้ายบรรทัดเดียว, ไม่มีค่าใส่เส้นปะ)
+        const extraText = it.inlineInput ? (d.extra ?? "").toString().trim() : "";
+        const itemParas: Paragraph[] = [
+            new Paragraph({
+                spacing: { before: 10, after: 10, line: 200 },
+                children: [
+                    new TextRun({ text: it.label, font: FONT_TH, size: SIZE_16PT }),
+                    ...(extraText ? [new TextRun({ text: "  " + extraText, font: FONT_TH, size: SIZE_16PT })] : []),
+                ],
+            }),
+        ];
+        if (it.inlineInput && !extraText) itemParas.push(dottedNoteCompact());
+
+        rows.push(
+            new TableRow({
+                height: { value: 160, rule: HeightRule.ATLEAST },
+                cantSplit: true,
+                children: [
+                    tdCellCompact(cellPCompact(String(i + 1), { align: AlignmentType.CENTER }), PCT5.IDX),
+                    tdCellCompact(itemParas, PCT5.ITEM),
+                    tdCellCompact(
+                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: ok ? "✓" : "", font: FONT_TH, size: SIZE_16PT, bold: true })] }),
+                        PCT5.OK
+                    ),
+                    tdCellCompact(
+                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: ng ? "✓" : "", font: FONT_TH, size: SIZE_16PT, bold: true })] }),
+                        PCT5.NG
+                    ),
+                    tdCellCompact(
+                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: fx ? "✓" : "", font: FONT_TH, size: SIZE_16PT, bold: true })] }),
+                        PCT5.FIXED
+                    ),
+                    tdCellCompact(
+                        d.note && String(d.note).trim() !== "" ? cellPCompact(String(d.note)) : dottedNoteCompact(),
+                        PCT5.NOTE
+                    ),
+                ],
+            })
+        );
+    });
+
+    return new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        layout: "fixed",
+        borders: {
+            top: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            bottom: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            left: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            right: { style: BorderStyle.SINGLE, size: 10, color: "000000" },
+            insideHorizontal: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+            insideVertical: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+        },
+        rows,
+    });
+}
+
+// ใช้งานใน Section 5
+async function buildSectionFive(formData: FormDataLite) {
+    const DOTS = "..................................................."; // ปรับความยาวตามที่ชอบ
+    const NBSP = "\u00A0";
+    const h5 = heading("ส่วนที่ 5 สรุปผลการตรวจสอบสภาพป้ายและอุปกรณ์ต่างๆ", true);
+    const s5 = (formData.sectionFive ?? formData) as { rows?: Record<string, S5Row>; meta?: any };
+    const table = buildS5_Table(s5.rows ?? {});
+    const GAP = new Paragraph({ children: [new TextRun({ text: " " })] });
+
+    // ---------- helpers เฉพาะส่วนนี้ ----------
+    const t = (v?: string, dot = "……") => (v && String(v).trim() ? String(v) : dot);
+
+    const signLine = (roleRight: string) => pn(`ลงชื่อ${DOTS}${roleRight}`, 4);
+
+    // --- วงเล็บ: กว้างเท่ากับ DOTS (indent level 3) ---
+    const signParenLine = (rightText?: string) => new Paragraph({
+        spacing: { before: 0, after: 14, line: 200 },
+        children: [
+            // prefix กินพื้นที่เท่าบรรทัดจุด แต่ไม่แสดงผล
+            new TextRun({ text: "ลงชื่อ", font: FONT_TH, size: SIZE_16PT, color: "FFFFFF" }),
+            new TextRun({ text: DOTS, font: FONT_TH, size: SIZE_16PT, color: "FFFFFF" }),
+            // วงเล็บกว้างเท่า DOTS
+            new TextRun({ text: `(${NBSP.repeat(DOTS.length)} )`, font: FONT_TH, size: SIZE_16PT }),
+            ...(rightText ? [new TextRun({ text: "  / " + rightText, font: FONT_TH, size: SIZE_16PT })] : []),
+        ],
+    });
+
+    // ---------- meta ----------
+    const m = s5.meta || {};
+    const siteName = t(m.siteName);
+    const roundNo = t(m.roundNo);
+    const d = t(m.inspectDate?.d);
+    const mm = t(m.inspectDate?.m);
+    const y = t(m.inspectDate?.y);
+
+    // สรุปความเห็น
+    const h5_1 = heading("สรุปความเห็นของผู้ตรวจสอบอาคาร", false);
+    const l1 = pn(`สรุปผลการตรวจสอบป้ายโฆษณา ${siteName} ซึ่งป้ายติดตั้งบนพื้นดินพบว่า ณ วันที่เข้า`, 1);
+    const l2 = pn(`ตรวจสอบ รอบที่ ${roundNo} เมื่อวันที่ ${d} ${mm} ${y} ในส่วนของโครงสร้าง ความมั่นคงแข็งแรงของป้าย พร้อมอุปกรณ์`, 0);
+    const l3 = pn("ประกอบป้ายอยู่ในสภาพมั่นคงแข็งแรงพร้อมใช้งานต่อไป และปลอดภัยต่อทรัพย์สิน", 0);
+
+    // ------- เลขทะเบียนผู้ตรวจสอบ  -------
+    const hInspector = pn("เลขทะเบียนผู้ตรวจสอบ", 1);
+
+    const licNo = t(m.licenseNo, "…………/……");
+    const issuer = t(m.issuer);
+    const company = t(m.company);
+    const address = t(m.address);
+    const id = m.licIssue || {};
+    const ex = m.licExpire || {};
+
+    const line1 = pn(`ผู้ตรวจสอบประเภทนิติบุคคล ทะเบียนเลขที่ ${licNo} จาก ${issuer}`, 2);
+    const line2 = pn(`โดยนาม ${company}`, 2);
+    const line3 = pn(address, 2);
+    const line4 = pn(`ออกให้ ณ วันที่  ${t(id.d)}  เดือน  ${t(id.m)}  พ.ศ.  ${t(id.y)}`, 2);
+    const line5 = pn(`ใช้ได้ถึง วันที่  ${t(ex.d)}  เดือน  ${t(ex.m)}  พ.ศ.  ${t(ex.y)}`, 2);
+
+    // return ทั้งหมด
+    return [
+        h5, GAP, table, GAP,
+        h5_1, l1, l2, l3, GAP,
+
+        // ลงชื่อเรียงลงมา
+        signLine("เจ้าของอาคาร/ผู้จัดการนิติบุคคลอาคารชุด"),
+        signParenLine("ผู้ครอบครองอาคาร/ผู้รับมอบหมาย"),
+        signLine("ผู้ตรวจสอบอาคาร"),
+        signParenLine(),
+        hInspector, line1, line2, line3, line4, line5,
+    ];
+}
 
 /* ---------------- Export main ---------------- */
 export async function exportToDocx(formData: FormDataLite) {
@@ -1196,7 +1655,29 @@ export async function exportToDocx(formData: FormDataLite) {
         children: sec3Children,
     } as const;
 
-    const doc = new Document({ sections: [coverSection, contentSectionOne, contentsectionTwo, contentsectionThree] });
+    //ส่วนที่ 4
+    const sec4Children = await buildSectionFour(formData);
+    const contentsectionFour = {
+        headers: { default: header },
+        footers: { default: footer },
+        properties: {
+            page: { size: { width: PAGE.widthTwips, height: PAGE.heightTwips }, margin: PAGE.margin },
+        },
+        children: sec4Children,
+    } as const;
+
+    //ส่วนที่ 4
+    const sec5Children = await buildSectionFive(formData);
+    const contentsectionFive = {
+        headers: { default: header },
+        footers: { default: footer },
+        properties: {
+            page: { size: { width: PAGE.widthTwips, height: PAGE.heightTwips }, margin: PAGE.margin },
+        },
+        children: sec5Children,
+    } as const;
+
+    const doc = new Document({ sections: [coverSection, contentSectionOne, contentsectionTwo, contentsectionThree, contentsectionFour, contentsectionFive] });
     const blob = await Packer.toBlob(doc);
 
     const safe = (s: string) =>

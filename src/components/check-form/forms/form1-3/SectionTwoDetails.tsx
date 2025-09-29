@@ -167,6 +167,32 @@ function ImageGallery({
     );
 }
 
+const THAI_MONTHS = [
+    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
+];
+
+const currentThaiYear = new Date().getFullYear() + 543;
+const YEAR_START = 2568;                       // ย้อนหลังได้นานพอสมควร
+const YEAR_END = currentThaiYear + 20;       // เผื่ออนาคต
+const YEARS = Array.from({ length: YEAR_END - YEAR_START + 1 }, (_, i) => String(YEAR_START + i));
+
+export type ThaiMonth = typeof THAI_MONTHS[number];
+
+function getDaysInMonthThai(
+    thaiYear: string | number | null | undefined,
+    thaiMonth: ThaiMonth | "" | null | undefined
+): number {
+    const monthIndex = thaiMonth ? THAI_MONTHS.indexOf(thaiMonth) : -1; // 0..11 หรือ -1 ถ้าไม่ถูกต้อง
+    const y = typeof thaiYear === "number" ? thaiYear : parseInt(thaiYear ?? "", 10);
+
+    if (monthIndex < 0 || Number.isNaN(y)) return 31;
+
+    const gregorianYear = y - 543;
+    // วันสุดท้ายของเดือนนั้น
+    return new Date(gregorianYear, monthIndex + 1, 0).getDate();
+}
+
 export type SectionTwoForm = {
     // ===== เดิม (ฟิลด์ที่ผู้ใช้กรอกเอง) =====
     permitDay?: string; permitMonth?: string; permitYear?: string;
@@ -551,35 +577,53 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                     <div className="text-sm">
                         ได้รับใบอนุญาตก่อสร้างจากเจ้าพนักงานท้องถิ่น
                         <span className="ml-1">เมื่อวันที่</span>
-
-                        {/* อินไลน์: วันที่ / เดือน / พ.ศ. (เส้นปะ) */}
-                        <input
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={2}
-                            className="mx-2 w-12 bg-transparent border-0 border-b border-dashed border-gray-400 
-                 focus:outline-none focus:ring-0 text-center placeholder-gray-400"
-                            value={permitDay}
-                            onChange={(e) => setPermitDay(e.target.value.replace(/\D/g, ""))}
-                        />
+                        <select
+                            className="mx-2 w-12 bg-transparent border-0 border-b border-dashed border-gray-400
+               focus:outline-none focus:ring-0 text-center cursor-pointer"
+                            value={permitDay || ""}
+                            onChange={(e) => setPermitDay(e.target.value)}
+                        >
+                            <option value="" disabled></option>
+                            {Array.from({ length: getDaysInMonthThai(permitYear, permitMonth) }, (_, i) => {
+                                const d = String(i + 1);
+                                return <option key={d} value={d}>{d}</option>;
+                            })}
+                        </select>
                         <span>เดือน</span>
-                        <input
-                            type="text"
-                            className="mx-2 w-36 bg-transparent border-0 border-b border-dashed border-gray-400 
-                 focus:outline-none focus:ring-0 text-center placeholder-gray-400"
-                            value={permitMonth}
-                            onChange={(e) => setPermitMonth(e.target.value)}
-                        />
+                        <select
+                            className="mx-2 w-36 bg-transparent border-0 border-b border-dashed border-gray-400
+               focus:outline-none focus:ring-0 text-center cursor-pointer"
+                            value={permitMonth || ""}
+                            onChange={(e) => {
+                                const newMonth = e.target.value;
+                                // ถ้าวันที่เดิมเกินจำนวนวันของเดือนใหม่ ให้ปรับลด
+                                const maxDay = getDaysInMonthThai(permitYear, newMonth);
+                                if (permitDay && Number(permitDay) > maxDay) setPermitDay(String(maxDay));
+                                setPermitMonth(newMonth);
+                            }}
+                        >
+                            <option value=""></option>
+                            {THAI_MONTHS.map((m) => (
+                                <option key={m} value={m}>{m}</option>
+                            ))}
+                        </select>
                         <span>พ.ศ.</span>
-                        <input
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={4}
-                            className="ml-2 w-16 bg-transparent border-0 border-b border-dashed border-gray-400 
-                 focus:outline-none focus:ring-0 text-center placeholder-gray-400"
-                            value={permitYear}
-                            onChange={(e) => setPermitYear(e.target.value.replace(/\D/g, ""))}
-                        />
+                        <select
+                            className="ml-2 w-16 bg-transparent border-0 border-b border-dashed border-gray-400
+             focus:outline-none focus:ring-0 text-center cursor-pointer"
+                            value={permitYear || ""}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                                const newYear = e.target.value;        // "2568"
+                                const maxDay = getDaysInMonthThai(newYear, permitMonth);
+                                if (permitDay && Number(permitDay) > maxDay) setPermitDay(String(maxDay));
+                                setPermitYear(newYear);                // เก็บเป็นสตริง "2568" ตรงๆ
+                            }}
+                        >
+                            <option value="" disabled></option>
+                            {YEARS.map((y) => (
+                                <option key={y} value={y}>{y}</option>
+                            ))}
+                        </select>
                     </div>
 
                     {/* เช็กบ็อกซ์เรียงลงมา */}
@@ -647,36 +691,61 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
 
                 <div className="flex items-center gap-2 text-sm">
                     <span>วัน/เดือน/ปี ที่ตรวจสอบ</span>
+
                     {/* วัน */}
-                    <input
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={2}
+                    <select
                         className="w-10 bg-transparent border-0 border-b border-dashed border-gray-400
-               focus:outline-none focus:ring-0 text-center"
-                        value={inspectDay2}
-                        onChange={(e) => setInspectDay2(e.target.value.replace(/\D/g, ""))}
-                    />
+               focus:outline-none focus:ring-0 text-center cursor-pointer"
+                        value={inspectDay2 || ""}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setInspectDay2(e.target.value)}
+                    >
+                        <option value="" disabled></option>
+                        {Array.from({ length: getDaysInMonthThai(inspectYear2, inspectMonth2) }, (_, i) => {
+                            const d = String(i + 1);
+                            return <option key={d} value={d}>{d}</option>;
+                        })}
+                    </select>
+
                     <span>เดือน</span>
+
                     {/* เดือน */}
-                    <input
-                        type="text"
+                    <select
                         className="w-28 bg-transparent border-0 border-b border-dashed border-gray-400
-               focus:outline-none focus:ring-0 text-center"
-                        value={inspectMonth2}
-                        onChange={(e) => setInspectMonth2(e.target.value)}
-                    />
+               focus:outline-none focus:ring-0 text-center cursor-pointer"
+                        value={inspectMonth2 || ""}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                            const newMonth = e.target.value as typeof THAI_MONTHS[number] | "";
+                            const maxDay = getDaysInMonthThai(inspectYear2, newMonth);
+                            if (inspectDay2 && Number(inspectDay2) > maxDay) setInspectDay2(String(maxDay));
+                            setInspectMonth2(newMonth);
+                        }}
+                    >
+                        <option value="" disabled></option>
+                        {THAI_MONTHS.map((m) => (
+                            <option key={m} value={m}>{m}</option>
+                        ))}
+                    </select>
+
                     <span>พ.ศ.</span>
+
                     {/* ปี */}
-                    <input
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={4}
+                    <select
                         className="w-16 bg-transparent border-0 border-b border-dashed border-gray-400
-               focus:outline-none focus:ring-0 text-center"
-                        value={inspectYear2}
-                        onChange={(e) => setInspectYear2(e.target.value.replace(/\D/g, ""))}
-                    />
+               focus:outline-none focus:ring-0 text-center cursor-pointer"
+                        value={inspectYear2 || ""}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                            const newYear = e.target.value;
+                            const maxDay = getDaysInMonthThai(newYear, inspectMonth2);
+                            if (inspectDay2 && Number(inspectDay2) > maxDay) setInspectDay2(String(maxDay));
+                            setInspectYear2(newYear);
+                        }}
+                    >
+                        <option value="" disabled></option>
+                        {YEARS.map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                        ))}
+                    </select>
+
                     <span>บันทึกโดย</span>
                     <input
                         type="text"
@@ -698,36 +767,61 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                 <div className="sm:grid-cols-2 gap-3 flex flex-col">
                     <div className="flex items-center gap-2 text-sm">
                         <span>วัน/เดือน/ปี ที่ตรวจสอบ</span>
+
                         {/* วัน */}
-                        <input
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={2}
+                        <select
                             className="w-10 bg-transparent border-0 border-b border-dashed border-gray-400
-               focus:outline-none focus:ring-0 text-center"
-                            value={inspectDay3}
-                            onChange={(e) => setInspectDay3(e.target.value.replace(/\D/g, ""))}
-                        />
+               focus:outline-none focus:ring-0 text-center cursor-pointer"
+                            value={inspectDay3 || ""}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setInspectDay3(e.target.value)}
+                        >
+                            <option value="" disabled></option>
+                            {Array.from({ length: getDaysInMonthThai(inspectYear3, inspectMonth3) }, (_, i) => {
+                                const d = String(i + 1);
+                                return <option key={d} value={d}>{d}</option>;
+                            })}
+                        </select>
+
                         <span>เดือน</span>
+
                         {/* เดือน */}
-                        <input
-                            type="text"
+                        <select
                             className="w-28 bg-transparent border-0 border-b border-dashed border-gray-400
-               focus:outline-none focus:ring-0 text-center"
-                            value={inspectMonth3}
-                            onChange={(e) => setInspectMonth3(e.target.value)}
-                        />
+               focus:outline-none focus:ring-0 text-center cursor-pointer"
+                            value={inspectMonth3 || ""}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                                const newMonth = e.target.value as typeof THAI_MONTHS[number] | "";
+                                const maxDay = getDaysInMonthThai(inspectYear3, newMonth);
+                                if (inspectDay3 && Number(inspectDay3) > maxDay) setInspectDay3(String(maxDay));
+                                setInspectMonth3(newMonth);
+                            }}
+                        >
+                            <option value="" disabled></option>
+                            {THAI_MONTHS.map((m) => (
+                                <option key={m} value={m}>{m}</option>
+                            ))}
+                        </select>
+
                         <span>พ.ศ.</span>
+
                         {/* ปี */}
-                        <input
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={4}
+                        <select
                             className="w-16 bg-transparent border-0 border-b border-dashed border-gray-400
-               focus:outline-none focus:ring-0 text-center"
-                            value={inspectYear3}
-                            onChange={(e) => setInspectYear3(e.target.value.replace(/\D/g, ""))}
-                        />
+               focus:outline-none focus:ring-0 text-center cursor-pointer"
+                            value={inspectYear3 || ""}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                                const newYear = e.target.value;
+                                const maxDay = getDaysInMonthThai(newYear, inspectMonth3);
+                                if (inspectDay3 && Number(inspectDay3) > maxDay) setInspectDay3(String(maxDay));
+                                setInspectYear3(newYear);
+                            }}
+                        >
+                            <option value="" disabled></option>
+                            {YEARS.map((y) => (
+                                <option key={y} value={y}>{y}</option>
+                            ))}
+                        </select>
+
                         <span>บันทึกโดย</span>
                         <input
                             type="text"
