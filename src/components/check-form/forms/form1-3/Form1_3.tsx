@@ -308,7 +308,7 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
                         className="w-full grid h-[5vh] select-none cursor-pointer"
                     >
                         <span className="flex items-center justify-between gap-2 text-black md:text-xl font-bold tracking-wide rounded-xl bg-white px-4 py-2 border shadow-md hover:shadow-lg">
-                            ส่วนที่ 2 ข้อมูลทั่วไปของป้าย
+                            ส่วนที่ 2 ข้อมูลทั่วไปของป้าย และแนวทางการตรวจสอบตามแผน
                             <svg
                                 className={`w-4 h-4 transition-transform ${openSections.includes("section2") ? "rotate-180" : ""}`}
                                 viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
