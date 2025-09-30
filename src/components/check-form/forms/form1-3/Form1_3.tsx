@@ -448,21 +448,24 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
                         </div>
                     </div>
                 </section>
+                {/* <div className="flex">
+                    <button
+                        type="button"
+                        className="ml-auto inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2
+  font-medium text-white shadow-sm transition-colors
+  hover:bg-sky-500 active:bg-sky-700
+  focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400
+  focus-visible:ring-offset-2 focus-visible:ring-offset-white
+  disabled:pointer-events-none disabled:opacity-50"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                            className="h-5 w-5" fill="currentColor" aria-hidden="true">
+                            <path d="M3 4a2 2 0 0 1 2-2h7.586a2 2 0 0 1 1.414.586l2.414 2.414A2 2 0 0 1 17 6.414V17a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4Zm3 0h6v4H6V4Zm0 7a1 1 0 0 0-1 1v4h8v-4a1 1 0 0 0-1-1H6Z" />
+                        </svg>
+                        Save
+                    </button>
+                </div> */}
             </div>
-            <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2
-         font-medium text-white shadow-sm transition-colors
-         hover:bg-emerald-500 active:bg-emerald-700
-         focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400
-         focus-visible:ring-offset-2 focus-visible:ring-offset-white
-         disabled:pointer-events-none disabled:opacity-50">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-                    className="h-5 w-5" fill="currentColor" aria-hidden="true">
-                    <path d="M3 4a2 2 0 0 1 2-2h7.586a2 2 0 0 1 1.414.586l2.414 2.414A2 2 0 0 1 17 6.414V17a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4Zm3 0h6v4H6V4Zm0 7a1 1 0 0 0-1 1v4h8v-4a1 1 0 0 0-1-1H6Z" />
-                </svg>
-                Save
-            </button>
         </>
     )
 }
