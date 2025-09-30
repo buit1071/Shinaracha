@@ -13,6 +13,7 @@ import { exportToDocx } from "@/utils/exportToDocx";
 type Props = {
     jobId: string;
     equipment_id: string;
+    name: string;
 };
 
 type FormData = {
@@ -24,7 +25,7 @@ type FormData = {
     sectionFive?: Partial<SectionFiveForm>
 };
 
-export default function Form1_3({ jobId, equipment_id }: Props) {
+export default function Form1_3({ jobId, equipment_id, name }: Props) {
     const [formData, setFormData] = React.useState<FormData>({});
     const [coverSrc, setCoverSrc] = React.useState<string | null>(null);
     const [openSections, setOpenSections] = React.useState<string[]>([]);
@@ -241,9 +242,9 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
 
                 {/* ชื่อสถานที่ตรวจ (ใหญ่ กลางหน้า/ล่าง) */}
                 <div className="pt-10 text-center">
-                    <div className="text-xl text-gray-700 mb-2">ชื่อสถานที่ตรวจ</div>
+                    <div className="text-xl text-gray-700 mb-2">ชื่ออุปกรณ์ที่ตรวจ</div>
                     <input
-                        value={formData.placeName ?? ""}
+                        value={formData.placeName ?? name}
                         onChange={(e) =>
                             setFormData(prev => ({ ...prev, placeName: e.target.value }))
                         }
@@ -439,15 +440,29 @@ export default function Form1_3({ jobId, equipment_id }: Props) {
                         <div className="overflow-hidden">
                             <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
                                 <SectionFiveDetails
+                                    name={name}
                                     value={formData.sectionFive ?? { rows: {}, meta: {} }}
                                     onChange={onSectionFiveChange}
                                 />
                             </div>
                         </div>
                     </div>
-                    <pre className="mt-4 bg-gray-100 p-3 rounded text-xs text-black">{JSON.stringify(formData.sectionFive, null, 2)}</pre>
                 </section>
             </div>
+            <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2
+         font-medium text-white shadow-sm transition-colors
+         hover:bg-emerald-500 active:bg-emerald-700
+         focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400
+         focus-visible:ring-offset-2 focus-visible:ring-offset-white
+         disabled:pointer-events-none disabled:opacity-50">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                    className="h-5 w-5" fill="currentColor" aria-hidden="true">
+                    <path d="M3 4a2 2 0 0 1 2-2h7.586a2 2 0 0 1 1.414.586l2.414 2.414A2 2 0 0 1 17 6.414V17a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4Zm3 0h6v4H6V4Zm0 7a1 1 0 0 0-1 1v4h8v-4a1 1 0 0 0-1-1H6Z" />
+                </svg>
+                Save
+            </button>
         </>
     )
 }

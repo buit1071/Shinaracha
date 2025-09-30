@@ -32,6 +32,7 @@ export type SectionFiveForm = {
 };
 
 type Props = {
+    name: string;
     value?: Partial<SectionFiveForm>;
     onChange?: (patch: Partial<SectionFiveForm>) => void;
 };
@@ -98,7 +99,7 @@ export function getDaysInMonthThai(
 }
 
 /* =========== COMPONENT =========== */
-export default function SectionFiveDetails({ value, onChange }: Props) {
+export default function SectionFiveDetails({ name, value, onChange }: Props) {
     const vRows = value?.rows ?? {};
     const vMeta = value?.meta ?? {};
 
@@ -197,7 +198,7 @@ export default function SectionFiveDetails({ value, onChange }: Props) {
                     <span className="mx-2">ของ</span>
                     <DottedInput
                         className="min-w-[280px]"
-                        value={vMeta.siteName ?? ""}
+                        value={vMeta.siteName ?? name}
                         onChange={(e) => setMeta({ siteName: e.target.value })}
                     />
 
