@@ -180,7 +180,7 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
 
                 {/* หัวกระดาษ: โลโก้ + ชื่อบริษัท */}
                 <CompanyHeader
-                    companyTh="บริษัท ชินราช โพรเทคเตอร์ จำกัด"
+                    companyTh="บริษัท ชินรัช โพรเทคเตอร์ จำกัด"
                     companyEn="Shinaracha Protector Co., Ltd."
                     logoUrl="/images/NewLOGOSF.webp"
                 />
@@ -259,7 +259,7 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
                 <hr className="my-8" />
 
                 <CompanyHeader
-                    companyTh="บริษัท ชินราช โพรเทคเตอร์ จำกัด"
+                    companyTh="บริษัท ชินรัช โพรเทคเตอร์ จำกัด"
                     companyEn="Shinaracha Protector Co., Ltd."
                     logoUrl="/images/NewLOGOSF.webp"
                 />

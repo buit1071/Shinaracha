@@ -118,3 +118,15 @@ body {
 .calendar-shell .fc .fc-list-event:hover td {
   background: #f8fafc; /* slate-50 */
 }
+/* Hide Next.js Dev Overlay & Issues badge (dev only) */
+nextjs-portal,
+iframe[data-next-dev-overlay],
+#nextjs__container,
+#__next-build-watcher,
+[data-next-overlay],
+[data-nextjs-toast],
+[data-nextjs-dialog] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
