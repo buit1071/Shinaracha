@@ -1,32 +1,41 @@
 "use client";
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { showLoading } from "@/lib/loading";
 
 export default function LoginForm() {
   const [u, setU] = useState("");
   const [p, setP] = useState("");
-  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const router = useRouter();
-  const q = useSearchParams();
-  const next = q.get("next");
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
-    setLoading(true);
+    showLoading(true);
     try {
       const r = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: u, password: p }),
       });
-      if (!r.ok) throw new Error((await r.json()).message || "Login failed");
-      router.replace(next || "/dashboard");
+
+      const data = await r.json();               // อ่าน body ก่อน
+      if (!r.ok || !data.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      // ✅ เก็บผู้ใช้ที่ล็อกอินสำเร็จไว้ฝั่ง client
+      localStorage.setItem("currentUser", JSON.stringify(data.user));
+
+      // กัน timing set-cookie (ถ้าจำเป็นจะหน่วงนิดเดียว)
+      // await new Promise(r => setTimeout(r, 150));
+
+      router.replace("/dashboard");
+      showLoading(false);
     } catch (e: any) {
+      showLoading(false);
       setErr(e.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -37,7 +46,7 @@ export default function LoginForm() {
 
         {err && <div className="mb-4 rounded border border-red-500 bg-red-100 text-red-800 px-3 py-2 text-sm font-medium">{err}</div>}
 
-        <label className="block text-sm mb-1 font-semibold text-gray-700">E-mail</label>
+        <label className="block text-sm mb-1 font-semibold text-gray-700">Username</label>
         <input className="w-full mb-4 rounded border border-gray-400 px-3 py-2 focus:ring-blue-200 outline-none text-black"
           value={u} onChange={(e) => setU(e.target.value)} autoFocus />
 
@@ -45,9 +54,8 @@ export default function LoginForm() {
         <input type="password" className="w-full mb-6 rounded border border-gray-400 px-3 py-2 outline-none text-black"
           value={p} onChange={(e) => setP(e.target.value)} />
 
-        <button className="w-full rounded bg-blue-600 hover:bg-blue-700 text-white py-2 font-semibold shadow-md disabled:opacity-60 transition"
-          disabled={loading}>
-          {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
+        <button className="w-full rounded bg-blue-600 hover:bg-blue-700 text-white py-2 font-semibold shadow-md disabled:opacity-60 transition">
+          เข้าสู่ระบบ
         </button>
       </form>
     </div>

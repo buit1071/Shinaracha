@@ -125,7 +125,7 @@ export async function POST(req: Request) {
         // ======= Service Item (เวอร์ชันลด lock) =======
         if (entity === "serviceItem") {
             const {
-                branch_id,
+                customer_id,
                 service_inspec_id,
                 service_id,
                 zone_id,
@@ -136,16 +136,16 @@ export async function POST(req: Request) {
             } = data ?? {};
 
             const trim = (v: any) => (v == null ? null : String(v).trim());
-            const _branch_id = trim(branch_id);
+            const _customer_id = trim(customer_id);
             const _service_id = trim(service_id);
             const _zone_id = trim(zone_id);
             const _is_active = Number.isFinite(+is_active) ? +is_active : 1;
             const _created_by = trim(created_by) || "system";
             const _updated_by = trim(updated_by) || "system";
 
-            if (!_branch_id || !_service_id || !_zone_id) {
+            if (!_customer_id || !_service_id || !_zone_id) {
                 return NextResponse.json(
-                    { success: false, message: "กรุณาระบุ branch_id, service_id และ zone_id" },
+                    { success: false, message: "กรุณาระบุ customer_id, service_id และ zone_id" },
                     { status: 400 }
                 );
             }
@@ -185,18 +185,18 @@ export async function POST(req: Request) {
                 await conn.query(
                     `
       INSERT INTO data_service_equipment
-        (branch_id, service_inspec_id, service_id, zone_id, is_active, created_by, created_date, updated_by, updated_date)
+        (customer_id, service_inspec_id, service_id, zone_id, is_active, created_by, created_date, updated_by, updated_date)
       VALUES
         (?,?,?,?,?, ?, NOW(), ?, NOW())
       ON DUPLICATE KEY UPDATE
-        branch_id    = VALUES(branch_id),
+        customer_id    = VALUES(customer_id),
         service_id   = VALUES(service_id),
         zone_id      = VALUES(zone_id),
         is_active    = VALUES(is_active),
         updated_by   = VALUES(updated_by),
         updated_date = NOW()
       `,
-                    [_branch_id, serviceInspecId, _service_id, _zone_id, _is_active, _created_by, _updated_by]
+                    [_customer_id, serviceInspecId, _service_id, _zone_id, _is_active, _created_by, _updated_by]
                 );
 
                 // ===== ทำ diff เพื่อลบเฉพาะที่ไม่มีในชุดใหม่ =====

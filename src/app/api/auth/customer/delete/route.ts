@@ -13,11 +13,11 @@ export async function POST(req: Request) {
         }
 
         if (fn === "group") {
-            await query(`DELETE FROM data_group_customers WHERE group_id=?`, [id]);
+            await query(`DELETE FROM master_group WHERE group_id=?`, [id]);
             return NextResponse.json({ success: true, message: "ลบข้อมูลเรียบร้อย" });
         }
         if (fn === "branch") {
-            await query(`DELETE FROM data_customer_branchs WHERE branch_id=?`, [id]);
+            await query(`DELETE FROM data_customer WHERE customer_id=?`, [id]);
             return NextResponse.json({ success: true, message: "ลบข้อมูลเรียบร้อย" });
         }
         if (fn === "service") {

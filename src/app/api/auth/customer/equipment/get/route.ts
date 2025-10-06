@@ -3,7 +3,7 @@ import { query } from "@/lib-server/db";
 
 type GetBody =
     | { function: "equipment"; job_id: string }
-    | { function: "serviceItem"; branch_id: string }
+    | { function: "serviceItem"; customer_id: string }
     ;
 
 export async function POST(req: Request) {
@@ -38,10 +38,10 @@ export async function POST(req: Request) {
         }
 
         if (fn === "serviceItem") {
-            const branchId = (body.branch_id ?? "").trim();
-            if (!branchId) {
+            const customer_id = (body.customer_id ?? "").trim();
+            if (!customer_id) {
                 return NextResponse.json(
-                    { success: false, message: "กรุณาระบุ branch_id" },
+                    { success: false, message: "กรุณาระบุ customer_id" },
                     { status: 400 }
                 );
             }
@@ -59,10 +59,10 @@ export async function POST(req: Request) {
                 `
     SELECT *
     FROM data_service_equipment
-    WHERE branch_id = ?
+    WHERE customer_id = ?
     ORDER BY updated_date DESC, created_date DESC
     `,
-                [branchId]
+                [customer_id]
             );
             const equipments = rowsOf(eqRes);
 
@@ -120,7 +120,7 @@ export async function POST(req: Request) {
                     ? Object.values(groupsByDoc[e.service_inspec_id])
                     : [];
                 return {
-                    branch_id: e.branch_id,
+                    customer_id: e.customer_id,
                     service_inspec_id: e.service_inspec_id,
                     service_id: e.service_id,
                     zone_id: e.zone_id,

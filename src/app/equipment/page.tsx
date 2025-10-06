@@ -834,7 +834,7 @@ export default function EquipmentPage() {
 
                     <Box sx={{ mt: 2 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
-                            ข้อมูลที่อยู่
+                            สถานที่ติดตั้งอุปกรณ์
                         </Typography>
 
                         {/* แถว 1: เลขที่, หมู่, ตรอก/ซอย, ถนน */}

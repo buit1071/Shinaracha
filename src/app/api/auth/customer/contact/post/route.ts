@@ -19,7 +19,7 @@ export async function POST(req: Request) {
         if (entity === "contact") {
             const {
                 contact_id,
-                branch_id,
+                customer_id,
                 name,
                 email,
                 tel,
@@ -35,9 +35,9 @@ export async function POST(req: Request) {
                     { status: 400 }
                 );
             }
-            if (!branch_id?.trim()) {
+            if (!customer_id?.trim()) {
                 return NextResponse.json(
-                    { success: false, message: "กรุณาระบุสาขา (branch_id)" },
+                    { success: false, message: "กรุณาระบุสาขา (customer_id)" },
                     { status: 400 }
                 );
             }
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
                 `
         UPDATE data_contact_customers
         SET
-          branch_id    = ?,
+          customer_id    = ?,
           name         = ?,
           email        = ?,
           tel          = ?,
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
         WHERE contact_id = ?
       `,
                 [
-                    branch_id,
+                    customer_id,
                     name.trim(),
                     email ?? null,
                     tel ?? null,
@@ -92,13 +92,13 @@ export async function POST(req: Request) {
                 await query(
                     `
           INSERT INTO data_contact_customers
-            (contact_id, branch_id, name, email, tel, is_active, created_by, created_date, updated_by, updated_date)
+            (contact_id, customer_id, name, email, tel, is_active, created_by, created_date, updated_by, updated_date)
           VALUES
             (?,?,?,?,?,?,?,NOW(),?,NOW())
         `,
                     [
                         contact_id,
-                        branch_id,
+                        customer_id,
                         name.trim(),
                         email ?? null,
                         tel ?? null,

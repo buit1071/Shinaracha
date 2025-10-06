@@ -2,404 +2,226 @@
 
 import * as React from "react";
 import {
-  DataGrid,
-  GridColDef,
-  GridRenderCellParams,
+    DataGrid,
+    GridColDef,
+    GridRenderCellParams,
 } from "@mui/x-data-grid";
+import { showAlert, showConfirm } from "@/lib/fetcher";
+import { showLoading } from "@/lib/loading";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import IconButton from "@mui/material/IconButton";
 import {
-  Box,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  TextField,
-  Switch,
+    Box,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    TextField,
+    Switch,
 } from "@mui/material";
-import { formatDateTime, showAlert, showConfirm } from "@/lib/fetcher";
-import { showLoading } from "@/lib/loading";
-import { CustomerRow, ServiceRow } from "@/interfaces/master";
+import { CustomerBranchRow } from "@/interfaces/master";
+import CustomerBranchDetail from "@/components/customer/CustomerBranchDetail";
 
-import CustomerBranch from "@/components/customer/CustomerBranch";
+export default function CustomerBranch() {
+    const [view, setView] = React.useState<null | { type: "detail"; id: string }>(null);
+    const openDetail = (id: string) => setView({ type: "detail", id, });
+    const openCreate = () => setView({ type: "detail", id: "" });
+    const backToList = () => setView(null);
+    const [customerName, setCustomerName] = React.useState<string>("");
+    const [rows, setRows] = React.useState<CustomerBranchRow[]>([]);
+    const [searchText, setSearchText] = React.useState("");
 
-export default function CustomersPage() {
-  const [view, setView] = React.useState<null | { type: "detail"; id: string }>(null);
-  const openDetail = (id: string) => setView({ type: "detail", id });
-  const backToList = () => setView(null);
-  const [rows, setRows] = React.useState<CustomerRow[]>([]);
-  const [searchText, setSearchText] = React.useState("");
-  const [open, setOpen] = React.useState(false);
-  const [isEdit, setIsEdit] = React.useState(false);
-  const [error, setError] = React.useState(false);
-  const [services, setServices] = React.useState<ServiceRow[]>([]);
+    const fetchCustomerBranch = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/customer/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "customerBranch" }),
+            });
 
-  const [formData, setFormData] = React.useState<CustomerRow>({
-    customer_id: "",
-    customer_name: "",
-    service_id: "",
-    service_name: "",
-    zone_id: "",
-    zone_name: "",
-    is_active: 1,
-    created_by: "admin",
-    updated_by: "admin",
-  });
+            const result = await res.json();
+            if (result.success && result.data) {
+                showLoading(false);
+                setRows(result.data || []);
+            }
+        } catch (err) {
+            showLoading(false);
+            console.error("fetch customer name error:", err);
+        }
+    };
 
-  const fetchServices = async () => {
-    try {
-      const res = await fetch("/api/auth/inspection-form/get", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ function: "services" }),
-      });
+    const handleBack = async () => {
+        await fetchCustomerBranch();
+        backToList();
+    };
 
-      const data = await res.json();
-      if (data.success) {
-        setServices(data.data || []);
-      } else {
-        console.error("โหลด services ไม่สำเร็จ:", data.message);
-      }
-    } catch (err) {
-      console.error("fetch error:", err);
-    }
-  };
+    const fetchCustomerById = async () => {
+        try {
+            const res = await fetch("/api/auth/customer/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "customerById" }),
+            });
 
-  // โหลดข้อมูลและจัดเรียงใหม่
-  const fetchCustomers = async () => {
-    showLoading(true);
-    try {
-      const res = await fetch("/api/auth/customer");
-      const data = await res.json();
-      if (data.success) {
-        updateWithOrder(data.data);
-      }
-    } catch (err) {
-      console.error("Fetch error:", err);
-    } finally {
-      showLoading(false);
-    }
-  };
+            const result = await res.json();
+            if (result.success && result.data) {
+                setCustomerName(result.data.customer_name);
+            }
+        } catch (err) {
+            console.error("fetch customer name error:", err);
+        }
+    };
 
-  // helper: เรียงใหม่ทุกครั้ง + เพิ่ม order
-  const updateWithOrder = (data: CustomerRow[]) => {
-    const sorted = [...data].sort((a, b) =>
-      new Date(b.updated_date || "").getTime() -
-      new Date(a.updated_date || "").getTime()
-    );
-    const withOrder = sorted.map((row, index) => ({
-      ...row,
-      order: index + 1,
-    }));
-    setRows(withOrder);
-  };
+    React.useEffect(() => {
+        const fetchAll = async () => {
+            showLoading(true);
+            await fetchCustomerById();
+            await fetchCustomerBranch();
+            showLoading(false);
+        };
 
-  React.useEffect(() => {
-    (async () => {
-      showLoading(true);
-      try {
-        await fetchServices();
-        await fetchCustomers();
-      } finally {
-        showLoading(false);
-      }
-    })();
-  }, []);
+        fetchAll();
+    },[]);
 
-  const handleOpenAdd = () => {
-    setIsEdit(false);
-    setFormData({
-      customer_id: "",
-      customer_name: "",
-      service_id: "",
-      service_name: "",
-      zone_id: "",
-      zone_name: "",
-      is_active: 1,
-      created_by: "admin",
-      updated_by: "admin",
-    });
-    setOpen(true);
-  };
+    const columns: GridColDef<CustomerBranchRow>[] = [
+        {
+            field: "order",
+            headerName: "ลำดับ",
+            width: 90,
+            headerAlign: "center",
+            align: "center",
+        },
+        {
+            field: "branch_name", headerName: "สาขา", flex: 1, headerAlign: "center", align: "left",
+            renderCell: (params: GridRenderCellParams<CustomerBranchRow>) => (
+                <button
+                    onClick={() => openDetail(params.row.customer_id)}
+                    className="hover:no-underline text-blue-900 hover:opacity-80 cursor-pointer"
+                    title="เปิดรายละเอียด"
+                >
+                    {params.row.branch_name}
+                </button>
+            ),
+        },
+        {
+            field: "actions",
+            headerName: "Action",
+            sortable: false,
+            filterable: false,
+            disableColumnMenu: true,
+            width: 150,
+            headerAlign: "center",
+            align: "center",
+            renderCell: (params: GridRenderCellParams<CustomerBranchRow>) => (
+                <>
+                    <IconButton color="error" onClick={() => handleDeleteBranch(params.row.customer_id)}>
+                        <DeleteIcon />
+                    </IconButton>
+                </>
+            ),
+        },
+    ];
 
-  const handleOpenEdit = (row: CustomerRow) => {
-    setIsEdit(true);
-    setFormData(row);
-    setOpen(true);
-  };
 
-  const handleClose = () => setOpen(false);
+    const handleDeleteBranch = async (id: string) => {
+        const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบข้อมูล");
+        if (!confirmed) return;
 
-  const handleSave = async () => {
-    if (!formData.customer_name) {
-      setError(true);
-      return; // ยังไม่เปิดโหลด เพราะเราเช็คก่อน
-    }
+        showLoading(true);
+        try {
+            const res = await fetch(`/api/auth/customer/delete`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, function: "branch" }),
+            });
 
-    showLoading(true);
-    try {
-      const res = await fetch("/api/auth/customer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      const result = await res.json();
+            const result = await res.json();
+            if (result.success) {
+                showLoading(false);
+                await showAlert("success", result.message);
+                fetchCustomerBranch();
+            } else {
+                showLoading(false);
+                showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
+            }
+        } catch (err) {
+            console.error("Delete error:", err);
+            showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        } finally {
+            showLoading(false);
+        }
+    };
 
-      if (result.success) {
-        // ปิดโหลดก่อน แล้วค่อยปิด dialog และค่อยโชว์ swal
-        showLoading(false);
-        setOpen(false);
-        await showAlert("success", result.message);
-        fetchCustomers();
-      } else {
-        showLoading(false);
-        setOpen(false);
-        await showAlert("error", result.message || "บันทึกล้มเหลว");
-      }
-    } catch (e) {
-      console.error(e);
-      showLoading(false);
-      setOpen(false);
-      await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
-    } finally {
-      // กันตกหล่น/throw จาก showAlert
-      showLoading(false);
-    }
-  };
+    const filteredRows = rows
+        .filter((row) =>
+            Object.values(row).some((value) =>
+                String(value).toLowerCase().includes(searchText.toLowerCase())
+            )
+        )
+        .map((row, index) => ({
+            ...row,
+            order: index + 1,
+        }));
 
-  const handleDelete = async (customer_id: string) => {
-    const confirmed = await showConfirm("คุณต้องการลบข้อมูลนี้หรือไม่?", "ลบข้อมูล");
-    if (!confirmed) return;
+    return (
+        <div className="w-full h-[96vh] flex flex-col bg-gray-50">
+            {!view && (
+                <div className="h-[6vh] flex items-center justify-between px-4 py-2 bg-white shadow-md rounded-lg">
+                    <div className="flex items-center">
+                        <h2 className="text-xl font-bold text-gray-800 ml-5">
+                            ข้อมูลลูกค้า
+                        </h2>
+                    </div>
+                    <div className="flex gap-2 items-center">
+                        <TextField
+                            size="small"
+                            placeholder="ค้นหา..."
+                            value={searchText}
+                            onChange={(e) => setSearchText(e.target.value)}
+                        />
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            startIcon={<AddIcon />}
+                            onClick={openCreate}
+                        >
+                            เพิ่มข้อมูล
+                        </Button>
+                    </div>
+                </div>
+            )}
 
-    showLoading(true);
-    try {
-      const res = await fetch(`/api/auth/customer/${customer_id}`, { method: "DELETE" });
-
-      // บาง API ลบแล้วส่ง 204 No Content -> อ่าน json จะ error
-      let result: { success: boolean; message?: string } = { success: res.ok };
-      const hasBody =
-        res.headers.get("content-length") !== "0" &&
-        (res.headers.get("content-type") || "").includes("application/json");
-
-      if (hasBody) {
-        result = await res.json();
-      } else if (!res.ok) {
-        // สร้างข้อความผิดพลาดแบบ fallback
-        result.message = `ลบข้อมูลล้มเหลว (HTTP ${res.status})`;
-      }
-
-      // ปิดโหลดก่อน แล้วค่อยแสดง alert (กัน overlay ซ้อน)
-      showLoading(false);
-
-      if (result.success) {
-        await showAlert("success", result.message || "ลบข้อมูลสำเร็จ");
-        fetchCustomers();
-      } else {
-        await showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
-      }
-    } catch (err) {
-      console.error("Delete error:", err);
-      showLoading(false);
-      await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
-    } finally {
-      // กันพลาดกรณี throw ตรง alert
-      showLoading(false);
-    }
-  };
-
-  const toggleStatus = async (row: CustomerRow) => {
-    showLoading(true);
-    try {
-      const res = await fetch("/api/auth/customer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...row,
-          is_active: row.is_active === 1 ? 0 : 1,
-        }),
-      });
-      showLoading(false);
-      const result = await res.json();
-      if (result.success) {
-        fetchCustomers();
-      }
-    } catch (err) {
-      console.error("Toggle status error:", err);
-    }
-  };
-
-  const columns: GridColDef<CustomerRow>[] = [
-    {
-      field: "order",
-      headerName: "ลำดับ",
-      width: 90,
-      headerAlign: "center",
-      align: "center",
-    },
-    {
-      field: "customer_name",
-      headerName: "ชื่อลูกค้า",
-      flex: 1,
-      headerAlign: "center",
-      align: "center",
-      renderCell: (params: GridRenderCellParams<CustomerRow>) => (
-        <button
-          onClick={() => openDetail(params.row.customer_id)}
-          className="hover:no-underline text-blue-600 hover:opacity-80 cursor-pointer"
-          title="เปิดรายละเอียด"
-        >
-          {params.row.customer_name}
-        </button>
-      ),
-    },
-    {
-      field: "created_date",
-      headerName: "วันที่สร้าง",
-      flex: 1,
-      headerAlign: "center",
-      align: "center",
-      renderCell: (params) => formatDateTime(params.row.created_date),
-    },
-    {
-      field: "updated_date",
-      headerName: "อัปเดทล่าสุด",
-      flex: 1,
-      headerAlign: "center",
-      align: "center",
-      renderCell: (params) => formatDateTime(params.row.updated_date),
-    },
-    {
-      field: "is_active",
-      headerName: "สถานะ",
-      flex: 1,
-      headerAlign: "center",
-      align: "center",
-      renderCell: (params: GridRenderCellParams<CustomerRow>) => (
-        <Switch
-          checked={params.row.is_active === 1}
-          onChange={() => toggleStatus(params.row)}
-          color="success"
-        />
-      ),
-    },
-    {
-      field: "actions",
-      headerName: "Action",
-      sortable: false,
-      filterable: false,
-      disableColumnMenu: true,
-      width: 150,
-      headerAlign: "center",
-      align: "center",
-      renderCell: (params: GridRenderCellParams<CustomerRow>) => (
-        <>
-          <IconButton color="primary" onClick={() => handleOpenEdit(params.row)}>
-            <EditIcon />
-          </IconButton>
-          <IconButton color="error" onClick={() => handleDelete(params.row.customer_id)}>
-            <DeleteIcon />
-          </IconButton></>
-      ),
-    },
-  ];
-
-  // Filter + reindex ใหม่
-  const filteredRows = rows
-    .filter((row) =>
-      Object.values(row).some((value) =>
-        String(value).toLowerCase().includes(searchText.toLowerCase())
-      )
-    )
-    .map((row, index) => ({
-      ...row,
-      order: index + 1,
-    }));
-
-  return (
-    <div className="w-full h-full flex flex-col bg-gray-50 justify-between w-full">
-      {view?.type === "detail" ? (
-        <CustomerBranch customerId={view.id} onBack={backToList} />
-      ) : (
-        <>
-          {/* Header Bar */}
-          <div className="h-[6vh] w-full bg-white shadow-md flex items-center justify-between px-4 text-black font-semibold rounded-lg">
-            Customers
-            <div className="flex gap-2 items-center">
-              <TextField
-                size="small"
-                placeholder="ค้นหา..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-              />
-              <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenAdd}>
-                เพิ่มข้อมูล
-              </Button>
+            {/* Content */}
+            <div className="flex-1 min-h-0 mb-2 rounded-lg">
+                {view?.type !== "detail" ? (
+                    <div className="w-full min-w-0 space-y-6">
+                        <div className="mt-5">
+                            <DataGrid
+                                rows={filteredRows}
+                                columns={columns}
+                                getRowId={(row) => row.customer_id}
+                                disableRowSelectionOnClick
+                                autoHeight
+                                initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
+                                pageSizeOptions={[5, 10, 25]}
+                                sx={{
+                                    width: "100%",
+                                    borderRadius: "0.5rem",
+                                    boxShadow: "0 4px 6px rgba(0,0,0,.1)",
+                                    "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": { outline: "none" },
+                                }}
+                            />
+                        </div>
+                    </div>
+                ) : (
+                    <CustomerBranchDetail customerId={view.id} onBack={handleBack} />
+                )}
             </div>
-          </div>
-
-          {/* Table */}
-          <div className="h-[88vh] w-full bg-white">
-            <DataGrid
-              sx={{
-                borderRadius: "0.5rem",
-                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": {
-                  outline: "none",
-                },
-              }}
-              rows={filteredRows}
-              columns={columns.map((col) => ({ ...col, resizable: false }))}
-              initialState={{
-                pagination: { paginationModel: { pageSize: 5, page: 0 } },
-              }}
-              pageSizeOptions={[5, 10]}
-              disableRowSelectionOnClick
-              getRowId={(row) => row.customer_id} // ใช้ customer_id แทน id
-            />
-          </div>
-
-          {/* Dialog Popup */}
-          <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
-            <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
-            <DialogContent dividers>
-              {isEdit && (
-                <TextField
-                  size="small"
-                  margin="dense"
-                  label="รหัสลูกค้า"
-                  fullWidth
-                  value={formData.customer_id}
-                  disabled
-                />
-              )}
-
-              <TextField
-                size="small"
-                margin="dense"
-                label="ชื่อลูกค้า"
-                fullWidth
-                required
-                value={formData.customer_name}
-                onChange={(e) => {
-                  setFormData({ ...formData, customer_name: e.target.value });
-                  if (error) setError(false);
-                }}
-                error={error && !formData.customer_name}
-                helperText={error && !formData.customer_name ? "กรุณากรอกชื่อลูกค้า" : ""}
-              />
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleClose}>ยกเลิก</Button>
-              <Button variant="contained" color="primary" onClick={handleSave}>
-                บันทึก
-              </Button>
-            </DialogActions>
-          </Dialog>
-        </>
-      )}
-    </div>
-  );
+        </div >
+    );
 }

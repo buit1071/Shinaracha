@@ -20,34 +20,29 @@ import {
     TextField,
 } from "@mui/material";
 import Select from "react-select";
-import { CustomerBranchRow, CustomerGroupRow, ServiceEquipmentRow, InspectGroupRow, InspectItemsRow, ContactRow } from "@/interfaces/master";
+import { CustomerBranchRow, CustomerGroupRow, ServiceEquipmentRow, ContactRow } from "@/interfaces/master";
 import { generateId } from "@/lib/fetcher";
 import GoogleMapBox from "@/components/google-map/GoogleMapBox";
 
 type Props = {
     customerId: string;
-    branchId: string;
     onBack: () => void;
 };
 
-export default function CustomerBranchDetail({ customerId, branchId, onBack }: Props) {
+export default function CustomerBranchDetail({ customerId, onBack }: Props) {
     const [groups, setGroups] = React.useState<CustomerGroupRow[]>([]);
     const [error, setError] = React.useState(false);
     const [errorContact, setErrorContact] = React.useState(false);
     const [formData, setFormData] = React.useState<CustomerBranchRow>({
         customer_id: customerId,
-        branch_id: branchId,
         branch_name: "",
         cus_cost_centre: "",
         store_no: "",
-        customer_format: "",
         customer_area: "",
         customer_hub: "",
         branch_tel: "",
         contact_person_id: "",
         address: "",
-        customer_regional: "",
-        customer_province: "",
         group_id: "",
         latitude: "",
         longitude: "",
@@ -57,7 +52,6 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
     });
 
     const [formEquipmentData, setFormEquipmentData] = React.useState<ServiceEquipmentRow>({
-        branch_id: branchId || "",
         service_id: "",
         zone_id: "",
         service_inspec_id: "",
@@ -83,7 +77,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
     const [editingId, setEditingId] = React.useState<string | null>(null);
     const [draft, setDraft] = React.useState<Partial<ContactRow>>({});
     const [formContactData, setFormContactData] = React.useState<ContactRow>({
-        branch_id: branchId || "",
+        customer_id: customerId || "",
         contact_id: "",
         name: "",
         email: "",
@@ -104,7 +98,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             const res = await fetch("/api/auth/customer/contact/get", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "contact", branch_id: branchId }),
+                body: JSON.stringify({ function: "contact", customer_id: customerId }),
             });
 
             const result = await res.json();
@@ -115,6 +109,8 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         } catch (err) {
             showLoading(false);
             console.error("fetch error:", err);
+        } finally {
+            showLoading(false);
         }
     };
 
@@ -124,7 +120,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             const res = await fetch("/api/auth/customer/get", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "customerBranchDetail", branch_id: branchId }),
+                body: JSON.stringify({ function: "customerBranchDetail", customer_id: customerId }),
             });
 
             const result = await res.json();
@@ -135,6 +131,8 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         } catch (err) {
             showLoading(false);
             console.error("fetch error:", err);
+        } finally {
+            showLoading(false);
         }
     };
 
@@ -145,7 +143,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
     const handleAddContact = () => {
         const nextId = generateId("CT");
         const newRow: ContactRow = {
-            branch_id: branchId || "",
+            customer_id: customerId || "",
             contact_id: nextId,
             name: "",
             email: "",
@@ -222,7 +220,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             const payload = {
                 entity: "contact" as const,
                 data: {
-                    branch_id: branchId || "",
+                    customer_id: customerId || "",
                     contact_id: id,
                     name,                 // ✅ แก้จาก 'ame'
                     email,
@@ -249,7 +247,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             setContactRows(prev => {
                 const idx = prev.findIndex(r => r.contact_id === id);
                 const updated: ContactRow = {
-                    branch_id: branchId || "",
+                    customer_id: customerId || "",
                     contact_id: id,
                     name, email, tel,
                     is_active: formContactData.is_active ?? 1,
@@ -371,7 +369,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             const res = await fetch("/api/auth/customer/get", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "groupByCustomerId", customer_id: customerId }),
+                body: JSON.stringify({ function: "groupByCustomerId" }),
             });
 
             const result = await res.json();
@@ -382,31 +380,29 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
         } catch (err) {
             showLoading(false);
             console.error("fetch error:", err);
+        } finally {
+            showLoading(false);
         }
     };
 
     React.useEffect(() => {
-        if (!customerId) return;
         fetchGroupByCustomerId();
-    }, [customerId]);
+    }, []);
 
     React.useEffect(() => {
         fetchBranchDetail();
         fetchContactByBranchId();
-    }, [branchId]);
+    }, [customerId]);
 
     const handleSave = async () => {
         const requiredFields = [
             "cus_cost_centre",
             "store_no",
-            "customer_format",
             "customer_area",
             "customer_hub",
             "branch_name",
             "branch_tel",
             "address",
-            "customer_regional",
-            "customer_province",
             "group_id",
         ] as const;
 
@@ -427,17 +423,13 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                 entity: "branchDetail" as const,
                 data: {
                     customer_id: formData.customer_id || undefined,
-                    branch_id: formData.branch_id || undefined,
                     cus_cost_centre: safeTrim(formData.cus_cost_centre),
                     store_no: safeTrim(formData.store_no),
-                    customer_format: safeTrim(formData.customer_format),
                     customer_area: safeTrim(formData.customer_area),
                     customer_hub: safeTrim(formData.customer_hub),
                     branch_name: safeTrim(formData.branch_name),
                     branch_tel: safeTrim(formData.branch_tel),
                     address: safeTrim(formData.address),
-                    customer_regional: safeTrim(formData.customer_regional),
-                    customer_province: safeTrim(formData.customer_province),
                     group_id: formData.group_id,
                     latitude: formData.latitude ?? null,
                     longitude: formData.longitude ?? null,
@@ -459,7 +451,6 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
             if (result.success) {
                 await showAlert("success", result.message);
                 onBack?.();
-                // fetchGroupByCustomerId();
             } else {
                 await showAlert("error", result.message || "บันทึกล้มเหลว");
             }
@@ -479,9 +470,9 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                         <ArrowBackIcon />
                     </IconButton>
                     <h2 className="text-xl font-bold text-gray-800 ml-5">
-                        {!branchId
+                        {!customerId
                             ? "เพิ่มข้อมูลสาขา"
-                            : `สาขา : ${formData.branch_name || ""}`}
+                            : `${formData.branch_name || ""}`}
                     </h2>
                 </div>
             </div>
@@ -515,14 +506,14 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                     <TextField
                         size="small"
                         margin="dense"
-                        label="Customer Format"
+                        label="Customer Hub"
                         fullWidth
-                        value={formData.customer_format}
+                        value={formData.customer_hub}
                         onChange={(e) => {
-                            setFormData({ ...formData, customer_format: e.target.value });
+                            setFormData({ ...formData, customer_hub: e.target.value });
                         }}
-                        error={error && !formData.customer_format}
-                        helperText={error && !formData.customer_format ? "กรุณากรอก Customer Format" : ""}
+                        error={error && !formData.customer_hub}
+                        helperText={error && !formData.customer_hub ? "กรุณากรอก Customer Hub" : ""}
                     />
                     <TextField
                         size="small"
@@ -538,19 +529,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                     />
                 </Box>
 
-                <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
-                    <TextField
-                        size="small"
-                        margin="dense"
-                        label="Customer Hub"
-                        fullWidth
-                        value={formData.customer_hub}
-                        onChange={(e) => {
-                            setFormData({ ...formData, customer_hub: e.target.value });
-                        }}
-                        error={error && !formData.customer_hub}
-                        helperText={error && !formData.customer_hub ? "กรุณากรอก Customer Hub" : ""}
-                    />
+                <Box sx={{ display: "flex", gap: 2, mt: 1, alignItems: "flex-end", "& > *": { flex: "1 1 0", minWidth: 0 } }}>
                     <TextField
                         size="small"
                         margin="dense"
@@ -587,120 +566,110 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                         error={error && !formData.address}
                         helperText={error && !formData.address ? "กรุณากรอกที่อยู่" : ""}
                     />
-                </Box>
+                    <Box mb={0.5}>
+                        <label className="block mb-1 text-sm text-black">
+                            Group
+                        </label>
 
-                <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
-                    <TextField
-                        size="small"
-                        margin="dense"
-                        label="Customer Regional"
-                        fullWidth
-                        value={formData.customer_regional}
-                        onChange={(e) => {
-                            setFormData({ ...formData, customer_regional: e.target.value });
-                        }}
-                        error={error && !formData.customer_regional}
-                        helperText={error && !formData.customer_regional ? "กรุณากรอก Customer Regional" : ""}
-                    />
-                    <TextField
-                        size="small"
-                        margin="dense"
-                        label="Customer Province"
-                        fullWidth
-                        value={formData.customer_province}
-                        onChange={(e) => {
-                            setFormData({ ...formData, customer_province: e.target.value });
-                        }}
-                        error={error && !formData.customer_province}
-                        helperText={error && !formData.customer_province ? "กรุณากรอก Customer Province" : ""}
-                    />
-                </Box>
-
-                <Box mt={1}>
-                    <label className="block mb-1 text-sm text-black">
-                        Group
-                    </label>
-
-                    <Select menuPlacement="auto"
-                        options={groups.map(c => ({
-                            value: c.group_id,
-                            label: c.group_name,
-                        }))}
-                        value={
-                            groups
-                                .map(c => ({ value: c.group_id, label: c.group_name }))
-                                .find(opt => opt.value === formData.group_id) || null
-                        }
-                        onChange={(selected) =>
-                            setFormData({ ...formData, group_id: selected?.value || "" })
-                        }
-                        placeholder="-- เลือก Group --"
-                        isClearable
-                        menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-                        styles={{
-                            control: (base, state) => ({
-                                ...base,
-                                backgroundColor: "#fff",
-                                borderColor:
-                                    error && !formData.group_id
-                                        ? "#d32f2f" // ❌ สีแดงเมื่อ error
-                                        : state.isFocused
-                                            ? "#3b82f6"
-                                            : "#d1d5db",
-                                boxShadow: "none",
-                                "&:hover": {
+                        <Select
+                            menuPlacement="auto"
+                            options={groups.map(c => ({
+                                value: c.group_id,
+                                label: c.group_name,
+                            }))}
+                            value={
+                                groups
+                                    .map(c => ({ value: c.group_id, label: c.group_name }))
+                                    .find(opt => opt.value === formData.group_id) || null
+                            }
+                            onChange={(selected) =>
+                                setFormData({ ...formData, group_id: selected?.value || "" })
+                            }
+                            placeholder="-- เลือก Group --"
+                            isClearable
+                            menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                            styles={{
+                                control: (base, state) => ({
+                                    ...base,
+                                    backgroundColor: "#fff",
                                     borderColor:
-                                        error && !formData.group_id ? "#d32f2f" : "#9ca3af",
-                                },
-                            }),
-                            menu: (base) => ({
-                                ...base,
-                                backgroundColor: "#fff",
-                                boxShadow: "0 8px 24px rgba(0,0,0,.2)",
-                                border: "1px solid #e5e7eb",
-                            }),
-                            menuPortal: (base) => ({
-                                ...base,
-                                zIndex: 2100,
-                            }),
-                            option: (base, state) => ({
-                                ...base,
-                                backgroundColor: state.isSelected
-                                    ? "#e5f2ff"
-                                    : state.isFocused
-                                        ? "#f3f4f6"
-                                        : "#fff",
-                                color: "#111827",
-                            }),
-                            menuList: (base) => ({
-                                ...base,
-                                backgroundColor: "#fff",
-                                paddingTop: 0,
-                                paddingBottom: 0,
-                            }),
-                            singleValue: (base) => ({
-                                ...base,
-                                color: "#111827",
-                            }),
-                        }}
-                    />
-
-                    {/* ✅ helperText */}
-                    {error && !formData.group_id && (
-                        <span
-                            style={{
-                                color: "#d32f2f",
-                                fontSize: "12px",
-                                marginTop: 4,
-                                display: "block",
+                                        error && !formData.group_id
+                                            ? "#d32f2f"
+                                            : state.isFocused
+                                                ? "#3b82f6"
+                                                : "#d1d5db",
+                                    boxShadow: "none",
+                                    minHeight: 40, // ✅ ปรับความสูงเป็น 40px
+                                    height: 40,    // ✅ บังคับให้สูงเท่ากันเป๊ะ
+                                    "&:hover": {
+                                        borderColor:
+                                            error && !formData.group_id ? "#d32f2f" : "#9ca3af",
+                                    },
+                                }),
+                                valueContainer: (base) => ({
+                                    ...base,
+                                    height: 40, // ✅ ให้ข้อความภายในอยู่ตรงกลาง
+                                    padding: "0 8px",
+                                }),
+                                input: (base) => ({
+                                    ...base,
+                                    margin: 0,
+                                    padding: 0,
+                                }),
+                                indicatorsContainer: (base) => ({
+                                    ...base,
+                                    height: 40, // ✅ ลูกศร dropdown อยู่กลาง
+                                }),
+                                menu: (base) => ({
+                                    ...base,
+                                    backgroundColor: "#fff",
+                                    boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                    border: "1px solid #e5e7eb",
+                                }),
+                                menuPortal: (base) => ({
+                                    ...base,
+                                    zIndex: 2100,
+                                }),
+                                option: (base, state) => ({
+                                    ...base,
+                                    backgroundColor: state.isSelected
+                                        ? "#e5f2ff"
+                                        : state.isFocused
+                                            ? "#f3f4f6"
+                                            : "#fff",
+                                    color: "#111827",
+                                }),
+                                menuList: (base) => ({
+                                    ...base,
+                                    backgroundColor: "#fff",
+                                    paddingTop: 0,
+                                    paddingBottom: 0,
+                                }),
+                                singleValue: (base) => ({
+                                    ...base,
+                                    color: "#111827",
+                                }),
                             }}
-                        >
-                            กรุณาเลือก Group
-                        </span>
-                    )}
+                        />
+
+                        {/* ✅ helperText */}
+                        {error && !formData.group_id && (
+                            <span
+                                style={{
+                                    color: "#d32f2f",
+                                    fontSize: "12px",
+                                    marginTop: 4,
+                                    display: "block",
+                                }}
+                            >
+                                กรุณาเลือก Group
+                            </span>
+                        )}
+
+                    </Box>
                 </Box>
 
-                {branchId && (
+                {customerId && (
                     <Box mt={2}>
                         <div className="w-full">
                             <div className="flex items-center justify-between mb-1">
@@ -780,7 +749,7 @@ export default function CustomerBranchDetail({ customerId, branchId, onBack }: P
                         <GoogleMapBox lat={13.7563} lng={100.5018} />
                     </Box>
                 </Box>
-                
+
                 <div className="w-full mt-5 flex justify-end">
                     <Button
                         variant="contained"

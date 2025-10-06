@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { showLoading } from "@/lib/loading";
+import { CurrentUser } from "@/interfaces/master";
 
 import {
     Bars3Icon,
@@ -31,12 +32,15 @@ import {
 } from "@heroicons/react/24/outline";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
+    const [user, setUser] = useState<CurrentUser | null>(null);
     const pathname = usePathname();
     const router = useRouter();
 
     const [openMenus, setOpenMenus] = useState<string[]>([]);
     const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
-    const avatarUrl = "";
+    const avatarUrl = user?.image_url
+        ? `/images/profile/${user.image_url}`
+        : null;
 
     // ปิดโหลดเมื่อเปลี่ยนหน้า
     useEffect(() => {
@@ -50,6 +54,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         }
     }, []);
 
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem("currentUser");
+            if (saved) setUser(JSON.parse(saved));
+        } catch { }
+    }, []);
+
     const toggleMenu = (menuId: string) => {
         setOpenMenus((prev) =>
             prev.includes(menuId) ? prev.filter((id) => id !== menuId) : [...prev, menuId]
@@ -59,6 +70,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const handleLogout = async () => {
         showLoading(true);
         await fetch("/api/auth/logout", { method: "POST" });
+        try {
+            localStorage.removeItem("currentUser");
+            sessionStorage.clear();
+        } catch { }
         showLoading(false);
         router.replace("/login");
     };
@@ -220,6 +235,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                 ข้อมูลลูกค้า
                             </NavLink>
                             <NavLink
+                                href="/customer-group"
+                                currentPath={pathname}
+                                icon={UserGroupIcon}
+                                collapsed={isCollapsed}
+                            >
+                                กลุ่มลูกค้า
+                            </NavLink>
+                            <NavLink
                                 href="/project-list"
                                 currentPath={pathname}
                                 icon={ClipboardDocumentListIcon}
@@ -270,14 +293,26 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <div className={`flex-none border-t border-gray-700 flex items-center justify-between ${isCollapsed ? "px-2 py-3" : "px-4 py-4"}`}>
                     <div className={`flex items-center ${isCollapsed ? "justify-center w-full" : "space-x-2"}`}>
                         {avatarUrl ? (
-                            <img src={avatarUrl} alt="User" className="w-10 h-10 rounded-full object-cover" />
+                            <img
+                                src={avatarUrl}
+                                alt="User"
+                                className="w-10 h-10 rounded-full object-cover"
+                                onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                    e.currentTarget.insertAdjacentHTML(
+                                        "afterend",
+                                        '<svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>'
+                                    );
+                                }}
+                            />
                         ) : (
                             <UserCircleIcon className="w-10 h-10 text-gray-400" />
                         )}
-                        {!isCollapsed && (
+
+                        {!isCollapsed && user && (
                             <div>
-                                <div className="text-sm font-semibold">username</div>
-                                <div className="text-xs text-gray-400">ตำแหน่ง</div>
+                                <div className="text-sm font-semibold">{user.first_name_th} {user.last_name_th}</div>
+                                <div className="text-xs text-gray-400">{user.permission_name}</div>
                             </div>
                         )}
                     </div>

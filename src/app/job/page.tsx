@@ -84,7 +84,6 @@ export default function JobPage() {
         job_end_time: "",
         customer_id: "",
         customer_name: "",
-        branch_id: "",
         branch_name: "",
         team_id: "",
         team_name: "",
@@ -95,14 +94,6 @@ export default function JobPage() {
         updated_by: "admin",
     });
 
-    const fetchCustomers = async () => {
-        const res = await fetch("/api/auth/customer?active=true");
-        const data = await res.json();
-        if (data.success) {
-            setCustomers(data.data);
-            customersRef.current = data.data;   // <<< สำคัญ
-        }
-    };
 
     const fetchEquipment = async () => {
         showLoading(true);
@@ -145,7 +136,7 @@ export default function JobPage() {
             const res = await fetch("/api/auth/customer/get", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "customerBranch", customer_id: customer_id }),
+                body: JSON.stringify({ function: "customerBranch" }),
             });
 
             const result = await res.json();
@@ -233,7 +224,6 @@ export default function JobPage() {
             showLoading(true);
             try {
                 await fetchProject();
-                await fetchCustomers();
                 await fetchEquipment();
                 await fetchCustomerBranchAll();
                 await fetchTeam();
@@ -259,7 +249,6 @@ export default function JobPage() {
             job_end_time: "",
             customer_id: "",
             customer_name: "",
-            branch_id: "",
             branch_name: "",
             team_id: "",
             team_name: "",
@@ -299,7 +288,6 @@ export default function JobPage() {
             customer_id: row.customer_id ?? "",
             customer_name: row.customer_name ?? "",
 
-            branch_id: row.branch_id ?? "",
             branch_name: row.branch_name ?? "",
 
             status_id: row.status_id ?? "",
@@ -328,8 +316,7 @@ export default function JobPage() {
             !formData.job_start_time ||
             !formData.job_end_time ||
             !formData.team_id ||
-            !formData.customer_id ||
-            !formData.branch_id
+            !formData.customer_id
         ) {
             setError(true);
             return;
@@ -351,7 +338,6 @@ export default function JobPage() {
                     team_id: formData.team_id,
                     status_id: formData.status_id,
                     customer_id: formData.customer_id,
-                    branch_id: formData.branch_id,
                     is_active: formData.is_active ?? 1,
                     created_by: formData.created_by || "admin",
                     updated_by: formData.updated_by || "admin",
@@ -427,9 +413,7 @@ export default function JobPage() {
         },
 
         // ปานกลาง
-        { field: "customer_name", headerName: "ลูกค้า", flex: 1.2, minWidth: 160, headerAlign: "center", align: "left", resizable: false },
-        { field: "branch_name", headerName: "สาขา", flex: 1.2, minWidth: 160, headerAlign: "center", align: "left", resizable: false },
-        // { field: "team_name", headerName: "ทีม", flex: 1.0, minWidth: 140, headerAlign: "center", align: "left", resizable: false },
+        { field: "branch_name", headerName: "ลูกค้า", flex: 1.2, minWidth: 160, headerAlign: "center", align: "left", resizable: false },
 
         // วันที่: กว้างเท่ากัน ตายตัว
         {
@@ -1050,31 +1034,24 @@ export default function JobPage() {
                     >
                         <Box>
                             <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
-                                ลูกค้า
+                                สาขา
                             </label>
                             <Select menuPlacement="auto"
-                                options={customers.map(c => ({
+                                options={branchs.map(c => ({
                                     value: c.customer_id,
-                                    label: c.customer_name,
+                                    label: c.branch_name,
                                 }))}
                                 value={
-                                    customers
-                                        .map(c => ({ value: c.customer_id, label: c.customer_name }))
+                                    branchs
+                                        .map(c => ({ value: c.customer_id, label: c.branch_name }))
                                         .find(opt => opt.value === formData.customer_id) || null
                                 }
-                                onChange={(selected) => {
-                                    const id = selected?.value || "";
-
-                                    setFormData(prev => ({ ...prev, customer_id: id }));
-
-                                    if (id) {
-                                        fetchCustomerBranch(id);
-                                    } else {
-                                        setBranchs?.([]);
-                                    }
-                                }}
-                                placeholder="-- เลือกลูกค้า --"
+                                onChange={(selected) =>
+                                    setFormData({ ...formData, customer_id: selected?.value || "" })
+                                }
+                                placeholder="-- เลือกสาขา --"
                                 isClearable
+                                isDisabled={!formData.customer_id}
                                 menuPortalTarget={typeof window !== "undefined" ? document.body : null}
                                 styles={{
                                     control: (base, state) => ({
@@ -1126,90 +1103,6 @@ export default function JobPage() {
 
                             {/* ✅ helperText */}
                             {error && !formData.customer_id && (
-                                <span
-                                    style={{
-                                        color: "#d32f2f",
-                                        fontSize: "12px",
-                                        marginTop: 4,
-                                        display: "block",
-                                    }}
-                                >
-                                    กรุณาเลือกลูกค้า
-                                </span>
-                            )}
-                        </Box>
-
-                        <Box>
-                            <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
-                                สาขา
-                            </label>
-                            <Select menuPlacement="auto"
-                                options={branchs.map(c => ({
-                                    value: c.branch_id,
-                                    label: c.branch_name,
-                                }))}
-                                value={
-                                    branchs
-                                        .map(c => ({ value: c.branch_id, label: c.branch_name }))
-                                        .find(opt => opt.value === formData.branch_id) || null
-                                }
-                                onChange={(selected) =>
-                                    setFormData({ ...formData, branch_id: selected?.value || "" })
-                                }
-                                placeholder="-- เลือกสาขา --"
-                                isClearable
-                                isDisabled={!formData.customer_id}
-                                menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-                                styles={{
-                                    control: (base, state) => ({
-                                        ...base,
-                                        backgroundColor: "#fff",
-                                        borderColor:
-                                            error && !formData.branch_id
-                                                ? "#d32f2f" // ❌ สีแดงเมื่อ error
-                                                : state.isFocused
-                                                    ? "#3b82f6"
-                                                    : "#d1d5db",
-                                        boxShadow: "none",
-                                        "&:hover": {
-                                            borderColor:
-                                                error && !formData.branch_id ? "#d32f2f" : "#9ca3af",
-                                        },
-                                    }),
-                                    menu: (base) => ({
-                                        ...base,
-                                        backgroundColor: "#fff",
-                                        boxShadow: "0 8px 24px rgba(0,0,0,.2)",
-                                        border: "1px solid #e5e7eb",
-                                    }),
-                                    menuPortal: (base) => ({
-                                        ...base,
-                                        zIndex: 2100,
-                                    }),
-                                    option: (base, state) => ({
-                                        ...base,
-                                        backgroundColor: state.isSelected
-                                            ? "#e5f2ff"
-                                            : state.isFocused
-                                                ? "#f3f4f6"
-                                                : "#fff",
-                                        color: "#111827",
-                                    }),
-                                    menuList: (base) => ({
-                                        ...base,
-                                        backgroundColor: "#fff",
-                                        paddingTop: 0,
-                                        paddingBottom: 0,
-                                    }),
-                                    singleValue: (base) => ({
-                                        ...base,
-                                        color: "#111827",
-                                    }),
-                                }}
-                            />
-
-                            {/* ✅ helperText */}
-                            {error && !formData.branch_id && (
                                 <span
                                     style={{
                                         color: "#d32f2f",

@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib-server/db";
 
-type GetBody = { function: "serviceZone"; branch_id: string };
+type GetBody = { function: "serviceZone"; customer_id: string };
 
 export async function POST(req: Request) {
     try {
@@ -17,10 +17,10 @@ export async function POST(req: Request) {
         }
 
         if (fn === "serviceZone") {
-            const branch_id = String(body.branch_id ?? "").trim();
-            if (!branch_id) {
+            const customer_id = String(body.customer_id ?? "").trim();
+            if (!customer_id) {
                 return NextResponse.json(
-                    { success: false, message: "กรุณาระบุ branch_id" },
+                    { success: false, message: "กรุณาระบุ customer_id" },
                     { status: 400 }
                 );
             }
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
             const rows = await query(
                 `
         SELECT
-          e.branch_id,
+          e.customer_id,
           e.service_inspec_id,
           e.service_id,
           e.zone_id,
@@ -40,10 +40,10 @@ export async function POST(req: Request) {
           e.updated_date
         FROM data_service_equipment e
         LEFT JOIN data_service_form z ON z.zone_id = e.zone_id
-        WHERE e.branch_id = ?
+        WHERE e.customer_id = ?
         ORDER BY z.zone_name ASC, e.created_date DESC
         `,
-                [branch_id]
+                [customer_id]
             );
 
             return NextResponse.json({ success: true, data: rows || [] });

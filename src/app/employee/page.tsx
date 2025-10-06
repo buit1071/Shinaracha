@@ -21,10 +21,11 @@ import {
     DialogContent,
     DialogTitle,
     Switch,
+    Avatar
 } from "@mui/material";
 import { showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
-import { EmployeeRow, PermissionRow } from "@/interfaces/master";
+import { EmployeeRow, PermissionRow, CompanyRow } from "@/interfaces/master";
 
 export default function EmployeePage() {
     const [rows, setRows] = React.useState<EmployeeRow[]>([]);
@@ -36,18 +37,46 @@ export default function EmployeePage() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [employeesRaw, setEmployeesRaw] = React.useState<EmployeeRow[]>([]);
+    const [masterCompany, setCompany] = React.useState<CompanyRow[]>([]);
 
     const [formData, setFormData] = React.useState<EmployeeRow>({
+        image_url: "",
+        company_id: "",
         emp_id: "",
-        first_name: "",
-        last_name: "",
-        username: "",
+        first_name_th: "",
+        first_name_en: "",
+        last_name_th: "",
+        last_name_en: "",
+        email: "",
         password: "",
         permission_id: "",
         is_active: 1,
         created_by: "admin",
         updated_by: "admin",
     });
+
+    const fileRef = React.useRef<HTMLInputElement | null>(null);
+    const [avatarFile, setAvatarFile] = React.useState<File | null>(null);
+    const [avatarChanged, setAvatarChanged] = React.useState(false);
+    const [avatarPreview, setAvatarPreview] = React.useState<string | null>(
+        formData.image_url || null
+    );
+
+    const handlePickAvatar = () => fileRef.current?.click();
+
+    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setAvatarFile(file);
+        setAvatarChanged(true); // ✅ มีการเปลี่ยนรูป
+        setAvatarPreview(URL.createObjectURL(file));
+    };
+
+    React.useEffect(() => {
+        return () => {
+            if (avatarPreview?.startsWith("blob:")) URL.revokeObjectURL(avatarPreview);
+        };
+    }, [avatarPreview]);
 
     // โหลดข้อมูลและจัดเรียงใหม่
     const fetchEmployees = async () => {
@@ -83,6 +112,20 @@ export default function EmployeePage() {
         }
     };
 
+    const fetchCompany = async () => {
+        try {
+            const res = await fetch("/api/auth/company/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "company" }),
+            });
+            const data = await res.json();
+            setCompany(data.data);
+        } catch (err) {
+            console.error("fetchPermissions error:", err);
+        }
+    };
+
     const updateWithOrder = (data: EmployeeRow[]) => {
         const sorted = [...data].sort(
             (a, b) =>
@@ -105,60 +148,103 @@ export default function EmployeePage() {
     React.useEffect(() => {
         fetchEmployees();
         fetchPermissions();
+        fetchCompany();
     }, []);
 
     const handleOpenAdd = () => {
         setIsEdit(false);
         setFormData({
+            image_url: "",
+            company_id: "",
             emp_id: "",
-            first_name: "",
-            last_name: "",
-            username: "",
+            first_name_th: "",
+            first_name_en: "",
+            last_name_th: "",
+            last_name_en: "",
+            email: "",
             password: "",
             permission_id: "",
             is_active: 1,
             created_by: "admin",
             updated_by: "admin",
         });
+        setAvatarPreview("/images/user-empty.png");
         setOpen(true);
     };
 
     const handleOpenEdit = (row: EmployeeRow) => {
         setIsEdit(true);
         setFormData(row);
+        setAvatarChanged(false);     // ✅ เริ่มต้นถือว่ายังไม่เปลี่ยน
+        setAvatarFile(null);
+        setAvatarPreview(row.image_url ? `/images/profile/${row.image_url}` : "/images/user-empty.png");
         setOpen(true);
     };
 
     const handleClose = () => setOpen(false);
 
     const handleSave = async () => {
-        // --- Validate ก่อน ยังไม่ต้องเปิดโหลด ---
-        if (!formData.first_name || !formData.last_name) {
-            setError(true);
-            return;
-        }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.username)) {
-            setError(true);
-            return;
-        }
-        // เพิ่มเท่านั้น: password ต้องไม่ว่าง และต้องตรงกัน
-        if (!formData.emp_id) {
-            if (!formData.password || !formData.confirm_password) {
+        // --- Validate ---
+        let hasError = false;
+        const fail = (cond: boolean) => {
+            if (cond) {
+                hasError = true;
                 setError(true);
-                return;
             }
-            if (formData.password !== formData.confirm_password) {
-                setError(true);
-                return;
-            }
+        };
+
+        // ฟิลด์จำเป็น
+        fail(!formData.emp_id);
+        fail(!formData.company_id);
+        fail(!formData.first_name_th);
+        fail(!formData.last_name_th);
+        fail(!formData.first_name_en);
+        fail(!formData.last_name_en);
+        fail(!formData.permission_id);
+
+        // ✅ เพิ่มเท่านั้น: password ต้องไม่ว่างและตรงกัน
+        if (!isEdit) {
+            fail(!formData.password);
+            fail(!formData.confirm_password);
+            fail(
+                !!formData.password &&
+                !!formData.confirm_password &&
+                formData.password !== formData.confirm_password
+            );
         }
+
+        if (hasError) return;
 
         showLoading(true);
         try {
+            // 1) อัปโหลดรูปเฉพาะเมื่อมีการเปลี่ยนรูปจริง ๆ
+            let imageFileName = formData.image_url || ""; // เก็บ "ชื่อไฟล์" เท่านั้น
+            if (avatarChanged && avatarFile) {
+                const fd = new FormData();
+                fd.append("file", avatarFile);
+                fd.append("filename", avatarFile.name);
+                // (ถ้าต้องใช้ตั้งชื่อไฟล์ฝั่ง server)
+                fd.append("company_id", formData.company_id || "");
+                fd.append("emp_id", formData.emp_id || "");
+
+                const up = await fetch("/api/auth/upload/profile/post", {
+                    method: "POST",
+                    body: fd,
+                });
+                const upJson = await up.json();
+                if (!up.ok || !upJson.success) {
+                    throw new Error(upJson.message || "อัปโหลดรูปไม่สำเร็จ");
+                }
+                imageFileName = upJson.filename; // ✅ ได้ชื่อไฟล์ใหม่จาก server
+            }
+            // ถ้าไม่ได้เปลี่ยนรูป: ใช้ค่าเดิมใน formData.image_url ไปเลย
+
+            // 2) บันทึกข้อมูลพนักงาน
+            const payload = { ...formData, image_url: imageFileName };
             const res = await fetch("/api/auth/employee", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             });
 
             let result: { success: boolean; message?: string } = { success: res.ok };
@@ -169,7 +255,6 @@ export default function EmployeePage() {
                 result.message = `บันทึกล้มเหลว (HTTP ${res.status})`;
             }
 
-            // ปิดโหลดก่อน แล้วค่อยปิด popup/โชว์ alert
             showLoading(false);
             setOpen(false);
 
@@ -185,7 +270,6 @@ export default function EmployeePage() {
             setOpen(false);
             await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
-            // กันพลาดกรณี throw ระหว่าง alert
             showLoading(false);
         }
     };
@@ -274,10 +358,10 @@ export default function EmployeePage() {
             headerAlign: "center",
             align: "left",
             renderCell: (params) => (
-                <span>{`${params.row.first_name ?? ""} ${params.row.last_name ?? ""}`}</span>
+                <span>{`${params.row.first_name_th ?? ""} ${params.row.last_name_th ?? ""}`}</span>
             ),
         },
-        { field: "username", headerName: "Email", flex: 1, headerAlign: "center", align: "left" },
+        { field: "email", headerName: "Email", flex: 1, headerAlign: "center", align: "left" },
         { field: "permission_name", headerName: "หน้าที่", flex: 1, headerAlign: "center", align: "center" },
         {
             field: "is_active",
@@ -368,42 +452,181 @@ export default function EmployeePage() {
             <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
                 <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
                 <DialogContent dividers>
-                    {isEdit && (
+                    <Box display="flex" justifyContent="center" mt={1} mb={2}>
+                        <Box textAlign="center">
+                            <Avatar
+                                src={avatarPreview || "/images/user-empty.png"} // 👈 ใส่ path ของ placeholder
+                                sx={{ width: 112, height: 112, bgcolor: "#e5e7eb" }}
+                                imgProps={{ style: { objectFit: "cover" } }}   // ✅ ครอบพอดีวงกลม
+                                onClick={handlePickAvatar}
+                            />
+                            <Button size="small" variant="outlined" sx={{ mt: 1 }} onClick={handlePickAvatar}>
+                                อัปโหลดรูป
+                            </Button>
+                            <input
+                                ref={fileRef}
+                                type="file"
+                                accept="image/*"
+                                hidden
+                                onChange={handleAvatarChange}
+                            />
+                        </Box>
+                    </Box>
+                    <Box display="flex" gap={2} mt={1}>
                         <TextField
                             size="small"
                             margin="dense"
                             label="รหัสพนักงาน"
                             fullWidth
+                            required
                             value={formData.emp_id}
-                            disabled
+                            onChange={(e) => {
+                                setFormData({ ...formData, emp_id: e.target.value });
+                            }}
+                            error={error && !formData.emp_id}
+                            helperText={error && !formData.emp_id ? "กรุณากรอกรหัสพนักงาน" : ""}
                         />
-                    )}
-                    <Box display="flex" gap={2} mt={2}>
+                    </Box>
+
+                    <Box mt={1}>
+                        <div>
+                            <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
+                                บริษัท
+                            </label>
+
+                            <Select menuPlacement="auto"
+                                options={masterCompany.map(p => ({
+                                    value: p.company_id,
+                                    label: p.company_name_th || p.company_id,
+                                }))}
+                                value={
+                                    masterCompany
+                                        .map(p => ({
+                                            value: p.company_id,
+                                            label: p.company_name_th || p.company_id,
+                                        }))
+                                        .find(opt => opt.value === formData.company_id) || null
+                                }
+                                onChange={(selected) =>
+                                    setFormData({
+                                        ...formData,
+                                        company_id: selected?.value || "",
+                                    })
+                                }
+                                placeholder="-- เลือกหน้าที่ --"
+                                isClearable
+                                menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                styles={{
+                                    control: (base, state) => ({
+                                        ...base,
+                                        backgroundColor: "#fff",
+                                        borderColor:
+                                            error && !formData.company_id
+                                                ? "#d32f2f" // 🔴 สีแดงเมื่อ error
+                                                : state.isFocused
+                                                    ? "#3b82f6"
+                                                    : "#d1d5db",
+                                        boxShadow: "none",
+                                        "&:hover": {
+                                            borderColor: error && !formData.company_id ? "#d32f2f" : "#9ca3af",
+                                        },
+                                    }),
+                                    menu: (base) => ({
+                                        ...base,
+                                        backgroundColor: "#fff",
+                                        boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                        border: "1px solid #e5e7eb",
+                                    }),
+                                    menuPortal: (base) => ({
+                                        ...base,
+                                        zIndex: 2100,
+                                    }),
+                                    option: (base, state) => ({
+                                        ...base,
+                                        backgroundColor: state.isSelected
+                                            ? "#e5f2ff"
+                                            : state.isFocused
+                                                ? "#f3f4f6"
+                                                : "#fff",
+                                        color: "#111827",
+                                    }),
+                                    menuList: (base) => ({
+                                        ...base,
+                                        backgroundColor: "#fff",
+                                        paddingTop: 0,
+                                        paddingBottom: 0,
+                                    }),
+                                    singleValue: (base) => ({
+                                        ...base,
+                                        color: "#111827",
+                                    }),
+                                }}
+                            />
+                        </div>
+
+                        {/* ✅ helperText */}
+                        {error && !formData.company_id && (
+                            <span style={{ color: "#d32f2f", fontSize: "12px", marginTop: 4, display: "block" }}>
+                                กรุณาเลือกบริษัท
+                            </span>
+                        )}
+                    </Box>
+
+                    <Box display="flex" gap={2} mt={1}>
                         <TextField
                             size="small"
                             margin="dense"
-                            label="ชื่อ"
+                            label="ชื่ออังกฤษ"
                             fullWidth
                             required
-                            value={formData.first_name}
+                            value={formData.first_name_en}
                             onChange={(e) => {
-                                setFormData({ ...formData, first_name: e.target.value });
+                                setFormData({ ...formData, first_name_en: e.target.value });
                             }}
-                            error={error && !formData.first_name}
-                            helperText={error && !formData.first_name ? "กรุณากรอกชื่อ" : ""}
+                            error={error && !formData.first_name_en}
+                            helperText={error && !formData.first_name_en ? "กรุณากรอกชื่ออังกฤษ" : ""}
                         />
                         <TextField
                             size="small"
                             margin="dense"
-                            label="นามสกุล"
+                            label="นามสกุลอังกฤษ"
                             fullWidth
                             required
-                            value={formData.last_name}
+                            value={formData.last_name_en}
                             onChange={(e) => {
-                                setFormData({ ...formData, last_name: e.target.value });
+                                setFormData({ ...formData, last_name_en: e.target.value });
                             }}
-                            error={error && !formData.last_name}
-                            helperText={error && !formData.last_name ? "กรุณากรอกนามสกุล" : ""}
+                            error={error && !formData.last_name_en}
+                            helperText={error && !formData.last_name_en ? "กรุณากรอกนามสกุลอังกฤษ" : ""}
+                        />
+                    </Box>
+
+                    <Box display="flex" gap={2} mt={1}>
+                        <TextField
+                            size="small"
+                            margin="dense"
+                            label="ชื่อไทย"
+                            fullWidth
+                            required
+                            value={formData.first_name_th}
+                            onChange={(e) => {
+                                setFormData({ ...formData, first_name_th: e.target.value });
+                            }}
+                            error={error && !formData.first_name_th}
+                            helperText={error && !formData.first_name_th ? "กรุณากรอกชื่อ" : ""}
+                        />
+                        <TextField
+                            size="small"
+                            margin="dense"
+                            label="นามสกุลไทย"
+                            fullWidth
+                            required
+                            value={formData.last_name_th}
+                            onChange={(e) => {
+                                setFormData({ ...formData, last_name_th: e.target.value });
+                            }}
+                            error={error && !formData.last_name_th}
+                            helperText={error && !formData.last_name_th ? "กรุณากรอกนามสกุล" : ""}
                         />
                     </Box>
                     <Box mt={1}>
@@ -489,32 +712,19 @@ export default function EmployeePage() {
                         )}
                     </Box>
 
+                    <Box mt={1}>
+                        <TextField
+                            size="small"
+                            margin="dense"
+                            label="Email"
+                            fullWidth
+                            value={formData.email}
+                            onChange={(e) => {
+                                setFormData({ ...formData, email: e.target.value });
+                            }}
 
-                    <TextField
-                        size="small"
-                        margin="dense"
-                        label="Email"
-                        fullWidth
-                        required
-                        value={formData.username}
-                        onChange={(e) => {
-                            setFormData({ ...formData, username: e.target.value });
-                        }}
-                        error={
-                            error &&
-                            (!formData.username ||
-                                !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.username))
-                        }
-                        helperText={
-                            !error
-                                ? ""
-                                : !formData.username
-                                    ? "กรุณากรอก email"
-                                    : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.username)
-                                        ? "รูปแบบ email ไม่ถูกต้อง"
-                                        : ""
-                        }
-                    />
+                        />
+                    </Box>
 
                     {/* Password */}
                     <TextField
@@ -528,9 +738,9 @@ export default function EmployeePage() {
                         onChange={(e) => {
                             setFormData({ ...formData, password: e.target.value });
                         }}
-                        error={error && !formData.password && !formData.emp_id}
+                        error={error && !formData.password}
                         helperText={
-                            error && !formData.password && !formData.emp_id
+                            error && !formData.password
                                 ? "กรุณากรอก password"
                                 : ""
                         }
@@ -549,7 +759,7 @@ export default function EmployeePage() {
                     />
 
                     {/* Confirm Password (เฉพาะตอนเพิ่ม) */}
-                    {!formData.emp_id && (
+                    {!isEdit && (
                         <TextField
                             size="small"
                             margin="dense"
@@ -558,13 +768,10 @@ export default function EmployeePage() {
                             fullWidth
                             required
                             value={formData.confirm_password}
-                            onChange={(e) => {
-                                setFormData({ ...formData, confirm_password: e.target.value });
-                            }}
+                            onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
                             error={
                                 error &&
-                                (!formData.confirm_password ||
-                                    formData.password !== formData.confirm_password)
+                                (!formData.confirm_password || formData.password !== formData.confirm_password)
                             }
                             helperText={
                                 !error
@@ -578,10 +785,7 @@ export default function EmployeePage() {
                             InputProps={{
                                 endAdornment: (
                                     <InputAdornment position="end">
-                                        <IconButton
-                                            onClick={() => setShowConfirmPassword((prev) => !prev)}
-                                            edge="end"
-                                        >
+                                        <IconButton onClick={() => setShowConfirmPassword((prev) => !prev)} edge="end">
                                             {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                                         </IconButton>
                                     </InputAdornment>

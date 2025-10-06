@@ -17,11 +17,11 @@ export async function POST(req: Request) {
 
         // =========== Groups ===========
         if (entity === "groupCustomer") {
-            const { group_id, customer_id, group_name, is_active, created_by, updated_by } = data;
+            const { group_id, group_name, is_active, created_by, updated_by } = data;
 
-            if (!customer_id || !group_name) {
+            if (!group_name) {
                 return NextResponse.json(
-                    { success: false, message: "กรุณาระบุ Customer และ Group Name" },
+                    { success: false, message: "กรุณาระบุ Group Name" },
                     { status: 400 }
                 );
             }
@@ -29,20 +29,20 @@ export async function POST(req: Request) {
             if (group_id) {
                 // UPDATE
                 await query(
-                    `UPDATE data_group_customers
-           SET customer_id=?, group_name=?, is_active=?, updated_by=?, updated_date=NOW()
+                    `UPDATE master_group
+           SET group_name=?, is_active=?, updated_by=?, updated_date=NOW()
            WHERE group_id=?`,
-                    [customer_id, group_name, is_active ?? 1, updated_by ?? "system", group_id]
+                    [group_name, is_active ?? 1, updated_by ?? "system", group_id]
                 );
                 return NextResponse.json({ success: true, message: "อัปเดต Group เรียบร้อย" });
             } else {
                 // INSERT
-                const newGroupId = generateId("CTMG");
+                const newGroupId = generateId("G");
                 await query(
-                    `INSERT INTO data_group_customers
-           (group_id, customer_id, group_name, is_active, created_by, created_date, updated_by, updated_date)
-           VALUES (?,?,?,?,?,NOW(),?,NOW())`,
-                    [newGroupId, customer_id, group_name, is_active ?? 1, created_by ?? "system", updated_by ?? "system"]
+                    `INSERT INTO master_group
+           (group_id, group_name, is_active, created_by, created_date, updated_by, updated_date)
+           VALUES (?,?,?,?,NOW(),?,NOW())`,
+                    [newGroupId, group_name, is_active ?? 1, created_by ?? "system", updated_by ?? "system"]
                 );
                 return NextResponse.json({
                     success: true,
@@ -55,18 +55,14 @@ export async function POST(req: Request) {
         // =========== Branch Detail ===========
         if (entity === "branchDetail") {
             const {
-                branch_id,
                 customer_id,
                 cus_cost_centre,
                 store_no,
-                customer_format,
                 customer_area,
                 customer_hub,
                 branch_name,
                 branch_tel,
                 address,
-                customer_regional,
-                customer_province,
                 group_id,
                 latitude,
                 longitude,
@@ -100,73 +96,60 @@ export async function POST(req: Request) {
             const lng = toLngOrNull(longitude);
 
             // ----- UPDATE -----
-            if (branch_id) {
+            if (customer_id) {
                 const sql = `
-                    UPDATE data_customer_branchs
+                    UPDATE data_customer
                     SET
-                        customer_id       = ?,
                         cus_cost_centre   = ?,
                         store_no          = ?,
-                        customer_format   = ?,
                         customer_area     = ?,
                         customer_hub      = ?,
                         branch_name       = ?,
                         branch_tel        = ?,
                         address           = ?,
-                        customer_regional = ?,
-                        customer_province = ?,
                         group_id          = ?,
                         latitude          = ?,
                         longitude         = ?,
                         is_active         = ?,
                         updated_by        = ?,
                         updated_date      = NOW()
-                    WHERE branch_id = ?
+                    WHERE customer_id = ?
                     `;
                 const params = [
-                    customer_id,
                     trim(cus_cost_centre),
                     trim(store_no),
-                    trim(customer_format),
                     trim(customer_area),
                     trim(customer_hub),
                     trim(branch_name),
                     trim(branch_tel),
                     trim(address),
-                    trim(customer_regional),
-                    trim(customer_province),
                     nullIfEmpty(group_id),
                     lat,
                     lng,
                     is_active ?? 1,
                     updated_by || "system",
-                    branch_id,
+                    customer_id,
                 ];
                 await query(sql, params);
                 return NextResponse.json({
                     success: true,
                     message: "อัปเดตสาขาเรียบร้อย",
-                    branch_id,
+                    customer_id,
                 });
             }
 
             // ----- INSERT -----
-            const newBranchId = generateId("CTMB");
+            const newCustomerId = generateId("CTM");
             const insertSql = `
-                    INSERT INTO data_customer_branchs
-                    (
-                    branch_id,
+                INSERT INTO data_customer (
                     customer_id,
                     cus_cost_centre,
                     store_no,
-                    customer_format,
                     customer_area,
                     customer_hub,
                     branch_name,
                     branch_tel,
                     address,
-                    customer_regional,
-                    customer_province,
                     group_id,
                     latitude,
                     longitude,
@@ -175,23 +158,20 @@ export async function POST(req: Request) {
                     created_date,
                     updated_by,
                     updated_date
-                    )
-                    VALUES
-                    (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?,NOW())
+                )
+                VALUES
+                (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?,NOW())
                 `;
+
             const insertParams = [
-                newBranchId,
-                customer_id,
+                newCustomerId,
                 trim(cus_cost_centre),
                 trim(store_no),
-                trim(customer_format),
                 trim(customer_area),
                 trim(customer_hub),
                 trim(branch_name),
                 trim(branch_tel),
                 trim(address),
-                trim(customer_regional),
-                trim(customer_province),
                 nullIfEmpty(group_id),
                 lat,
                 lng,
@@ -199,12 +179,13 @@ export async function POST(req: Request) {
                 created_by || "system",
                 updated_by || "system",
             ];
+
             await query(insertSql, insertParams);
 
             return NextResponse.json({
                 success: true,
                 message: "เพิ่มข้อมูลเรียบร้อย",
-                branch_id: newBranchId,
+                customer_id: newCustomerId,
             });
         }
 

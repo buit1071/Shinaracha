@@ -29,7 +29,6 @@ export async function POST(req: Request) {
                 team_id,
                 status_id,
                 customer_id,
-                branch_id,
                 is_active,
                 created_by,
                 updated_by,
@@ -55,10 +54,10 @@ export async function POST(req: Request) {
   INSERT INTO data_jobs (
     job_id, job_name, project_id, shift_next_jobs,
     job_start_date, job_end_date, job_start_time, job_end_time,
-    team_id, status_id, customer_id, branch_id,
+    team_id, status_id, customer_id, 
     is_active, created_by, updated_by, created_date, updated_date
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
   ON DUPLICATE KEY UPDATE
     job_name = VALUES(job_name),
     project_id = VALUES(project_id),
@@ -70,7 +69,6 @@ export async function POST(req: Request) {
     team_id = VALUES(team_id),
     status_id = VALUES(status_id),
     customer_id = VALUES(customer_id),
-    branch_id = VALUES(branch_id),
     is_active = VALUES(is_active),
     updated_by = VALUES(updated_by),
     updated_date = NOW()
@@ -87,7 +85,6 @@ export async function POST(req: Request) {
                     toNull(team_id),
                     toNull(status_id),
                     toNull(customer_id),
-                    toNull(branch_id),
                     Number(is_active ?? 1),
                     toNull(created_by ?? "system"),
                     toNull(updated_by ?? "system"),

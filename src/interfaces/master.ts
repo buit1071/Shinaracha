@@ -1,3 +1,17 @@
+export interface CurrentUser {
+  emp_id: string;
+  company_id: string;
+  first_name_th: string;
+  first_name_en: string;
+  last_name_th: string;
+  last_name_en: string;
+  email: string;
+  permission_id: string;
+  permission_name?: string;
+  image_url?: string;
+  role?: string;        // ใส่เพิ่มเผื่อ JWT role
+}
+
 export interface ProjectRow {
     project_id: string;
     project_name: string;
@@ -48,14 +62,30 @@ export interface ZoneRow {
     order?: number;
 }
 export interface EmployeeRow {
+    image_url: string;
     emp_id: string;
-    first_name: string;
-    last_name: string;
-    username: string;
+    company_id: string;
+    first_name_th: string;
+    first_name_en: string;
+    last_name_th: string;
+    last_name_en: string;
+    email: string;
     password: string;
     confirm_password?: string;
     permission_id: string;
     permission_name?: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+}
+export interface CompanyRow {
+    company_id: string;
+    company_name_th: string;
+    company_name_en: string;
+    description: string;
     is_active: number;
     created_by: string;
     updated_by: string;
@@ -221,7 +251,6 @@ export interface JobsRow {
     status_id?: string;
     customer_id: string;
     customer_name?: string;
-    branch_id: string;
     branch_name?: string;
     status_name?: string;
     is_active: number;
@@ -243,18 +272,14 @@ export interface JobStatusRow {
 }
 export interface CustomerBranchRow {
     customer_id: string;
-    branch_id: string;
     branch_name: string;
     cus_cost_centre: string;
     store_no: string;
-    customer_format: string;
     customer_area: string;
     customer_hub: string;
     branch_tel: string;
     contact_person_id: string;
     address: string;
-    customer_regional: string;
-    customer_province: string;
     group_id: string;
     latitude: string;
     longitude: string;
@@ -266,7 +291,6 @@ export interface CustomerBranchRow {
     order?: number;
 }
 export interface CustomerGroupRow {
-    customer_id: string;
     group_id: string;
     group_name: string;
     is_active: number;
@@ -303,7 +327,6 @@ export interface ServiceEquipmentRow {
     service_inspec_id: string;
     service_id: string;
     service_name?: string;
-    branch_id: string;
     zone_id: string;
     zone_name?: string;
     is_active: number;
@@ -316,7 +339,7 @@ export interface ServiceEquipmentRow {
     inspection: InspectionGroup[];
 }
 export interface ContactRow {
-    branch_id: string;
+    customer_id: string;
     contact_id: string;
     name: string;
     email: string;
