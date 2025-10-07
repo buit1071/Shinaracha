@@ -637,11 +637,9 @@ export default function ProjectListPage() {
                                 helperText={
                                     !error
                                         ? ""
-                                        : !formData.confirm_password
-                                            ? "กรุณากรอก confirm password"
-                                            : formData.password !== formData.confirm_password
-                                                ? "รหัสผ่านไม่ตรงกัน"
-                                                : ""
+                                        : formData.password !== formData.confirm_password
+                                            ? "รหัสผ่านไม่ตรงกัน"
+                                            : ""
                                 }
                                 InputProps={{
                                     endAdornment: (

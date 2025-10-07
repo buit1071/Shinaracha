@@ -150,7 +150,6 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
     // validate เบื้องต้น
     if (!formData.zone_name?.trim() || !formData.service_id?.trim()) {
       setError(true);
-      await showAlert("warning", "กรุณากรอก Service และ Zone");
       return;
     }
 

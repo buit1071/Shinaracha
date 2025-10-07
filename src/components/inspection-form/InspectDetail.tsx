@@ -150,7 +150,6 @@ export default function InspectDetail({ InspectId, onBack }: Props) {
     // validate เบื้องต้น
     if (!formData.inspect_item_name?.trim()) {
       setError(true);
-      await showAlert("warning", "กรุณากรอก Inspection Item Name");
       return;
     }
 

@@ -155,7 +155,6 @@ export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
     // validate เบื้องต้น
     if (!formData.inspect_name?.trim() || !formData.zone_id?.trim()) {
       setError(true);
-      await showAlert("warning", "กรุณากรอก Zone และ Inspect Name");
       return;
     }
 
