@@ -36,7 +36,6 @@ export async function POST(req: Request) {
             equipment_code,
             equipment_name,
             description = "",
-            image_limit = 0,
             service_id = "",
             zone_id = "",
             is_active = 1,
@@ -76,7 +75,6 @@ export async function POST(req: Request) {
 
         const code = String(equipment_code ?? "").trim();
         const codeOrNull: any = code ? code : null;
-        const imgLimit = toInt(image_limit, 0);
 
         if (!equipment_name?.trim()) {
             return NextResponse.json(
@@ -107,7 +105,6 @@ export async function POST(req: Request) {
           equipment_code = ?,
           equipment_name = ?,
           description    = ?,
-          image_limit    = ?,
           service_id     = ?,
           zone_id        = ?,
           is_active      = ?,
@@ -150,7 +147,6 @@ export async function POST(req: Request) {
                     codeOrNull,
                     equipment_name,
                     description,
-                    imgLimit,
                     service_id,
                     zone_id,
                     is_active ?? 1,
@@ -213,7 +209,7 @@ export async function POST(req: Request) {
             `
       INSERT INTO master_equipments
         (
-          equipment_id, equipment_code, equipment_name, description, image_limit,
+          equipment_id, equipment_code, equipment_name, description,
           service_id, zone_id, is_active,
 
           -- ที่อยู่ป้าย
@@ -231,7 +227,7 @@ export async function POST(req: Request) {
         )
       VALUES
         (
-          ?, ?, ?, ?, ?,
+          ?, ?, ?, ?,
           ?, ?, ?,
 
           ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
@@ -250,7 +246,6 @@ export async function POST(req: Request) {
                 codeOrNull,
                 equipment_name,
                 description,
-                imgLimit,
                 service_id,
                 zone_id,
                 is_active ?? 1,

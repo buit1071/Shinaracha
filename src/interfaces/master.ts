@@ -138,7 +138,6 @@ export interface EquipmentRow {
     service_name?: string;
     zone_id: string;
     zone_name?: string;
-    image_limit?: number;
     // ---------------- ที่อยู่สถานที่ติดตั้ง ----------------
     address_no: string;        // เลขที่
     moo: string;               // หมู่
@@ -403,7 +402,6 @@ export interface ViewDataForm {
     equipment_id: string;
 
     equipment_name: string;
-    image_limit: number;
     description: string | null;
 
     equipment_code: string;
@@ -448,7 +446,6 @@ export interface ViewDataForm {
     owner_district_name_th: string | null;
     owner_province_name_th: string | null;
 }
-
 export interface BuildingRow {
     building_id: string;
     building_name: string;
@@ -459,7 +456,6 @@ export interface BuildingRow {
     updated_date?: string;
     order?: number;
 }
-
 export interface FloorRoomRow {
     building_id: string;
     floor_id: string;

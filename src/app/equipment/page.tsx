@@ -91,7 +91,6 @@ export default function EquipmentPage() {
         service_name: "",
         zone_id: "",
         zone_name: "",
-        image_limit: 0,
         is_active: 1,
         created_by: "admin",
         updated_by: "admin",
@@ -424,7 +423,6 @@ export default function EquipmentPage() {
             service_name: "",
             zone_id: "",
             zone_name: "",
-            image_limit: 0,
             is_active: 1,
             created_by: "admin",
             updated_by: "admin",
@@ -478,7 +476,7 @@ export default function EquipmentPage() {
 
     const handleSave = async () => {
         if (
-            !formData.equipment_name || !formData.equipment_code || !formData.image_limit || !formData.address_no || !formData.moo ||
+            !formData.equipment_name || !formData.equipment_code || !formData.address_no || !formData.moo ||
             !formData.alley || !formData.road || !formData.sub_district_id || !formData.district_id || !formData.province_id ||
             !formData.zipcode || !formData.phone || !formData.fax || !formData.owner_name || !formData.owner_address_no || !formData.owner_moo ||
             !formData.owner_alley || !formData.owner_road || !formData.owner_province_id || !formData.owner_district_id || !formData.owner_sub_district_id ||
@@ -598,14 +596,6 @@ export default function EquipmentPage() {
             headerName: "การตรวจ",
             flex: 1.4,            // 👈 กว้างกว่าทั่วไป
             minWidth: 200,
-            headerAlign: "center",
-            align: "center",
-            resizable: false,
-        },
-        {
-            field: "image_limit",
-            headerName: "จำนวนรูป",
-            width: 120,           // 👈 ควบคุมขนาดตายตัว
             headerAlign: "center",
             align: "center",
             resizable: false,

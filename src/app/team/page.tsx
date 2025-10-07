@@ -318,7 +318,7 @@ export default function ProjectListPage() {
         () =>
             (employees || []).map(e => ({
                 value: String(e.emp_id),                          // ให้เป็น string ชัดเจน
-                label: `${e.first_name ?? ""} ${e.last_name ?? ""}`.trim() || String(e.emp_id),
+                label: `${e.first_name_th ?? ""} ${e.last_name_th ?? ""}`.trim() || String(e.emp_id),
             })),
         [employees]
     );
@@ -370,7 +370,7 @@ export default function ProjectListPage() {
                     status_id: String(r.status_id),
                     name: (() => {
                         const emp = employees.find(e => String(e.emp_id) === String(r.emp_id));
-                        return emp ? `${emp.first_name ?? ""} ${emp.last_name ?? ""}`.trim() : "-";
+                        return emp ? `${emp.first_name_th ?? ""} ${emp.last_name_th ?? ""}`.trim() : "-";
                     })(),
                     editing: false,
                     isNew: false,
@@ -435,7 +435,7 @@ export default function ProjectListPage() {
                                 r.name ||
                                 (() => {
                                     const emp = employees.find(e => String(e.emp_id) === String(r.emp_id));
-                                    return emp ? `${emp.first_name ?? ""} ${emp.last_name ?? ""}`.trim() : "-";
+                                    return emp ? `${emp.first_name_th ?? ""} ${emp.last_name_th ?? ""}`.trim() : "-";
                                 })(),
                             editing: false,
                             isNew: false,
