@@ -140,7 +140,6 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
                 setViewData(data.data);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }

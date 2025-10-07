@@ -1,17 +1,16 @@
 export interface CurrentUser {
-  emp_id: string;
-  company_id: string;
-  first_name_th: string;
-  first_name_en: string;
-  last_name_th: string;
-  last_name_en: string;
-  email: string;
-  permission_id: string;
-  permission_name?: string;
-  image_url?: string;
-  role?: string;        // ใส่เพิ่มเผื่อ JWT role
+    emp_id: string;
+    company_id: string;
+    first_name_th: string;
+    first_name_en: string;
+    last_name_th: string;
+    last_name_en: string;
+    email: string;
+    permission_id: string;
+    permission_name?: string;
+    image_url?: string;
+    role?: string;        // ใส่เพิ่มเผื่อ JWT role
 }
-
 export interface ProjectRow {
     project_id: string;
     project_name: string;
@@ -396,7 +395,6 @@ export interface MasterSubdistrictRow extends MasterBase {
     name_en?: string;
     post_code?: string;         // ถ้าเก็บในตารางนี้ (บางระบบแยกเป็นตาราง postcodes)
 }
-
 export interface ViewDataForm {
     data_id: number;
 
@@ -449,4 +447,28 @@ export interface ViewDataForm {
     owner_sub_district_name_th: string | null;
     owner_district_name_th: string | null;
     owner_province_name_th: string | null;
+}
+
+export interface BuildingRow {
+    building_id: string;
+    building_name: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+}
+
+export interface FloorRoomRow {
+    building_id: string;
+    floor_id: string;
+    floor_name: string;
+    room_name: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
 }

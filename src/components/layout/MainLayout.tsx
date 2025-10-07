@@ -29,6 +29,8 @@ import {
     TableCellsIcon,
     DocumentMagnifyingGlassIcon,
     ChevronDownIcon,
+    MapPinIcon,
+    Squares2X2Icon
 } from "@heroicons/react/24/outline";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -205,6 +207,22 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             >
                                 ระบบ & อุปกรณ์
                             </NavLink>
+                            {/* <NavLink
+                                href="/equipment-type"
+                                currentPath={pathname}
+                                icon={Cog6ToothIcon}
+                                collapsed={isCollapsed}
+                            >
+                                ประเภทระบบ & อุปกรณ์
+                            </NavLink> */}
+                            <NavLink
+                                href="/location"
+                                currentPath={pathname}
+                                icon={MapPinIcon}
+                                collapsed={isCollapsed}
+                            >
+                                สถานที่ติดตั้ง
+                            </NavLink>
                         </div>
                     )}
 
@@ -237,7 +255,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             <NavLink
                                 href="/customer-group"
                                 currentPath={pathname}
-                                icon={UserGroupIcon}
+                                icon={Squares2X2Icon}
                                 collapsed={isCollapsed}
                             >
                                 กลุ่มลูกค้า

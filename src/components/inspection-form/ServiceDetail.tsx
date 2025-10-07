@@ -64,10 +64,8 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
       if (data.success) {
         setRows(data.data || []);
       } else {
-        console.error("โหลด zones ไม่สำเร็จ:", data.message);
       }
     } catch (err) {
-      console.error("fetch error:", err);
     }
   };
 
@@ -84,7 +82,6 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
         setServiceName(result.data.service_name);
       }
     } catch (err) {
-      console.error("fetch service name error:", err);
     }
   };
 
@@ -141,7 +138,6 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
         await showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
       }
     } catch (err) {
-      console.error("Delete error:", err);
       await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
     } finally {
       showLoading(false);
@@ -190,7 +186,6 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
         await showAlert("error", result.message || "บันทึกล้มเหลว");
       }
     } catch (err) {
-      console.error("Save error:", err);
       setOpen(false);                         // ปิด popup แม้ error
       await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
     } finally {

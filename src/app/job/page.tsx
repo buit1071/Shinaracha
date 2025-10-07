@@ -104,7 +104,6 @@ export default function JobPage() {
                 setEquipmentOptions(data.data);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -126,27 +125,6 @@ export default function JobPage() {
             }
         } catch (err) {
             showLoading(false);
-            console.error("fetch error:", err);
-        }
-    };
-
-    const fetchCustomerBranch = async (customer_id: string) => {
-        showLoading(true);
-        try {
-            const res = await fetch("/api/auth/customer/get", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "customerBranch" }),
-            });
-
-            const result = await res.json();
-            if (result.success && result.data) {
-                showLoading(false);
-                setBranchs(result.data || []);
-            }
-        } catch (err) {
-            showLoading(false);
-            console.error("fetch customer name error:", err);
         }
     };
 
@@ -166,7 +144,6 @@ export default function JobPage() {
             }
         } catch (err) {
             showLoading(false);
-            console.error("fetch customer name error:", err);
         }
     };
     // Loaders
@@ -183,7 +160,6 @@ export default function JobPage() {
                 setRows(data.data || []);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -195,7 +171,6 @@ export default function JobPage() {
             const data = await res.json();
             if (data.success) setTeams(data.data || []);
         } catch (err) {
-            console.error("Fetch error:", err);
         }
     };
 
@@ -205,7 +180,6 @@ export default function JobPage() {
             const data = await res.json();
             if (data.success) setProjects(data.data || []);
         } catch (err) {
-            console.error("Fetch error:", err);
         }
     };
 
@@ -215,7 +189,6 @@ export default function JobPage() {
             const data = await res.json();
             if (data.success) setStatus(data.data || []);
         } catch (err) {
-            console.error("Fetch error:", err);
         }
     };
 
@@ -360,7 +333,6 @@ export default function JobPage() {
                 showAlert("error", result.message || "บันทึกล้มเหลว");
             }
         } catch (err) {
-            console.error("Save error:", err);
             setOpen(false);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
@@ -387,7 +359,6 @@ export default function JobPage() {
                 showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
             }
         } catch (err) {
-            console.error("Delete error:", err);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
             showLoading(false);
@@ -503,7 +474,6 @@ export default function JobPage() {
             setEditingId(null);
             await showAlert("success", result.message ?? "บันทึกสำเร็จ");
         } catch (e: any) {
-            console.error(e);
             await showAlert("error", e?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
             showLoading(false);
@@ -538,7 +508,6 @@ export default function JobPage() {
 
             await fetchEquipmentByJobId(formData.job_id);
         } catch (err) {
-            console.error("Delete error:", err);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
             showLoading(false);

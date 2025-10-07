@@ -58,10 +58,8 @@ export default function InspectionFormPage() {
             if (data.success) {
                 updateWithOrder(data.data || []);
             } else {
-                console.error("โหลด services ไม่สำเร็จ:", data.message);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -141,7 +139,6 @@ export default function InspectionFormPage() {
                 await showAlert("error", result.message || "บันทึกล้มเหลว");
             }
         } catch (err) {
-            console.error("Save error:", err);
             setOpen(false);                   // ปิด popup แม้ error
             await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
@@ -174,7 +171,6 @@ export default function InspectionFormPage() {
                 showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
             }
         } catch (err) {
-            console.error("Delete error:", err);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
             showLoading(false);
@@ -203,11 +199,9 @@ export default function InspectionFormPage() {
             if (res.ok && result.success) {
                 fetchService();
             } else {
-                console.error("Toggle failed:", result.message);
             }
         } catch (err) {
             showLoading(false);
-            console.error("Toggle status error:", err);
         }
     };
 

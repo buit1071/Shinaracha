@@ -53,7 +53,6 @@ export default function ProjectListPage() {
                 setRows(data.data);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -126,7 +125,6 @@ export default function ProjectListPage() {
                 showAlert("error", result.message || "บันทึกล้มเหลว");
             }
         } catch (err) {
-            console.error("Save error:", err);
             setOpen(false); // ปิด popup แม้ error
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
@@ -151,7 +149,6 @@ export default function ProjectListPage() {
                 showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
             }
         } catch (err) {
-            console.error("Delete error:", err);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
             showLoading(false);
@@ -176,7 +173,6 @@ export default function ProjectListPage() {
                 fetchProject();
             }
         } catch (err) {
-            console.error("Toggle status error:", err);
         }
     };
 

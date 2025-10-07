@@ -55,7 +55,6 @@ export default function CustomerGroupPage() {
             }
         } catch (err) {
             showLoading(false);
-            console.error("fetch customer name error:", err);
         }
     };
 
@@ -104,7 +103,6 @@ export default function CustomerGroupPage() {
                 await showAlert("error", result.message || "บันทึกล้มเหลว");
             }
         } catch (e) {
-            console.error(e);
             showLoading(false);
             setOpen(false);
             await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
@@ -154,7 +152,6 @@ export default function CustomerGroupPage() {
                 showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
             }
         } catch (err) {
-            console.error("Delete error:", err);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
             showLoading(false);

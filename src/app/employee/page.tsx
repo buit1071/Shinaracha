@@ -89,7 +89,6 @@ export default function EmployeePage() {
                 updateWithOrder(data.data);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -108,7 +107,6 @@ export default function EmployeePage() {
             const data = await res.json();
             if (data.success) setPermissions(data.data as PermissionRow[]);
         } catch (err) {
-            console.error("fetchPermissions error:", err);
         }
     };
 
@@ -122,7 +120,6 @@ export default function EmployeePage() {
             const data = await res.json();
             setCompany(data.data);
         } catch (err) {
-            console.error("fetchPermissions error:", err);
         }
     };
 
@@ -265,7 +262,6 @@ export default function EmployeePage() {
                 await showAlert("error", result.message || "บันทึกล้มเหลว");
             }
         } catch (err) {
-            console.error("Save error:", err);
             showLoading(false);
             setOpen(false);
             await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
@@ -312,7 +308,6 @@ export default function EmployeePage() {
                 await showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
             }
         } catch (err) {
-            console.error("Delete error:", err);
             showLoading(false);
             await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
@@ -338,7 +333,6 @@ export default function EmployeePage() {
                 fetchEmployees();
             }
         } catch (err) {
-            console.error("Toggle status error:", err);
         }
     };
 

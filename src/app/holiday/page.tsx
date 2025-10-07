@@ -63,7 +63,6 @@ export default function HolidayPage() {
           showAlert("error", "โหลดข้อมูลวันหยุดล้มเหลว");
         }
       } catch (err) {
-        console.error("โหลด holiday error:", err);
         showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อ");
       }
     };
@@ -160,12 +159,10 @@ export default function HolidayPage() {
         setOpenDialog(false);
       } else {
         showLoading(false);
-        console.error("❌ Error", result);
         showAlert("error", "เกิดข้อผิดพลาด");
       }
     } catch (err) {
       showLoading(false);
-      console.error("❌ Request failed", err);
       showAlert("error", "การเชื่อมต่อล้มเหลว");
     }
   };
@@ -192,11 +189,9 @@ export default function HolidayPage() {
         setOpenDialog(false);
         showAlert("success", "ลบเรียบร้อย");
       } else {
-        console.error("❌ Error", result);
         showAlert("error", result.message || "เกิดข้อผิดพลาดในการลบข้อมูล");
       }
     } catch (err) {
-      console.error("❌ Request failed", err);
       showAlert("error", "การเชื่อมต่อล้มเหลว");
     }
   };

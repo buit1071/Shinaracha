@@ -45,7 +45,6 @@ export default function CheckForm({ jobId, onBack }: Props) {
                 setjobName(result.data.job_name);
             }
         } catch (err) {
-            console.error("fetch job name error:", err);
         }
     };
 
@@ -62,7 +61,6 @@ export default function CheckForm({ jobId, onBack }: Props) {
                 setRows(data.data);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }

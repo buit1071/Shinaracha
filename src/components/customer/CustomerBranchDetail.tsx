@@ -108,7 +108,6 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
             }
         } catch (err) {
             showLoading(false);
-            console.error("fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -130,7 +129,6 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
             }
         } catch (err) {
             showLoading(false);
-            console.error("fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -196,7 +194,6 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
             await showAlert("success", result.message || "ลบข้อมูลเรียบร้อย");
         } catch (err: any) {
             showLoading(false);
-            console.error("Delete error:", err);
             await showAlert("error", err?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
             showLoading(false);
@@ -267,7 +264,6 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
             setDraft({});
             setErrorContact(false);
         } catch (e: any) {
-            console.error(e);
             await showAlert("error", e?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
             showLoading(false);
@@ -379,7 +375,6 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
             }
         } catch (err) {
             showLoading(false);
-            console.error("fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -455,7 +450,6 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
                 await showAlert("error", result.message || "บันทึกล้มเหลว");
             }
         } catch (e) {
-            console.error(e);
             await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
             showLoading(false);

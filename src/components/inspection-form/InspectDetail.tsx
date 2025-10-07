@@ -63,7 +63,6 @@ export default function InspectDetail({ InspectId, onBack }: Props) {
         showAlert("warning", result.message || "ไม่สามารถดึงข้อมูลได้");
       }
     } catch (err) {
-      console.error("Fetch error:", err);
       showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
     } finally {
       showLoading(false);
@@ -83,7 +82,6 @@ export default function InspectDetail({ InspectId, onBack }: Props) {
         setGroupName(result.data.inspect_name);
       }
     } catch (err) {
-      console.error("fetch group name error:", err);
     }
   };
 
@@ -140,7 +138,6 @@ export default function InspectDetail({ InspectId, onBack }: Props) {
         await showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
       }
     } catch (err) {
-      console.error("Delete error:", err);
       await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
     } finally {
       showLoading(false);
@@ -189,7 +186,6 @@ export default function InspectDetail({ InspectId, onBack }: Props) {
         await showAlert("error", result.message || "บันทึกล้มเหลว");
       }
     } catch (err) {
-      console.error("Save error:", err);
       setOpen(false);                          // ปิด popup แม้ error
       await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
     } finally {

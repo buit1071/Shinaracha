@@ -56,7 +56,6 @@ export default function PermissionPage() {
                 updateWithOrder(data.data as PermissionRow[]);
             }
         } catch (err) {
-            console.error("Fetch permission error:", err);
         } finally {
             showLoading(false);
         }
@@ -75,7 +74,6 @@ export default function PermissionPage() {
                 setMenu(sorted);
             }
         } catch (err) {
-            console.error("Fetch menu error:", err);
         }
     };
 
@@ -139,7 +137,6 @@ export default function PermissionPage() {
                 });
             }
         } catch (e) {
-            console.error(e);
             setFormData({
                 ...row,
                 menu_ids: row.menu_ids ?? [],
@@ -176,7 +173,6 @@ export default function PermissionPage() {
                 showAlert("error", result.message || "บันทึกล้มเหลว");
             }
         } catch (err) {
-            console.error("Save error:", err);
             setOpen(false);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
@@ -201,7 +197,6 @@ export default function PermissionPage() {
                 showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
             }
         } catch (err) {
-            console.error("Delete error:", err);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
             showLoading(false);
@@ -225,7 +220,6 @@ export default function PermissionPage() {
                 fetchPermission();
             }
         } catch (err) {
-            console.error("Toggle status error:", err);
         }
     };
 

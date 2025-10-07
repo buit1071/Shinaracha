@@ -54,10 +54,8 @@ export default function InspectionTypePage() {
             if (data.success) {
                 updateWithOrder(data.data || []);
             } else {
-                console.error("โหลด services ไม่สำเร็จ:", data.message);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -133,7 +131,6 @@ export default function InspectionTypePage() {
                 await showAlert("error", result.message || "บันทึกล้มเหลว");
             }
         } catch (err) {
-            console.error("Save error:", err);
             setOpen(false);
             await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {

@@ -66,7 +66,6 @@ export default function ProjectListPage() {
                 updateWithOrder(data.data);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -185,7 +184,6 @@ export default function ProjectListPage() {
                 showAlert("error", result.message || "บันทึกล้มเหลว");
             }
         } catch (err) {
-            console.error("Save error:", err);
             setOpen(false); // ปิด popup แม้ error
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         }
@@ -209,7 +207,6 @@ export default function ProjectListPage() {
                 showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
             }
         } catch (err) {
-            console.error("Delete error:", err);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         }
     };
@@ -231,7 +228,6 @@ export default function ProjectListPage() {
                 fetchTeam();
             }
         } catch (err) {
-            console.error("Toggle status error:", err);
         }
     };
 
@@ -382,7 +378,6 @@ export default function ProjectListPage() {
 
                 setMembers(rows);
             } catch (err: any) {
-                console.error(err);
                 await showAlert("error", "เกิดข้อผิดพลาดในการโหลดข้อมูลทีม");
             } finally {
                 showLoading(false);
@@ -502,7 +497,6 @@ export default function ProjectListPage() {
             setMembers(prev => prev.filter(r => r.id !== rowId));
             await showAlert("success", result.message || "ลบข้อมูลเรียบร้อย");
         } catch (err: any) {
-            console.error(err);
             await showAlert("error", "เกิดข้อผิดพลาดในการลบข้อมูล");
         } finally {
             showLoading(false);

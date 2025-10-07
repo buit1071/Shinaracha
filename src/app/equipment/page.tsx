@@ -147,10 +147,8 @@ export default function EquipmentPage() {
                 setProvince(data.data || []);
                 setOwnProvince(data.data || []);
             } else {
-                console.error("โหลด Provinces ไม่สำเร็จ:", data.message);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -171,10 +169,8 @@ export default function EquipmentPage() {
                 setDistrict(data.data || []);
                 setOwnDistrict(data.data || []);
             } else {
-                console.error("โหลด Provinces ไม่สำเร็จ:", data.message);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -195,10 +191,8 @@ export default function EquipmentPage() {
                 setSubDistrict(data.data || []);
                 setOwnSubDistrict(data.data || []);
             } else {
-                console.error("โหลด Provinces ไม่สำเร็จ:", data.message);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -218,10 +212,8 @@ export default function EquipmentPage() {
             if (data.success) {
                 setDistrict(data.data || []);
             } else {
-                console.error("โหลด District ไม่สำเร็จ:", data.message);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -241,10 +233,8 @@ export default function EquipmentPage() {
             if (data.success) {
                 setSubDistrict(data.data || []);
             } else {
-                console.error("โหลด Sub District ไม่สำเร็จ:", data.message);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -264,10 +254,8 @@ export default function EquipmentPage() {
             if (data.success) {
                 setOwnProvince(data.data || []);
             } else {
-                console.error("โหลด Provinces ไม่สำเร็จ:", data.message);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -287,10 +275,8 @@ export default function EquipmentPage() {
             if (data.success) {
                 setOwnDistrict(data.data || []);
             } else {
-                console.error("โหลด District ไม่สำเร็จ:", data.message);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -310,10 +296,8 @@ export default function EquipmentPage() {
             if (data.success) {
                 setOwnSubDistrict(data.data || []);
             } else {
-                console.error("โหลด Sub District ไม่สำเร็จ:", data.message);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -333,10 +317,8 @@ export default function EquipmentPage() {
             if (data.success) {
                 setServices(data.data || []);
             } else {
-                console.error("โหลด services ไม่สำเร็จ:", data.message);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -358,7 +340,6 @@ export default function EquipmentPage() {
             }
         } catch (err) {
             showLoading(false);
-            console.error("fetch error:", err);
         }
     };
 
@@ -385,11 +366,9 @@ export default function EquipmentPage() {
                 setZones(data.data || []);
             } else {
                 setZones([]);
-                console.error("zonesByService error:", data?.message);
             }
         } catch (err) {
             if ((err as any).name !== "AbortError") {
-                console.error("zonesByService fetch error:", err);
                 setZones([]);
             }
         } finally {
@@ -407,7 +386,6 @@ export default function EquipmentPage() {
                 updateWithOrder(data.data);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
@@ -532,7 +510,6 @@ export default function EquipmentPage() {
                 showAlert("error", result.message || "บันทึกล้มเหลว");
             }
         } catch (err) {
-            console.error("Save error:", err);
             setOpenEdit(false); // ปิด popup แม้ error
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
@@ -562,7 +539,6 @@ export default function EquipmentPage() {
                 showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
             }
         } catch (err) {
-            console.error("Delete error:", err);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
             // กันพลาดกรณี throw ระหว่าง alert
@@ -587,7 +563,6 @@ export default function EquipmentPage() {
                 fecthEquipment();
             }
         } catch (err) {
-            console.error("Toggle status error:", err);
         }
     };
 
@@ -758,26 +733,12 @@ export default function EquipmentPage() {
                         <TextField
                             size="small"
                             margin="dense"
-                            label="ID"
+                            label="รหัสอุปกรณ์"
                             fullWidth
                             value={formData.equipment_id}
                             disabled
                         />
                     )}
-
-                    <TextField
-                        size="small"
-                        margin="dense"
-                        label="รหัสอุปกรณ์"
-                        fullWidth
-                        required
-                        value={formData.equipment_code}
-                        onChange={(e) => {
-                            setFormData({ ...formData, equipment_code: e.target.value });
-                        }}
-                        error={error && !formData.equipment_code}
-                        helperText={error && !formData.equipment_code ? "กรุณากรอกรหัสอุปกรณ์" : ""}
-                    />
 
                     <TextField
                         size="small"
@@ -813,24 +774,6 @@ export default function EquipmentPage() {
                             },
                         }}
                     />
-
-                    <Box mt={1}>
-                        <TextField
-                            size="small"
-                            margin="dense"
-                            label="จำนวนรูป"
-                            type="number"
-                            fullWidth
-                            required
-                            value={formData.image_limit ?? ""}
-                            onChange={(e) => {
-                                const value = e.target.value === "" ? 0 : parseInt(e.target.value, 10);
-                                setFormData({ ...formData, image_limit: value });
-                            }}
-                            error={error && !formData.image_limit}
-                            helperText={error && !formData.image_limit ? "กรุณาระบุจำนวนรูป" : ""}
-                        />
-                    </Box>
 
                     <Box sx={{ mt: 2 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>

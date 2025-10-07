@@ -51,7 +51,6 @@ export default function CustomerBranch() {
             }
         } catch (err) {
             showLoading(false);
-            console.error("fetch customer name error:", err);
         }
     };
 
@@ -73,7 +72,6 @@ export default function CustomerBranch() {
                 setCustomerName(result.data.customer_name);
             }
         } catch (err) {
-            console.error("fetch customer name error:", err);
         }
     };
 
@@ -150,7 +148,6 @@ export default function CustomerBranch() {
                 showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
             }
         } catch (err) {
-            console.error("Delete error:", err);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
             showLoading(false);

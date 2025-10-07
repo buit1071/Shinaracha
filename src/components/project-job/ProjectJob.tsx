@@ -49,7 +49,6 @@ export default function ProjectJob({ projectId, onBack }: Props) {
                 setProjectName(result.data.project_name);
             }
         } catch (err) {
-            console.error("fetch project name error:", err);
         }
     };
 
@@ -66,7 +65,6 @@ export default function ProjectJob({ projectId, onBack }: Props) {
                 setRows(data.data || []);
             }
         } catch (err) {
-            console.error("Fetch error:", err);
         } finally {
             showLoading(false);
         }
