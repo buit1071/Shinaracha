@@ -268,7 +268,6 @@ export default function CustomerGroupPage() {
                             if (error) setError(false);
                         }}
                         error={error && !formData.group_name}
-                        helperText={error && !formData.group_name ? "กรุณากรอก Group Name" : ""}
                     />
                 </DialogContent>
                 <DialogActions>

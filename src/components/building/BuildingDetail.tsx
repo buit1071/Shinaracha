@@ -299,7 +299,6 @@ export default function BuildingDetail({ BuildingId, BuildingName, onBack }: Pro
                             if (error) setError(false);
                         }}
                         error={error && !formData.room_name}
-                        helperText={error && !formData.room_name ? "กรุณากรอกห้อง" : ""}
                     />
                 </DialogContent>
                 <DialogActions>

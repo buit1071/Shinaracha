@@ -328,7 +328,6 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
                   if (error) setError(false);
                 }}
                 error={error && !formData.zone_name}
-                helperText={error && !formData.zone_name ? "กรุณากรอกชื่อ Zone" : ""}
               />
             </DialogContent>
             <DialogActions>

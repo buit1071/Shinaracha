@@ -776,20 +776,6 @@ export default function JobPage() {
                                         }),
                                     }}
                                 />
-
-                                {/* ✅ helperText */}
-                                {error && !formData.status_id && (
-                                    <span
-                                        style={{
-                                            color: "#d32f2f",
-                                            fontSize: "12px",
-                                            marginTop: 4,
-                                            display: "block",
-                                        }}
-                                    >
-                                        กรุณาเลือกสถานะ
-                                    </span>
-                                )}
                             </Box>
                         </Box>
                     )}
@@ -814,7 +800,6 @@ export default function JobPage() {
                                 value={formData.job_name ?? ""}
                                 onChange={(e) => setFormData({ ...formData, job_name: e.target.value })}
                                 error={error && !formData.job_name}
-                                helperText={error && !formData.job_name ? "กรุณาเลือกวันที่เริ่มต้น" : ""}
                             />
                         </Box>
 
@@ -886,20 +871,6 @@ export default function JobPage() {
                                     }),
                                 }}
                             />
-
-                            {/* ✅ helperText */}
-                            {error && !formData.project_id && (
-                                <span
-                                    style={{
-                                        color: "#d32f2f",
-                                        fontSize: "12px",
-                                        marginTop: 4,
-                                        display: "block",
-                                    }}
-                                >
-                                    กรุณาเลือกโครงการ
-                                </span>
-                            )}
                         </Box>
                     </Box>
 
@@ -928,7 +899,6 @@ export default function JobPage() {
                                 value={parseToInputDate(formData.job_start_date ?? "")}
                                 onChange={(e) => setFormData({ ...formData, job_start_date: formatToThaiDate(e.target.value) })}
                                 error={error && !formData.job_start_date}
-                                helperText={error && !formData.job_start_date ? "กรุณาเลือกวันที่เริ่มต้น" : ""}
                             />
 
                             {/* เวลาเริ่ม */}
@@ -943,7 +913,6 @@ export default function JobPage() {
                                         size: "small",
                                         fullWidth: true,
                                         error: error && !formData.job_start_time,
-                                        helperText: error && !formData.job_start_time ? "กรุณาเลือกเวลาเริ่มต้น" : "",
                                     },
                                 }}
                             />
@@ -959,7 +928,6 @@ export default function JobPage() {
                                 onChange={(e) => setFormData({ ...formData, job_end_date: formatToThaiDate(e.target.value) })}
                                 inputProps={{ min: parseToInputDate(formData.job_start_date ?? "") }}
                                 error={error && !formData.job_end_date}
-                                helperText={error && !formData.job_end_date ? "กรุณาเลือกวันที่สิ้นสุด" : ""}
                             />
 
                             {/* เวลาสิ้น */}
@@ -974,7 +942,6 @@ export default function JobPage() {
                                         size: "small",
                                         fullWidth: true,
                                         error: error && !formData.job_end_time,
-                                        helperText: error && !formData.job_end_time ? "กรุณาเลือกเวลาสิ้นสุด" : "",
                                     },
                                 }}
                             />
@@ -1069,20 +1036,6 @@ export default function JobPage() {
                                     }),
                                 }}
                             />
-
-                            {/* ✅ helperText */}
-                            {error && !formData.customer_id && (
-                                <span
-                                    style={{
-                                        color: "#d32f2f",
-                                        fontSize: "12px",
-                                        marginTop: 4,
-                                        display: "block",
-                                    }}
-                                >
-                                    กรุณาเลือกสาขา
-                                </span>
-                            )}
                         </Box>
 
                         <Box>
@@ -1152,20 +1105,6 @@ export default function JobPage() {
                                     }),
                                 }}
                             />
-
-                            {/* ✅ helperText */}
-                            {error && !formData.team_id && (
-                                <span
-                                    style={{
-                                        color: "#d32f2f",
-                                        fontSize: "12px",
-                                        marginTop: 4,
-                                        display: "block",
-                                    }}
-                                >
-                                    กรุณาเลือกทีม
-                                </span>
-                            )}
                         </Box>
                     </Box>
 

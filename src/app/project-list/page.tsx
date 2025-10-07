@@ -311,7 +311,6 @@ export default function ProjectListPage() {
                             setFormData({ ...formData, project_name: e.target.value });
                         }}
                         error={error && !formData.project_name}
-                        helperText={error && !formData.project_name ? "กรุณากรอกชื่อโครงการ" : ""}
                     />
 
                     <TextField
@@ -342,7 +341,6 @@ export default function ProjectListPage() {
                                 })
                             }
                             error={error && !formData.start_date}
-                            helperText={error && !formData.start_date ? "กรุณาเลือกวันที่เริ่มต้น" : ""}
                         />
 
                         {/* End Date */}
@@ -360,7 +358,6 @@ export default function ProjectListPage() {
                                 })
                             }
                             error={error && !formData.end_date}
-                            helperText={error && !formData.end_date ? "กรุณาเลือกวันที่สิ้นสุด" : ""}
                             // 👇 บรรทัดนี้สำคัญมาก!
                             inputProps={{
                                 min: parseToInputDate(formData.start_date),

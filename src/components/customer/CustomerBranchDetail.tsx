@@ -483,7 +483,6 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
                             setFormData({ ...formData, cus_cost_centre: e.target.value });
                         }}
                         error={error && !formData.cus_cost_centre}
-                        helperText={error && !formData.cus_cost_centre ? "กรุณากรอก Cus Cost Centre" : ""}
                     />
                     <TextField
                         size="small"
@@ -495,7 +494,6 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
                             setFormData({ ...formData, store_no: e.target.value });
                         }}
                         error={error && !formData.store_no}
-                        helperText={error && !formData.store_no ? "กรุณากรอก Store No" : ""}
                     />
                     <TextField
                         size="small"
@@ -507,7 +505,6 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
                             setFormData({ ...formData, customer_hub: e.target.value });
                         }}
                         error={error && !formData.customer_hub}
-                        helperText={error && !formData.customer_hub ? "กรุณากรอก Customer Hub" : ""}
                     />
                     <TextField
                         size="small"
@@ -519,7 +516,6 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
                             setFormData({ ...formData, customer_area: e.target.value });
                         }}
                         error={error && !formData.customer_area}
-                        helperText={error && !formData.customer_area ? "กรุณากรอก Customer Area" : ""}
                     />
                 </Box>
 
@@ -534,7 +530,6 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
                             setFormData({ ...formData, branch_name: e.target.value });
                         }}
                         error={error && !formData.branch_name}
-                        helperText={error && !formData.branch_name ? "กรุณากรอกชื่อสาขา" : ""}
                     />
                     <TextField
                         size="small"
@@ -546,7 +541,6 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
                             setFormData({ ...formData, branch_tel: e.target.value });
                         }}
                         error={error && !formData.branch_tel}
-                        helperText={error && !formData.branch_tel ? "กรุณากรอก Branch Tel" : ""}
                     />
                     <TextField
                         size="small"
@@ -558,7 +552,6 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
                             setFormData({ ...formData, address: e.target.value });
                         }}
                         error={error && !formData.address}
-                        helperText={error && !formData.address ? "กรุณากรอกที่อยู่" : ""}
                     />
                     <Box mb={0.5}>
                         <label className="block mb-1 text-sm text-black">
@@ -645,21 +638,6 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
                                 }),
                             }}
                         />
-
-                        {/* ✅ helperText */}
-                        {error && !formData.group_id && (
-                            <span
-                                style={{
-                                    color: "#d32f2f",
-                                    fontSize: "12px",
-                                    marginTop: 4,
-                                    display: "block",
-                                }}
-                            >
-                                กรุณาเลือก Group
-                            </span>
-                        )}
-
                     </Box>
                 </Box>
 

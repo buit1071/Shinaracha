@@ -312,7 +312,6 @@ export default function InspectDetail({ InspectId, onBack }: Props) {
               if (error) setError(false);
             }}
             error={error && !formData.inspect_item_name}
-            helperText={error && !formData.inspect_item_name ? "กรุณากรอก รายการตรวจ" : ""}
           />
         </DialogContent>
         <DialogActions>

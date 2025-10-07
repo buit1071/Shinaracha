@@ -362,7 +362,6 @@ export default function InspectionFormPage() {
                                     if (error) setError(false);
                                 }}
                                 error={error && !formData.service_name}
-                                helperText={error && !formData.service_name ? "กรุณากรอกชื่อบริการ" : ""}
                             />
 
                             <Box mt={2} display="flex" alignItems="center" gap={2}>

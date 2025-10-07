@@ -24,7 +24,7 @@ import {
 } from "@mui/material";
 import { showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
-import { EquipmentRow, ServiceRow, ZoneRow, MasterProvinceRow, MasterDistrictRow, MasterSubdistrictRow } from "@/interfaces/master";
+import { EquipmentRow, ServiceRow, ZoneRow, MasterProvinceRow, MasterDistrictRow, MasterSubdistrictRow, BuildingRow, FloorRoomRow } from "@/interfaces/master";
 import type { IFormStorage } from "@react-form-builder/designer";
 
 class LocalFormStorage implements IFormStorage {
@@ -79,6 +79,8 @@ export default function EquipmentPage() {
     const [subDistrictsOwn, setOwnSubDistrict] = React.useState<MasterSubdistrictRow[]>([]);
     const [services, setServices] = React.useState<ServiceRow[]>([]);
     const [zones, setZones] = React.useState<ZoneRow[]>([]);
+    const [building, setBuilding] = React.useState<BuildingRow[]>([]);
+    const [floor, setFloor] = React.useState<FloorRoomRow[]>([]);
     const zonesAbortRef = React.useRef<AbortController | null>(null);
     type Option = { value: string; label: string };
 
@@ -109,6 +111,8 @@ export default function EquipmentPage() {
         zipcode: "",
         phone: "",
         fax: "",
+        building_id: "",
+        floor_id: "",
 
         // เจ้าของ/ผู้ครอบครอง
         owner_name: "",
@@ -239,6 +243,27 @@ export default function EquipmentPage() {
         }
     };
 
+    const fetchFloorByBuildingId = async (building_id: string) => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/building/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                // ถ้าต้องการกัน cache ฝั่งเบราว์เซอร์ เพิ่ม cache: "no-store"
+                body: JSON.stringify({ function: "floor", building_id }),
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                setFloor(data.data || []);
+            } else {
+            }
+        } catch (err) {
+        } finally {
+            showLoading(false);
+        }
+    };
+
     const fetchOwnProvince = async () => {
         showLoading(true);
         try {
@@ -342,6 +367,25 @@ export default function EquipmentPage() {
         }
     };
 
+    const fetchBuilding = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/building/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "building" }),
+            });
+
+            const result = await res.json();
+            if (result.success && result.data) {
+                setBuilding(result.data || []);
+                showLoading(false);
+            }
+        } catch (err) {
+            showLoading(false);
+        }
+    };
+
     const fetchZonesByService = async (serviceId: string) => {
         if (zonesAbortRef.current) zonesAbortRef.current.abort();
 
@@ -408,6 +452,7 @@ export default function EquipmentPage() {
         fetchDistrict();
         fetchSubDistrict();
         fetchOwnProvince();
+        fetchBuilding();
         fetchService();
         fetchZoneAll();
         fecthEquipment();
@@ -441,6 +486,8 @@ export default function EquipmentPage() {
             zipcode: "",
             phone: "",
             fax: "",
+            building_id: "",
+            floor_id: "",
 
             // เจ้าของ/ผู้ครอบครอง
             owner_name: "",
@@ -741,7 +788,6 @@ export default function EquipmentPage() {
                             setFormData({ ...formData, equipment_name: e.target.value });
                         }}
                         error={error && !formData.equipment_name}
-                        helperText={error && !formData.equipment_name ? "กรุณากรอกชื่ออุปกรณ์" : ""}
                     />
 
                     <TextField
@@ -781,22 +827,18 @@ export default function EquipmentPage() {
                             <TextField label="เลขที่" size="small" fullWidth name="address_no"
                                 value={formData.address_no ?? ""} onChange={handleChange}
                                 error={error && !formData.address_no}
-                                helperText={error && !formData.address_no ? "กรุณากรอกเลขที่" : ""}
                             />
                             <TextField label="หมู่ที่" size="small" fullWidth name="moo"
                                 value={formData.moo ?? ""} onChange={handleChange}
                                 error={error && !formData.moo}
-                                helperText={error && !formData.moo ? "กรุณากรอกหมู่ที่" : ""}
                             />
                             <TextField label="ตรอก/ซอย" size="small" fullWidth name="alley"
                                 value={formData.alley ?? ""} onChange={handleChange}
                                 error={error && !formData.alley}
-                                helperText={error && !formData.alley ? "กรุณากรอกตรอก/ซอย" : ""}
                             />
                             <TextField label="ถนน" size="small" fullWidth name="road"
                                 value={formData.road ?? ""} onChange={handleChange}
                                 error={error && !formData.road}
-                                helperText={error && !formData.road ? "กรุณากรอกถนน" : ""}
                             />
                         </Box>
 
@@ -901,20 +943,6 @@ export default function EquipmentPage() {
                                         }),
                                     }}
                                 />
-
-                                {/* helperText */}
-                                {error && !formData.province_id && (
-                                    <span
-                                        style={{
-                                            color: "#d32f2f",
-                                            fontSize: "12px",
-                                            marginTop: 4,
-                                            display: "block",
-                                        }}
-                                    >
-                                        กรุณาเลือกจังหวัด
-                                    </span>
-                                )}
                             </Box>
 
                             <Box>
@@ -993,12 +1021,6 @@ export default function EquipmentPage() {
                                         singleValue: (base) => ({ ...base, color: "#111827" }),
                                     }}
                                 />
-
-                                {error && !formData.district_id && (
-                                    <span style={{ color: "#d32f2f", fontSize: 12, marginTop: 4, display: "block" }}>
-                                        กรุณาเลือกอำเภอ/เขต
-                                    </span>
-                                )}
                             </Box>
 
                             <Box>
@@ -1059,11 +1081,6 @@ export default function EquipmentPage() {
                                         singleValue: (base) => ({ ...base, color: "#111827" }),
                                     }}
                                 />
-                                {error && !formData.sub_district_id && (
-                                    <span style={{ color: "#d32f2f", fontSize: 12, marginTop: 4, display: "block" }}>
-                                        กรุณาเลือกตำบล/แขวง
-                                    </span>
-                                )}
                             </Box>
 
                             <TextField
@@ -1080,7 +1097,6 @@ export default function EquipmentPage() {
                                     sx: { height: 38 },
                                 }}
                                 error={error && !formData.zipcode}
-                                helperText={error && !formData.zipcode ? "กรุณากรอกรหัสไปรษณีย์" : ""}
                             />
                         </Box>
 
@@ -1091,22 +1107,168 @@ export default function EquipmentPage() {
                                 display: "grid",
                                 gap: 2,
                                 gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
+                                alignItems: "flex-end",
                             }}
                         >
                             <TextField label="โทรศัพท์" size="small" fullWidth name="phone"
                                 inputProps={{ inputMode: "tel" }}
                                 value={formData.phone ?? ""} onChange={handleChange}
                                 error={error && !formData.phone}
-                                helperText={error && !formData.phone ? "กรุณากรอกโทรศัพท์" : ""}
                             />
                             <TextField label="โทรสาร" size="small" fullWidth name="fax"
                                 inputProps={{ inputMode: "tel" }}
                                 value={formData.fax ?? ""} onChange={handleChange}
                                 error={error && !formData.fax}
-                                helperText={error && !formData.fax ? "กรุณากรอกโทรสาร" : ""}
                             />
-                            <Box />
-                            <Box />
+                            <Box>
+                                <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
+                                    อาคาร
+                                </label>
+                                <Select menuPlacement="auto"
+                                    options={building.map(p => ({
+                                        value: p.building_id,
+                                        label: p.building_name,
+                                    }))}
+
+                                    value={
+                                        building
+                                            .map(p => ({
+                                                value: p.building_id,
+                                                label: p.building_name,
+                                            }))
+                                            .find(opt => opt.value === formData.building_id) || null
+                                    }
+
+                                    onChange={async (selected: Option | null) => {
+                                        const building_id = selected?.value ?? "";
+
+                                        // อัปเดตค่า building_id เดิมด้วย handleChange
+                                        handleChange({
+                                            target: { name: "building_id", value: building_id },
+                                        } as any);
+
+                                        // โหลดอำเภอตามจังหวัดที่เลือก
+                                        if (building_id) {
+                                            await fetchFloorByBuildingId(building_id);
+                                        }
+                                    }}
+
+                                    placeholder="-- เลือกอาคาร --"
+                                    isClearable
+                                    menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            borderColor: "#d1d5db",
+                                            boxShadow: "none",
+
+                                        }),
+                                        menu: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                            border: "1px solid #e5e7eb",
+                                        }),
+                                        menuPortal: (base) => ({
+                                            ...base,
+                                            zIndex: 2100,
+                                        }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected
+                                                ? "#e5f2ff"
+                                                : state.isFocused
+                                                    ? "#f3f4f6"
+                                                    : "#fff",
+                                            color: "#111827",
+                                        }),
+                                        menuList: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            paddingTop: 0,
+                                            paddingBottom: 0,
+                                        }),
+                                        singleValue: (base) => ({
+                                            ...base,
+                                            color: "#111827",
+                                        }),
+                                    }}
+                                />
+                            </Box>
+
+                            <Box>
+                                <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
+                                    ชั้น/ห้อง
+                                </label>
+                                <Select menuPlacement="auto"
+                                    options={floor.map(p => ({
+                                        value: p.floor_id,
+                                        label: `ชั้น ${p.floor_name} ห้อง ${p.room_name}`,
+                                    }))}
+
+                                    value={
+                                        floor
+                                            .map(p => ({
+                                                value: p.floor_id,
+                                                label: `ชั้น ${p.floor_name} ห้อง ${p.room_name}`,
+                                            }))
+                                            .find(opt => opt.value === formData.floor_id) || null
+                                    }
+
+                                    onChange={async (selected: Option | null) => {
+                                        const floor_id = selected?.value ?? "";
+
+                                        // อัปเดตค่า building_id เดิมด้วย handleChange
+                                        handleChange({
+                                            target: { name: "floor_id", value: floor_id },
+                                        } as any);
+                                    }}
+
+                                    placeholder="-- เลือกชั้น/ห้อง --"
+                                    isClearable
+                                    isDisabled={!formData.building_id}
+                                    menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            borderColor: "#d1d5db",
+                                            boxShadow: "none",
+
+                                        }),
+                                        menu: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                            border: "1px solid #e5e7eb",
+                                        }),
+                                        menuPortal: (base) => ({
+                                            ...base,
+                                            zIndex: 2100,
+                                        }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected
+                                                ? "#e5f2ff"
+                                                : state.isFocused
+                                                    ? "#f3f4f6"
+                                                    : "#fff",
+                                            color: "#111827",
+                                        }),
+                                        menuList: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            paddingTop: 0,
+                                            paddingBottom: 0,
+                                        }),
+                                        singleValue: (base) => ({
+                                            ...base,
+                                            color: "#111827",
+                                        }),
+                                    }}
+                                />
+                            </Box>
                         </Box>
                     </Box>
 
@@ -1126,27 +1288,22 @@ export default function EquipmentPage() {
                             <TextField label="ชื่อ" size="small" fullWidth name="owner_name"
                                 value={formData.owner_name ?? ""} onChange={handleChange}
                                 error={error && !formData.owner_name}
-                                helperText={error && !formData.owner_name ? "กรุณากรอกชื่อ" : ""}
                             />
                             <TextField label="เลขที่" size="small" fullWidth name="owner_address_no"
                                 value={formData.owner_address_no ?? ""} onChange={handleChange}
                                 error={error && !formData.owner_address_no}
-                                helperText={error && !formData.owner_address_no ? "กรุณากรอกเลขที่" : ""}
                             />
                             <TextField label="หมู่ที่" size="small" fullWidth name="owner_moo"
                                 value={formData.owner_moo ?? ""} onChange={handleChange}
                                 error={error && !formData.owner_moo}
-                                helperText={error && !formData.owner_moo ? "กรุณากรอกหมู่ที่" : ""}
                             />
                             <TextField label="ตรอก/ซอย" size="small" fullWidth name="owner_alley"
                                 value={formData.owner_alley ?? ""} onChange={handleChange}
                                 error={error && !formData.owner_alley}
-                                helperText={error && !formData.owner_alley ? "กรุณากรอกตรอก/ซอย" : ""}
                             />
                             <TextField label="ถนน" size="small" fullWidth name="owner_road"
                                 value={formData.owner_road ?? ""} onChange={handleChange}
                                 error={error && !formData.owner_road}
-                                helperText={error && !formData.owner_road ? "กรุณากรอกถนน" : ""}
                             />
                         </Box>
 
@@ -1251,20 +1408,6 @@ export default function EquipmentPage() {
                                         }),
                                     }}
                                 />
-
-                                {/* helperText */}
-                                {error && !formData.owner_province_id && (
-                                    <span
-                                        style={{
-                                            color: "#d32f2f",
-                                            fontSize: "12px",
-                                            marginTop: 4,
-                                            display: "block",
-                                        }}
-                                    >
-                                        กรุณาเลือกจังหวัด
-                                    </span>
-                                )}
                             </Box>
 
                             <Box>
@@ -1343,12 +1486,6 @@ export default function EquipmentPage() {
                                         singleValue: (base) => ({ ...base, color: "#111827" }),
                                     }}
                                 />
-
-                                {error && !formData.owner_district_id && (
-                                    <span style={{ color: "#d32f2f", fontSize: 12, marginTop: 4, display: "block" }}>
-                                        กรุณาเลือกอำเภอ/เขต
-                                    </span>
-                                )}
                             </Box>
 
                             <Box>
@@ -1409,11 +1546,6 @@ export default function EquipmentPage() {
                                         singleValue: (base) => ({ ...base, color: "#111827" }),
                                     }}
                                 />
-                                {error && !formData.owner_sub_district_id && (
-                                    <span style={{ color: "#d32f2f", fontSize: 12, marginTop: 4, display: "block" }}>
-                                        กรุณาเลือกตำบล/แขวง
-                                    </span>
-                                )}
                             </Box>
 
                             <TextField
@@ -1430,7 +1562,6 @@ export default function EquipmentPage() {
                                     sx: { height: 38 },
                                 }}
                                 error={error && !formData.owner_zipcode}
-                                helperText={error && !formData.owner_zipcode ? "กรุณากรอกรหัสไปรษณีย์" : ""}
                             />
                             <Box /> {/* ช่องว่างท้ายสุด */}
                         </Box>
@@ -1452,18 +1583,15 @@ export default function EquipmentPage() {
                                 inputProps={{ inputMode: "tel" }}
                                 value={formData.owner_phone ?? ""} onChange={handleChange}
                                 error={error && !formData.owner_phone}
-                                helperText={error && !formData.owner_phone ? "กรุณากรอกโทรศัพท์" : ""}
                             />
                             <TextField label="โทรสาร" size="small" fullWidth name="owner_fax"
                                 inputProps={{ inputMode: "tel" }}
                                 value={formData.owner_fax ?? ""} onChange={handleChange}
                                 error={error && !formData.owner_fax}
-                                helperText={error && !formData.owner_fax ? "กรุณากรอกโทรสาร" : ""}
                             />
                             <TextField label="อีเมล" size="small" fullWidth name="owner_email" type="email"
                                 value={formData.owner_email ?? ""} onChange={handleChange}
                                 error={error && !formData.owner_email}
-                                helperText={error && !formData.owner_email ? "กรุณากรอกอีเมล" : ""}
                             />
                         </Box>
 
@@ -1479,12 +1607,10 @@ export default function EquipmentPage() {
                             <TextField label="ผู้ออกแบบด้านวิศวกรรมโครงสร้าง" size="small" fullWidth name="designer_name"
                                 value={formData.designer_name ?? ""} onChange={handleChange}
                                 error={error && !formData.designer_name}
-                                helperText={error && !formData.designer_name ? "กรุณากรอกผู้ออกแบบด้านวิศวกรรมโครงสร้าง" : ""}
                             />
                             <TextField label="ใบอนุญาตทะเบียนเลขที่" size="small" fullWidth name="designer_license_no"
                                 value={formData.designer_license_no ?? ""} onChange={handleChange}
                                 error={error && !formData.designer_license_no}
-                                helperText={error && !formData.designer_license_no ? "กรุณากรอกใบอนุญาตทะเบียนเลขที่" : ""}
                             />
                         </Box>
                     </Box>
@@ -1562,20 +1688,6 @@ export default function EquipmentPage() {
                                 }),
                             }}
                         />
-
-                        {/* ✅ helperText */}
-                        {error && !formData.service_id && (
-                            <span
-                                style={{
-                                    color: "#d32f2f",
-                                    fontSize: "12px",
-                                    marginTop: 4,
-                                    display: "block",
-                                }}
-                            >
-                                กรุณาเลือกการบริการ
-                            </span>
-                        )}
                     </Box>
 
                     <Box>
@@ -1644,20 +1756,6 @@ export default function EquipmentPage() {
                                 }),
                             }}
                         />
-
-                        {/* ✅ helperText */}
-                        {error && !formData.zone_id && (
-                            <span
-                                style={{
-                                    color: "#d32f2f",
-                                    fontSize: "12px",
-                                    marginTop: 4,
-                                    display: "block",
-                                }}
-                            >
-                                กรุณาเลือกการตรวจ
-                            </span>
-                        )}
                     </Box>
                 </DialogContent>
                 <DialogActions>

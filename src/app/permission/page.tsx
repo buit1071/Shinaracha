@@ -436,7 +436,6 @@ export default function PermissionPage() {
                             if (error) setError(false);
                         }}
                         error={error && !formData.permission_name}
-                        helperText={error && !formData.permission_name ? "กรุณากรอกชื่อ" : ""}
                     />
 
                     {/* เลือกเมนู */}

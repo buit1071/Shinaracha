@@ -478,7 +478,6 @@ export default function EmployeePage() {
                                 setFormData({ ...formData, emp_id: e.target.value });
                             }}
                             error={error && !formData.emp_id}
-                            helperText={error && !formData.emp_id ? "กรุณากรอกรหัสพนักงาน" : ""}
                         />
                     </Box>
 
@@ -557,13 +556,6 @@ export default function EmployeePage() {
                                 }}
                             />
                         </div>
-
-                        {/* ✅ helperText */}
-                        {error && !formData.company_id && (
-                            <span style={{ color: "#d32f2f", fontSize: "12px", marginTop: 4, display: "block" }}>
-                                กรุณาเลือกบริษัท
-                            </span>
-                        )}
                     </Box>
 
                     <Box display="flex" gap={2} mt={1}>
@@ -578,7 +570,6 @@ export default function EmployeePage() {
                                 setFormData({ ...formData, first_name_en: e.target.value });
                             }}
                             error={error && !formData.first_name_en}
-                            helperText={error && !formData.first_name_en ? "กรุณากรอกชื่ออังกฤษ" : ""}
                         />
                         <TextField
                             size="small"
@@ -591,7 +582,6 @@ export default function EmployeePage() {
                                 setFormData({ ...formData, last_name_en: e.target.value });
                             }}
                             error={error && !formData.last_name_en}
-                            helperText={error && !formData.last_name_en ? "กรุณากรอกนามสกุลอังกฤษ" : ""}
                         />
                     </Box>
 
@@ -607,7 +597,6 @@ export default function EmployeePage() {
                                 setFormData({ ...formData, first_name_th: e.target.value });
                             }}
                             error={error && !formData.first_name_th}
-                            helperText={error && !formData.first_name_th ? "กรุณากรอกชื่อ" : ""}
                         />
                         <TextField
                             size="small"
@@ -620,7 +609,6 @@ export default function EmployeePage() {
                                 setFormData({ ...formData, last_name_th: e.target.value });
                             }}
                             error={error && !formData.last_name_th}
-                            helperText={error && !formData.last_name_th ? "กรุณากรอกนามสกุล" : ""}
                         />
                     </Box>
                     <Box mt={1}>
@@ -697,13 +685,6 @@ export default function EmployeePage() {
                                 }),
                             }}
                         />
-
-                        {/* ✅ helperText */}
-                        {error && !formData.permission_id && (
-                            <span style={{ color: "#d32f2f", fontSize: "12px", marginTop: 4, display: "block" }}>
-                                กรุณาเลือกหน้าที่
-                            </span>
-                        )}
                     </Box>
 
                     <Box mt={1}>
@@ -733,11 +714,6 @@ export default function EmployeePage() {
                             setFormData({ ...formData, password: e.target.value });
                         }}
                         error={error && !formData.password}
-                        helperText={
-                            error && !formData.password
-                                ? "กรุณากรอก password"
-                                : ""
-                        }
                         InputProps={{
                             endAdornment: (
                                 <InputAdornment position="end">
@@ -766,15 +742,6 @@ export default function EmployeePage() {
                             error={
                                 error &&
                                 (!formData.confirm_password || formData.password !== formData.confirm_password)
-                            }
-                            helperText={
-                                !error
-                                    ? ""
-                                    : !formData.confirm_password
-                                        ? "กรุณากรอก confirm password"
-                                        : formData.password !== formData.confirm_password
-                                            ? "รหัสผ่านไม่ตรงกัน"
-                                            : ""
                             }
                             InputProps={{
                                 endAdornment: (

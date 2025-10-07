@@ -149,6 +149,8 @@ export interface EquipmentRow {
     zipcode: string;           // รหัสไปรษณีย์
     phone: string;             // โทรศัพท์
     fax: string;               // โทรสาร
+    building_id: string;
+    floor_id: string;
     // -------- เจ้าของ/ผู้ครอบครอง & ผู้ออกแบบโครงสร้าง --------
     owner_name: string;            // ชื่อ
     owner_address_no: string;      // เลขที่

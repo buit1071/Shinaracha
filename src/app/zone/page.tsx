@@ -305,7 +305,6 @@ export default function ZonePage() {
                             if (error) setError(false);
                         }}
                         error={error && !formData.zone_name}
-                        helperText={error && !formData.zone_name ? "กรุณากรอกชื่อพื้นที่" : ""}
                     />
                 </DialogContent>
                 <DialogActions>

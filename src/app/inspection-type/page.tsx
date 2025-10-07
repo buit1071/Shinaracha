@@ -240,7 +240,6 @@ export default function InspectionTypePage() {
                             setFormData({ ...formData, service_name: e.target.value });
                         }}
                         error={error && !formData.service_name}
-                        helperText={error && !formData.service_name ? "กรุณากรอกชื่อบริการ" : ""}
                     />
 
                     {/* ระยะเวลาที่ใช้ในการตรวจ (วัน) */}
@@ -258,11 +257,6 @@ export default function InspectionTypePage() {
                             setFormData({ ...formData, inspection_duration: n });
                         }}
                         error={error && formData.inspection_duration == null}
-                        helperText={
-                            error && formData.inspection_duration == null
-                                ? "กรุณากรอกระยะเวลาที่ใช้ในการตรวจ"
-                                : ""
-                        }
                     />
 
                     {/* จำนวนครั้งในการตรวจต่อปี */}
@@ -280,11 +274,6 @@ export default function InspectionTypePage() {
                             setFormData({ ...formData, inspections_per_year: n });
                         }}
                         error={error && formData.inspections_per_year == null}
-                        helperText={
-                            error && formData.inspections_per_year == null
-                                ? "กรุณากรอกจำนวนครั้งในการตรวจต่อปี"
-                                : ""
-                        }
                     />
 
                 </DialogContent>

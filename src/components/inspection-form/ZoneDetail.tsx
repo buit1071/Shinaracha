@@ -331,7 +331,6 @@ export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
                   if (error) setError(false);
                 }}
                 error={error && !formData.inspect_name}
-                helperText={error && !formData.inspect_name ? "กรุณากรอกหัวข้อการตรวจ" : ""}
               />
             </DialogContent>
             <DialogActions>

@@ -299,7 +299,6 @@ export default function LocationPage() {
                                 setFormData({ ...formData, building_name: e.target.value });
                             }}
                             error={error && !formData.building_name}
-                            helperText={error && !formData.building_name ? "กรุณากรอกชื่อหรือเลขอาคาร" : ""}
                         />
                     </Box>
                 </DialogContent>

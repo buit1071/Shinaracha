@@ -573,7 +573,6 @@ export default function ProjectListPage() {
                             setFormData({ ...formData, team_name: e.target.value });
                         }}
                         error={error && !formData.team_name}
-                        helperText={error && !formData.team_name ? "กรุณากรอกชื่อ" : ""}
                     />
 
                     <TextField
@@ -587,7 +586,6 @@ export default function ProjectListPage() {
                             setFormData({ ...formData, username: e.target.value });
                         }}
                         error={error && !formData.username}
-                        helperText={error && !formData.username ? "กรุณากรอก Username" : ""}
                     />
 
                     <Box display="flex" gap={2}>
@@ -604,11 +602,6 @@ export default function ProjectListPage() {
                                 setFormData({ ...formData, password: e.target.value });
                             }}
                             error={error && !formData.password && !formData.team_id}
-                            helperText={
-                                error && !formData.password && !formData.team_id
-                                    ? "กรุณากรอก password"
-                                    : ""
-                            }
                             InputProps={{
                                 endAdornment: (
                                     <InputAdornment position="end">
@@ -677,7 +670,6 @@ export default function ProjectListPage() {
                             setFormData({ ...formData, uuid: e.target.value });
                         }}
                         error={error && !formData.uuid}
-                        helperText={error && !formData.uuid ? "กรุณากรอก UUID" : ""}
                     />
 
                     <Box>
@@ -754,14 +746,6 @@ export default function ProjectListPage() {
                                 }),
                             }}
                         />
-
-                        {/* ✅ helperText */}
-                        {error && !formData.zone_id && (
-                            <span style={{ color: "#d32f2f", fontSize: "12px", marginTop: 4, display: "block" }}>
-                                กรุณาเลือกพื้นที่
-                            </span>
-                        )}
-
                     </Box>
 
                     {/* Add Employee to team (react-select) */}
