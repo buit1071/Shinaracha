@@ -281,11 +281,13 @@ export default function BuildingDetail({ BuildingId, BuildingName, onBack }: Pro
                         margin="dense"
                         label="ชั้น"
                         fullWidth
+                        required
                         value={formData.floor_name}
                         onChange={(e) => {
                             setFormData({ ...formData, floor_name: e.target.value });
                             if (error) setError(false);
                         }}
+                        error={error && !formData.floor_name}
                     />
                     <TextField
                         size="small"

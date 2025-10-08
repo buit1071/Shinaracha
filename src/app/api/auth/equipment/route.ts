@@ -71,6 +71,10 @@ export async function POST(req: Request) {
             // ---------- ผู้ออกแบบ ----------
             designer_name = "",
             designer_license_no = "",
+            building_id = "",
+            floor_id = "",
+            system_type_id = "",
+            equipment_type_id = "",
         } = body;
 
         const code = String(equipment_code ?? "").trim();
@@ -138,6 +142,10 @@ export async function POST(req: Request) {
           -- ผู้ออกแบบ
           designer_name       = ?,
           designer_license_no = ?,
+          building_id = ?,
+          floor_id = ?,
+          system_type_id = ?,
+          equipment_type_id = ?,
 
           updated_by     = ?,
           updated_date   = NOW()
@@ -180,6 +188,10 @@ export async function POST(req: Request) {
                     // ผู้ออกแบบ
                     toNull(designer_name),
                     toNull(designer_license_no),
+                    toNull(building_id),
+                    toNull(floor_id),
+                    toNull(system_type_id),
+                    toNull(equipment_type_id),
 
                     updated_by,
                     equipment_id,
@@ -221,7 +233,7 @@ export async function POST(req: Request) {
           owner_phone, owner_fax, owner_email,
 
           -- ผู้ออกแบบ
-          designer_name, designer_license_no,
+          designer_name, designer_license_no, building_id, floor_id, system_type_id, equipment_type_id
 
           created_by, created_date, updated_by, updated_date
         )
@@ -236,7 +248,7 @@ export async function POST(req: Request) {
           ?, ?, ?, ?,
           ?, ?, ?,
 
-          ?, ?,
+          ?, ?, ?, ?, ?, ?,
 
           ?, NOW(), ?, NOW()
         )
@@ -279,6 +291,10 @@ export async function POST(req: Request) {
                 // ผู้ออกแบบ
                 toNull(designer_name),
                 toNull(designer_license_no),
+                toNull(building_id),
+                toNull(floor_id),
+                toNull(system_type_id),
+                toNull(equipment_type_id),
 
                 created_by,
                 updated_by,

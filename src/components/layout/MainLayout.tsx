@@ -207,14 +207,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             >
                                 ระบบ & อุปกรณ์
                             </NavLink>
-                            {/* <NavLink
+                            <NavLink
                                 href="/equipment-type"
                                 currentPath={pathname}
                                 icon={Cog6ToothIcon}
                                 collapsed={isCollapsed}
                             >
                                 ประเภทระบบ & อุปกรณ์
-                            </NavLink> */}
+                            </NavLink>
                             <NavLink
                                 href="/location"
                                 currentPath={pathname}

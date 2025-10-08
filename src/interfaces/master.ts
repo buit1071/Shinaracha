@@ -151,6 +151,8 @@ export interface EquipmentRow {
     fax: string;               // โทรสาร
     building_id: string;
     floor_id: string;
+    system_type_id: string;
+    equipment_type_id: string;
     // -------- เจ้าของ/ผู้ครอบครอง & ผู้ออกแบบโครงสร้าง --------
     owner_name: string;            // ชื่อ
     owner_address_no: string;      // เลขที่
@@ -463,6 +465,26 @@ export interface FloorRoomRow {
     floor_id: string;
     floor_name: string;
     room_name: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+}
+export interface SystemTypeRow {
+    system_type_id: string;
+    system_type_name: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+}
+export interface EquipmentTypeRow {
+    equipment_type_id: string;
+    equipment_type_name: string;
     is_active: number;
     created_by: string;
     updated_by: string;

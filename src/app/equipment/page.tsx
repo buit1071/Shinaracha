@@ -24,7 +24,7 @@ import {
 } from "@mui/material";
 import { showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
-import { EquipmentRow, ServiceRow, ZoneRow, MasterProvinceRow, MasterDistrictRow, MasterSubdistrictRow, BuildingRow, FloorRoomRow } from "@/interfaces/master";
+import { EquipmentRow, ServiceRow, ZoneRow, MasterProvinceRow, MasterDistrictRow, MasterSubdistrictRow, BuildingRow, FloorRoomRow, SystemTypeRow, EquipmentTypeRow } from "@/interfaces/master";
 import type { IFormStorage } from "@react-form-builder/designer";
 
 class LocalFormStorage implements IFormStorage {
@@ -81,6 +81,8 @@ export default function EquipmentPage() {
     const [zones, setZones] = React.useState<ZoneRow[]>([]);
     const [building, setBuilding] = React.useState<BuildingRow[]>([]);
     const [floor, setFloor] = React.useState<FloorRoomRow[]>([]);
+    const [system, setSystem] = React.useState<SystemTypeRow[]>([]);
+    const [eqType, setEqType] = React.useState<EquipmentTypeRow[]>([]);
     const zonesAbortRef = React.useRef<AbortController | null>(null);
     type Option = { value: string; label: string };
 
@@ -113,6 +115,8 @@ export default function EquipmentPage() {
         fax: "",
         building_id: "",
         floor_id: "",
+        system_type_id: "",
+        equipment_type_id: "",
 
         // เจ้าของ/ผู้ครอบครอง
         owner_name: "",
@@ -134,6 +138,44 @@ export default function EquipmentPage() {
         designer_name: "",
         designer_license_no: "",
     });
+
+    const fecthSystemType = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/equipment-type/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                // ถ้าต้องการกัน cache ฝั่งเบราว์เซอร์ เพิ่ม cache: "no-store"
+                body: JSON.stringify({ function: "system_type" }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setSystem(data.data);
+            }
+        } catch (err) {
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    const fecthEquipmentType = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/equipment-type/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                // ถ้าต้องการกัน cache ฝั่งเบราว์เซอร์ เพิ่ม cache: "no-store"
+                body: JSON.stringify({ function: "equipment_type" }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setEqType(data.data);
+            }
+        } catch (err) {
+        } finally {
+            showLoading(false);
+        }
+    };
 
     const fetchProvince = async () => {
         showLoading(true);
@@ -251,6 +293,27 @@ export default function EquipmentPage() {
                 headers: { "Content-Type": "application/json" },
                 // ถ้าต้องการกัน cache ฝั่งเบราว์เซอร์ เพิ่ม cache: "no-store"
                 body: JSON.stringify({ function: "floor", building_id }),
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                setFloor(data.data || []);
+            } else {
+            }
+        } catch (err) {
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    const fetchFloor = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/building/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                // ถ้าต้องการกัน cache ฝั่งเบราว์เซอร์ เพิ่ม cache: "no-store"
+                body: JSON.stringify({ function: "floorAll" }),
             });
 
             const data = await res.json();
@@ -453,9 +516,12 @@ export default function EquipmentPage() {
         fetchSubDistrict();
         fetchOwnProvince();
         fetchBuilding();
+        fetchFloor();
         fetchService();
         fetchZoneAll();
         fecthEquipment();
+        fecthSystemType();
+        fecthEquipmentType();
     }, []);
 
     const handleOpenAdd = () => {
@@ -488,6 +554,8 @@ export default function EquipmentPage() {
             fax: "",
             building_id: "",
             floor_id: "",
+            system_type_id: "",
+            equipment_type_id: "",
 
             // เจ้าของ/ผู้ครอบครอง
             owner_name: "",
@@ -810,6 +878,162 @@ export default function EquipmentPage() {
                             },
                         }}
                     />
+
+                    <Box sx={{ mt: 2 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                            ประเภทระบบ & อุปกรณ์
+                        </Typography>
+                        <Box
+                            sx={{
+                                display: "grid",
+                                gap: 2,
+                                gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
+                            }}
+                        >
+                            <Box>
+                                <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
+                                    ประเภทระบบ
+                                </label>
+                                <Select menuPlacement="auto"
+                                    options={system.map(p => ({
+                                        value: p.system_type_id,
+                                        label: p.system_type_name,
+                                    }))}
+
+                                    value={
+                                        system
+                                            .map(p => ({
+                                                value: p.system_type_id,
+                                                label: p.system_type_name,
+                                            }))
+                                            .find(opt => opt.value === formData.system_type_id) || null
+                                    }
+
+                                    onChange={async (selected: Option | null) => {
+                                        const system_type_id = selected?.value ?? "";
+                                        handleChange({
+                                            target: { name: "system_type_id", value: system_type_id },
+                                        } as any);
+
+                                    }}
+
+                                    placeholder="-- เลือกประเภทระบบ --"
+                                    isClearable
+                                    menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            borderColor: "#d1d5db",
+                                            boxShadow: "none",
+
+                                        }),
+                                        menu: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                            border: "1px solid #e5e7eb",
+                                        }),
+                                        menuPortal: (base) => ({
+                                            ...base,
+                                            zIndex: 2100,
+                                        }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected
+                                                ? "#e5f2ff"
+                                                : state.isFocused
+                                                    ? "#f3f4f6"
+                                                    : "#fff",
+                                            color: "#111827",
+                                        }),
+                                        menuList: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            paddingTop: 0,
+                                            paddingBottom: 0,
+                                        }),
+                                        singleValue: (base) => ({
+                                            ...base,
+                                            color: "#111827",
+                                        }),
+                                    }}
+                                />
+                            </Box>
+
+                            <Box>
+                                <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
+                                    ประเภทอุปกรณ์
+                                </label>
+                                <Select menuPlacement="auto"
+                                    options={eqType.map(p => ({
+                                        value: p.equipment_type_id,
+                                        label: p.equipment_type_name,
+                                    }))}
+
+                                    value={
+                                        eqType
+                                            .map(p => ({
+                                                value: p.equipment_type_id,
+                                                label: p.equipment_type_name,
+                                            }))
+                                            .find(opt => opt.value === formData.equipment_type_id) || null
+                                    }
+
+                                    onChange={async (selected: Option | null) => {
+                                        const equipment_type_id = selected?.value ?? "";
+
+                                        // อัปเดตค่า building_id เดิมด้วย handleChange
+                                        handleChange({
+                                            target: { name: "equipment_type_id", value: equipment_type_id },
+                                        } as any);
+                                    }}
+
+                                    placeholder="-- เลือกประเภทอุปกรณ์ --"
+                                    isClearable
+                                    menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            borderColor: "#d1d5db",
+                                            boxShadow: "none",
+
+                                        }),
+                                        menu: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                            border: "1px solid #e5e7eb",
+                                        }),
+                                        menuPortal: (base) => ({
+                                            ...base,
+                                            zIndex: 2100,
+                                        }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected
+                                                ? "#e5f2ff"
+                                                : state.isFocused
+                                                    ? "#f3f4f6"
+                                                    : "#fff",
+                                            color: "#111827",
+                                        }),
+                                        menuList: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            paddingTop: 0,
+                                            paddingBottom: 0,
+                                        }),
+                                        singleValue: (base) => ({
+                                            ...base,
+                                            color: "#111827",
+                                        }),
+                                    }}
+                                />
+                            </Box>
+                        </Box>
+                    </Box>
 
                     <Box sx={{ mt: 2 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>

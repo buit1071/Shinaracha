@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { query } from "@/lib-server/db";
 
 type GetBody =
-    | { function: "building"; }
-    | { function: "floor"; building_id: string }
-    | { function: "floorAll"; }
+    | { function: "system_type"; }
+    | { function: "equipment_type"; }
     ;
 
 export async function POST(req: Request) {
@@ -19,38 +18,30 @@ export async function POST(req: Request) {
             );
         }
 
-        if (fn === "building") {
+        if (fn === "system_type") {
             const rows = await query(
-                `
-        SELECT *
-        FROM data_building
-        ORDER BY created_date DESC
-        `,
+                `SELECT *
+                FROM master_system_type
+                `,
             );
-            return NextResponse.json({ success: true, data: rows });
+
+            return NextResponse.json({
+                success: true,
+                data: rows || [],
+            });
         }
 
-        if (fn === "floor") {
+        if (fn === "equipment_type") {
             const rows = await query(
-                `
-        SELECT *
-        FROM data_floor_room
-        WHERE building_id = ?
-        ORDER BY created_date DESC
-        `, [body.building_id]
+                `SELECT *
+                FROM master_equipment_type
+                `,
             );
-            return NextResponse.json({ success: true, data: rows });
-        }
 
-        if (fn === "floorAll") {
-            const rows = await query(
-                `
-        SELECT *
-        FROM data_floor_room
-        ORDER BY created_date DESC
-        `,
-            );
-            return NextResponse.json({ success: true, data: rows });
+            return NextResponse.json({
+                success: true,
+                data: rows || [],
+            });
         }
 
         // ไม่รู้จัก function
