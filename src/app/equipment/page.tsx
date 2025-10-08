@@ -1032,6 +1032,145 @@ export default function EquipmentPage() {
                                     }}
                                 />
                             </Box>
+
+                            <Box>
+                                <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
+                                    การบริการ
+                                </label>
+                                <Select menuPlacement="auto"
+                                    options={services.map(c => ({ value: c.service_id, label: c.service_name }))}
+                                    value={services.map(c => ({ value: c.service_id, label: c.service_name }))
+                                        .find(opt => opt.value === formData.service_id) || null}
+                                    onChange={async (selected) => {
+                                        const service_id = selected?.value || "";
+
+                                        setFormData({
+                                            ...formData,
+                                            service_id,
+                                        });
+
+                                        // โหลดโซนของบริการ
+                                        await fetchZonesByService(service_id);
+                                    }}
+                                    placeholder="-- เลือกการบริการ --"
+                                    isClearable
+                                    menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            borderColor:
+                                                error && !formData.service_id
+                                                    ? "#d32f2f" // ❌ สีแดงเมื่อ error
+                                                    : state.isFocused
+                                                        ? "#3b82f6"
+                                                        : "#d1d5db",
+                                            boxShadow: "none",
+                                            "&:hover": {
+                                                borderColor:
+                                                    error && !formData.service_id ? "#d32f2f" : "#9ca3af",
+                                            },
+                                        }),
+                                        menu: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                            border: "1px solid #e5e7eb",
+                                        }),
+                                        menuPortal: (base) => ({
+                                            ...base,
+                                            zIndex: 2100,
+                                        }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected
+                                                ? "#e5f2ff"
+                                                : state.isFocused
+                                                    ? "#f3f4f6"
+                                                    : "#fff",
+                                            color: "#111827",
+                                        }),
+                                        menuList: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            paddingTop: 0,
+                                            paddingBottom: 0,
+                                        }),
+                                        singleValue: (base) => ({
+                                            ...base,
+                                            color: "#111827",
+                                        }),
+                                    }}
+                                />
+                            </Box>
+
+                            <Box>
+                                <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
+                                    การตรวจ
+                                </label>
+                                <Select menuPlacement="auto"
+                                    options={zones.map(c => ({ value: c.zone_id, label: c.zone_name }))}
+                                    value={zones.map(c => ({ value: c.zone_id, label: c.zone_name }))
+                                        .find(opt => opt.value === formData.zone_id) || null}
+                                    onChange={(selected: SingleValue<Option>) =>
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            zone_id: selected?.value ?? "",
+                                            zone_name: selected?.label ?? "",
+                                        }))
+                                    }
+                                    placeholder="-- เลือกการตรวจ --"
+                                    isDisabled={!formData.service_id}
+                                    isClearable
+                                    menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            borderColor:
+                                                error && !formData.zone_id
+                                                    ? "#d32f2f" // ❌ สีแดงเมื่อ error
+                                                    : state.isFocused
+                                                        ? "#3b82f6"
+                                                        : "#d1d5db",
+                                            boxShadow: "none",
+                                            "&:hover": {
+                                                borderColor:
+                                                    error && !formData.zone_id ? "#d32f2f" : "#9ca3af",
+                                            },
+                                        }),
+                                        menu: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                            border: "1px solid #e5e7eb",
+                                        }),
+                                        menuPortal: (base) => ({
+                                            ...base,
+                                            zIndex: 2100,
+                                        }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected
+                                                ? "#e5f2ff"
+                                                : state.isFocused
+                                                    ? "#f3f4f6"
+                                                    : "#fff",
+                                            color: "#111827",
+                                        }),
+                                        menuList: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            paddingTop: 0,
+                                            paddingBottom: 0,
+                                        }),
+                                        singleValue: (base) => ({
+                                            ...base,
+                                            color: "#111827",
+                                        }),
+                                    }}
+                                />
+                            </Box>
                         </Box>
                     </Box>
 
@@ -1837,149 +1976,6 @@ export default function EquipmentPage() {
                                 error={error && !formData.designer_license_no}
                             />
                         </Box>
-                    </Box>
-
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
-                        ข้อมูลแบบฟอร์ม
-                    </Typography>
-
-                    <Box>
-                        <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
-                            การบริการ
-                        </label>
-                        <Select menuPlacement="auto"
-                            options={services.map(c => ({ value: c.service_id, label: c.service_name }))}
-                            value={services.map(c => ({ value: c.service_id, label: c.service_name }))
-                                .find(opt => opt.value === formData.service_id) || null}
-                            onChange={async (selected) => {
-                                const service_id = selected?.value || "";
-
-                                setFormData({
-                                    ...formData,
-                                    service_id,
-                                });
-
-                                // โหลดโซนของบริการ
-                                await fetchZonesByService(service_id);
-                            }}
-                            placeholder="-- เลือกการบริการ --"
-                            isClearable
-                            menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-                            styles={{
-                                control: (base, state) => ({
-                                    ...base,
-                                    backgroundColor: "#fff",
-                                    borderColor:
-                                        error && !formData.service_id
-                                            ? "#d32f2f" // ❌ สีแดงเมื่อ error
-                                            : state.isFocused
-                                                ? "#3b82f6"
-                                                : "#d1d5db",
-                                    boxShadow: "none",
-                                    "&:hover": {
-                                        borderColor:
-                                            error && !formData.service_id ? "#d32f2f" : "#9ca3af",
-                                    },
-                                }),
-                                menu: (base) => ({
-                                    ...base,
-                                    backgroundColor: "#fff",
-                                    boxShadow: "0 8px 24px rgba(0,0,0,.2)",
-                                    border: "1px solid #e5e7eb",
-                                }),
-                                menuPortal: (base) => ({
-                                    ...base,
-                                    zIndex: 2100,
-                                }),
-                                option: (base, state) => ({
-                                    ...base,
-                                    backgroundColor: state.isSelected
-                                        ? "#e5f2ff"
-                                        : state.isFocused
-                                            ? "#f3f4f6"
-                                            : "#fff",
-                                    color: "#111827",
-                                }),
-                                menuList: (base) => ({
-                                    ...base,
-                                    backgroundColor: "#fff",
-                                    paddingTop: 0,
-                                    paddingBottom: 0,
-                                }),
-                                singleValue: (base) => ({
-                                    ...base,
-                                    color: "#111827",
-                                }),
-                            }}
-                        />
-                    </Box>
-
-                    <Box>
-                        <label style={{ fontSize: "14px", marginBottom: "4px", display: "block" }}>
-                            การตรวจ
-                        </label>
-                        <Select menuPlacement="auto"
-                            options={zones.map(c => ({ value: c.zone_id, label: c.zone_name }))}
-                            value={zones.map(c => ({ value: c.zone_id, label: c.zone_name }))
-                                .find(opt => opt.value === formData.zone_id) || null}
-                            onChange={(selected: SingleValue<Option>) =>
-                                setFormData(prev => ({
-                                    ...prev,
-                                    zone_id: selected?.value ?? "",
-                                    zone_name: selected?.label ?? "",
-                                }))
-                            }
-                            placeholder="-- เลือกการตรวจ --"
-                            isDisabled={!formData.service_id}
-                            isClearable
-                            menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-                            styles={{
-                                control: (base, state) => ({
-                                    ...base,
-                                    backgroundColor: "#fff",
-                                    borderColor:
-                                        error && !formData.zone_id
-                                            ? "#d32f2f" // ❌ สีแดงเมื่อ error
-                                            : state.isFocused
-                                                ? "#3b82f6"
-                                                : "#d1d5db",
-                                    boxShadow: "none",
-                                    "&:hover": {
-                                        borderColor:
-                                            error && !formData.zone_id ? "#d32f2f" : "#9ca3af",
-                                    },
-                                }),
-                                menu: (base) => ({
-                                    ...base,
-                                    backgroundColor: "#fff",
-                                    boxShadow: "0 8px 24px rgba(0,0,0,.2)",
-                                    border: "1px solid #e5e7eb",
-                                }),
-                                menuPortal: (base) => ({
-                                    ...base,
-                                    zIndex: 2100,
-                                }),
-                                option: (base, state) => ({
-                                    ...base,
-                                    backgroundColor: state.isSelected
-                                        ? "#e5f2ff"
-                                        : state.isFocused
-                                            ? "#f3f4f6"
-                                            : "#fff",
-                                    color: "#111827",
-                                }),
-                                menuList: (base) => ({
-                                    ...base,
-                                    backgroundColor: "#fff",
-                                    paddingTop: 0,
-                                    paddingBottom: 0,
-                                }),
-                                singleValue: (base) => ({
-                                    ...base,
-                                    color: "#111827",
-                                }),
-                            }}
-                        />
                     </Box>
                 </DialogContent>
                 <DialogActions>
