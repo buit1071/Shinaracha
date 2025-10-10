@@ -22,7 +22,7 @@ export async function DELETE(
             message: "ลบข้อมูลเรียบร้อย",
         });
     } catch (err: any) {
-        console.error("DB Error:", err);
+        
         return NextResponse.json(
             { success: false, message: "Database error", error: err.message },
             { status: 500 }

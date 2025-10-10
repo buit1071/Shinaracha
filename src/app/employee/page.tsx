@@ -434,9 +434,9 @@ export default function EmployeePage() {
                     rows={filteredRows}
                     columns={columns.map((col) => ({ ...col, resizable: false }))}
                     initialState={{
-                        pagination: { paginationModel: { pageSize: 5, page: 0 } },
+                        pagination: { paginationModel: { pageSize: 15, page: 0 } },
                     }}
-                    pageSizeOptions={[5, 10]}
+                    pageSizeOptions={[15,20]}
                     disableRowSelectionOnClick
                     getRowId={(row) => row.emp_id}
                 />

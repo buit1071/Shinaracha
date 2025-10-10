@@ -1256,8 +1256,24 @@ function buildS3_Table2(section2: Record<string, SectionThreeRow> | undefined) {
         // --- แถวรายการย่อย ---
         group.rows.forEach((r, ri) => {
             const label = typeof r === "string" ? r : r.label;
-            const id = `s2-${group.title}-${ri + 1}`;
-            const data = section2?.[id] || {};
+            const id = `s2-${gi + 1}-${ri + 1}`;
+            const data = (() => {
+                // คีย์ใหม่ (index ล้วน)
+                const kNew = `s2-${gi + 1}-${ri + 1}`;
+                if (section2?.[kNew]) return section2[kNew];
+
+                // คีย์เดิมที่ผูกกับชื่อหัวข้อแบบเป๊ะ
+                const kOldExact = `s2-${group.title}-${ri + 1}`;
+                if (section2?.[kOldExact]) return section2[kOldExact];
+
+                // คีย์เก่าแบบหยวน: ขึ้นต้นด้วย "s2-<เลขข้อ>. " และลงท้ายด้วย "-<เลขแถว>"
+                const kLoose = Object.keys(section2 || {}).find(
+                    (k) => k.startsWith(`s2-${gi + 1}. `) && k.endsWith(`-${ri + 1}`)
+                );
+                if (kLoose) return (section2 as any)[kLoose];
+
+                return {};
+            })();
             const freqKey = data.freq as FreqKey | undefined;
 
             const itemParas: Paragraph[] = [cellP(label)];
@@ -1435,6 +1451,22 @@ function buildS4_Table1(
         })
     );
 
+    rows.push(
+        new TableRow({
+            height: { value: 300, rule: HeightRule.ATLEAST },
+            cantSplit: true,
+            children: [
+                new TableCell({
+                    columnSpan: 1 + 1 + ROUNDS.length * 2 + 1, // รวมทุกคอลัมน์
+                    shading: { fill: "E7E6E6" },
+                    verticalAlign: VerticalAlign.CENTER,
+                    margins: { top: 100, bottom: 100, left: 150, right: 150 },
+                    children: [cellP("1. การตรวจสอบความมั่นคงแข็งแรงของป้าย", { bold: true })],
+                }),
+            ],
+        })
+    );
+
     // เนื้อหา
     S4_T1_ROWS.forEach((row, idx) => {
         const id = `t1-${idx + 1}`;
@@ -1498,25 +1530,23 @@ function buildS4_Table1(
 type T2Row = string | { label: string; inlineInput?: boolean };
 const S4_T2_GROUPS: { title: string; rows: T2Row[] }[] = [
     {
-        title: "1. ระบบไฟฟ้าแสงสว่าง",
+        title: "2.1 ระบบไฟฟ้าแสงสว่าง",
         rows: [
-            "สภาพหลอดไฟฟ้า",
-            "ตู้คอนโทรล/สายไฟ/อุปกรณ์",
-            "สลักกุญแจ/บันทึกการเปิดตู้",
-            "อุปกรณ์ป้องกัน (RCD/MCCB ฯๆ)",
-            "สายดิน/จุดต่อกราวด์",
-            "งานเดินสาย/การจัดยึด",
-            "ระบบตั้งเวลา/เปิด–ปิดอัตโนมัติ",
+            "สภาพสายไฟฟ้า",
+            "สภาพท่อร้อยสาย รางเดินสาย และรางเคเบิล",
+            "สภาพเครื่องป้องกันกระแสเกิน",
+            "สภาพเครื่องตัดไฟรั่ว",
+            "การต่อลงดินของบริภัณฑ์ ตัวนำต่อลงดิน และความต่อเนื่องลงดินของท่อร้อยสาย รางเดินสาย รางเคเบิ",
             { label: "อื่น ๆ (โปรดระบุ)", inlineInput: true },
         ],
     },
     {
-        title: "2. ระบบไฟฟ้าควบคุม/อาณัติสัญญาณ (ถ้ามี)",
-        rows: ["หน่วยควบคุม/จอแสดงผล", "เซนเซอร์/ระบบตรวจจับ", "ระบบป้องกันไฟกระชาก"],
+        title: "2.2 ระบบไฟฟ้าควบคุม/อาณัติสัญญาณ (ถ้ามี)",
+        rows: ["ตรวจสอบระบบตัวนำล่อฟ้า ตัวนำต่อลงดิน", "ตรวจสอบระบบรากสายดิน", "ตรวจสอบจุดต่อประสานศักย์"],
     },
     {
-        title: "3. ระบบอุปกรณ์ประกอบอื่น ๆ (ถ้ามี)",
-        rows: ["อุปกรณ์ที่สมบูรณ์", "อุปกรณ์กันตก/ราวจับ", { label: "อุปกรณ์ประกอบอื่นที่เห็นสมควร (ระบุ)", inlineInput: true }],
+        title: "2.3 ระบบอุปกรณ์ประกอบอื่น ๆ (ถ้ามี)",
+        rows: ["สภาพบันไดขึ้นลง", "สภาพราวจับ และราวกันตก", { label: "อุปกรณ์ประกอบอื่นตามที่เห็นสมควร", inlineInput: true }],
     },
 ];
 
@@ -1551,6 +1581,22 @@ function buildS4_Table2(
             height: { value: 220, rule: HeightRule.ATLEAST },
             cantSplit: true,
             children: S4_ROUNDS.flatMap(() => [thCell("ใช้ได้", ROUND_SUB_PCT), thCell("ใช้ไม่ได้", ROUND_SUB_PCT)]),
+        })
+    );
+
+    rows.push(
+        new TableRow({
+            height: { value: 300, rule: HeightRule.ATLEAST },
+            cantSplit: true,
+            children: [
+                new TableCell({
+                    columnSpan: TOTAL_SPAN_S4T2,
+                    shading: { fill: "E7E6E6" },
+                    verticalAlign: VerticalAlign.CENTER,
+                    margins: { top: 100, bottom: 100, left: 150, right: 150 },
+                    children: [cellP("2. การตรวจสอบบำรุงรักษาระบบและอุปกรณ์ประกอบต่าง ๆ ของป้าย", { bold: true })],
+                }),
+            ],
         })
     );
 
@@ -1647,8 +1693,6 @@ async function buildSectionFour(formData: FormDataLite) {
     const h4_3_1 = pn("ตามความถี่ที่ผู้ตรวจสอบกำหนด จำนวนครั้งที่ตรวจสอบในแต่ละปีตามความถี่ในการตรวจสอบ คือ ตรวจสอบทุก ๆ 6 เดือน ", 0);
     const h4_3_2 = pn("จำนวนครั้งที่ต้องตรวจสอบในแต่ละปีเท่ากับ 2 ครั้ง (รอบ 6 เดือน และ 12 เดือน)", 0);
 
-    const h4_4 = pn("1. การตรวจสอบความมั่นคงแข็งแรงของป้าย", 1);
-    const h4_5 = pn("2. การตรวจสอบบำรุงรักษาระบบและอุปกรณ์ประกอบต่าง ๆ ของป้าย", 1);
     const table1 = buildS4_Table1(formData.sectionFour?.table1);
     const table2 = buildS4_Table2(formData.sectionFour?.table2);
 
@@ -1657,9 +1701,9 @@ async function buildSectionFour(formData: FormDataLite) {
     return [
         h4, h4_1, h4_1_1, h4_2, h4_2_1, h4_2_2, h4_2_3, h4_2_4, h4_3, h4_3_1, h4_3_2,
         GAP,
-        h4_4, table1,
+        table1,
         PAGEBREAK,
-        h4_5, table2
+        table2
     ];
 }
 
@@ -1680,14 +1724,14 @@ function buildS5_Table(rowsData: Record<string, S5Row>) {
     // แถวหัวเรื่องรวมทั้งแถว
     rows.push(
         new TableRow({
-            height: { value: 900, rule: HeightRule.ATLEAST }, // ↑ สูงขึ้น (ปรับเลขได้ 700–1200 ตามต้องการ)
+            height: { value: 500, rule: HeightRule.ATLEAST }, // ↑ สูงขึ้น (ปรับเลขได้ 700–1200 ตามต้องการ)
             cantSplit: true,
             children: [
                 new TableCell({
                     columnSpan: 6,
                     verticalAlign: VerticalAlign.CENTER,
                     shading: { fill: "D1D1D1" },                     // พื้นหลังเทา CCCCC C
-                    margins: { top: 120, bottom: 120, left: 120, right: 120 },
+                    margins: { top: 100, bottom: 100, left: 100, right: 100 },
                     children: [
                         new Paragraph({
                             alignment: AlignmentType.CENTER,
@@ -1796,7 +1840,7 @@ async function buildSectionFive(formData: FormDataLite) {
     const GAP = new Paragraph({ children: [new TextRun({ text: " " })] });
 
     // ---------- helpers เฉพาะส่วนนี้ ----------
-    const t = (v?: string, dot = "……") => (v && String(v).trim() ? String(v) : dot);
+    const t = (v?: string, dot = "……………………") => (v && String(v).trim() ? String(v) : dot);
 
     const signLine = (roleRight: string) => pn(`ลงชื่อ${DOTS}${roleRight}`, 4);
 
@@ -1830,7 +1874,7 @@ async function buildSectionFive(formData: FormDataLite) {
     // ------- เลขทะเบียนผู้ตรวจสอบ  -------
     const hInspector = pn("เลขทะเบียนผู้ตรวจสอบ", 1);
 
-    const licNo = t(m.licenseNo, "…………/……");
+    const licNo = t(m.licenseNo, "…………………………");
     const issuer = t(m.issuer);
     const company = t(m.company);
     const address = t(m.address);
@@ -1839,7 +1883,7 @@ async function buildSectionFive(formData: FormDataLite) {
 
     const line1 = pn(`ผู้ตรวจสอบประเภทนิติบุคคล ทะเบียนเลขที่ ${licNo} จาก ${issuer}`, 2);
     const line2 = pn(`โดยนาม ${company}`, 2);
-    const line3 = pn(address, 2);
+    const line3 = pn(`เลขที่ ${address}`, 2);
     const line4 = pn(`ออกให้ ณ วันที่  ${t(id.d)}  เดือน  ${t(id.m)}  พ.ศ.  ${t(id.y)}`, 2);
     const line5 = pn(`ใช้ได้ถึง วันที่  ${t(ex.d)}  เดือน  ${t(ex.m)}  พ.ศ.  ${t(ex.y)}`, 2);
 
@@ -1903,7 +1947,7 @@ export async function exportToDocx(formData: FormDataLite) {
             spacing: { before: GAP_IMG_TO_TITLE },
             children: [
                 new TextRun({
-                    text: formData.placeName?.trim() || "..............",
+                    text: formData.placeName?.trim() || formData.sectionTwo?.signName?.trim() || "",
                     bold: true,
                     font: FONT_TH,
                     size: SIZE_TITLE,
@@ -1936,7 +1980,6 @@ export async function exportToDocx(formData: FormDataLite) {
         },
         children: [new Paragraph({ spacing: { after: 240 } }), ...buildSectionOne()],
     } as const;
-
 
     //ส่วนที่ 2
     const sec2Children = await buildSectionTwo(formData);
@@ -1991,7 +2034,7 @@ export async function exportToDocx(formData: FormDataLite) {
             .replace(/\s+/g, "_")                // เว้นวรรค -> _
             .slice(0, 120);                      // กันยาวเกินไป
 
-    const place = formData.placeName ? safe(formData.placeName) : "ไม่มีอุปกรณ์";
+    const place = safe((formData.placeName?.trim() || formData.sectionTwo?.signName?.trim() || "")) || "ไม่มีอุปกรณ์";
 
     const now = new Date();
     const yyyy = now.getFullYear();

@@ -23,7 +23,7 @@ export async function GET(req: Request) {
 
         return NextResponse.json({ success: true, data: rows });
     } catch (err: any) {
-        console.error("DB Error:", err);
+        
         return NextResponse.json(
             { success: false, message: "Database error", error: err.message },
             { status: 500 }

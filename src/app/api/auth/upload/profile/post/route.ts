@@ -33,7 +33,6 @@ export async function POST(req: Request) {
             url: `/images/profile/${safeName}` // เผื่ออยากใช้แสดงผลทันที
         });
     } catch (e: any) {
-        console.error("Upload error:", e);
         return NextResponse.json({ success: false, message: "อัปโหลดล้มเหลว" }, { status: 500 });
     }
 }

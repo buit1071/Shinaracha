@@ -98,7 +98,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ success: false, message: "ไม่รู้จัก function ที่ส่งมา" }, { status: 400 });
     } catch (err: any) {
-        console.error("DB Error:", err);
+        
         return NextResponse.json(
             { success: false, message: "Database error", error: err.message },
             { status: 500 }

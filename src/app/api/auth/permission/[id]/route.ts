@@ -38,7 +38,6 @@ export async function GET(
                 : { permission_id, menu_ids }, // เผื่อกรณีไม่พบ perm ก็ยังส่ง menu_ids ได้
         });
     } catch (err: any) {
-        console.error("GET /api/auth/permission/[id] error:", err);
         return NextResponse.json(
             { success: false, message: "Database error", error: err.message },
             { status: 500 }
@@ -84,7 +83,6 @@ export async function DELETE(
             message: "ลบข้อมูลเรียบร้อย",
         });
     } catch (err: any) {
-        console.error("DELETE /permission/[id] error:", err);
         return NextResponse.json(
             { success: false, message: "Database error", error: err?.message ?? String(err) },
             { status: 500 }

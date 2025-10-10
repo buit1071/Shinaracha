@@ -8,6 +8,7 @@ import SectionFourDetails, { SectionFourForm, SectionFourRow } from "@/component
 import SectionFiveDetails, { SectionFiveForm, SectionFiveRow } from "@/components/check-form/forms/form1-3/SectionFiveDetails";
 import type { ViewDataForm } from "@/interfaces/master";
 import { showLoading } from "@/lib/loading";
+import { showAlert } from "@/lib/fetcher";
 import { exportToDocx } from "@/utils/exportToDocx";
 
 type Props = {
@@ -17,7 +18,9 @@ type Props = {
 };
 
 type FormData = {
+    form_code?: string;
     cover?: File;
+    coverfilename?: string;
     placeName?: string;
     sectionTwo?: Partial<SectionTwoForm>;
     sectionThree?: Partial<SectionThreeForm>
@@ -29,7 +32,7 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
     const [formData, setFormData] = React.useState<FormData>({});
     const [coverSrc, setCoverSrc] = React.useState<string | null>(null);
     const [openSections, setOpenSections] = React.useState<string[]>([]);
-    const [viewData, setViewData] = React.useState<ViewDataForm | null>(null);
+    // const [viewData, setViewData] = React.useState<ViewDataForm | null>(null);
 
     const onSectionTwoChange = React.useCallback(
         (patch: Partial<SectionTwoForm>) => {
@@ -117,27 +120,88 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
         const f = e.target.files?.[0];
         if (!f) return;
 
+        // ลบ URL เก่าออกก่อน (ถ้ามี)
         if (coverSrc) URL.revokeObjectURL(coverSrc);
 
+        // === ✅ สร้างชื่อไฟล์ใหม่: ววดดปปปป_ชมมนวว.ext ===
+        const now = new Date();
+        const day = String(now.getDate()).padStart(2, "0");
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const year = String(now.getFullYear());
+        const hour = String(now.getHours()).padStart(2, "0");
+        const minute = String(now.getMinutes()).padStart(2, "0");
+        const second = String(now.getSeconds()).padStart(2, "0");
+
+        // ดึงนามสกุลไฟล์จริงจากชื่อไฟล์ที่เลือก
+        const ext = f.name.split(".").pop()?.toLowerCase() || "jpg";
+
+        // 🔥 ตัวอย่างชื่อไฟล์: 01102025_143512.jpg
+        const newFileName = `${day}${month}${year}_${hour}${minute}${second}.${ext}`;
+
+        // === สร้าง URL สำหรับ preview ===
         const url = URL.createObjectURL(f);
         setCoverSrc(url);
+
+        // === เซ็ตข้อมูลลง formData ===
         setFormData(prev => ({
             ...prev,
             cover: f,
+            coverfilename: newFileName,
         }));
     };
 
-    const fecthEquipmentDetail = async () => {
+    // const fecthEquipmentDetail = async () => {
+    //     showLoading(true);
+    //     try {
+    //         const res = await fetch("/api/auth/equipment/get", {
+    //             method: "POST",
+    //             headers: { "Content-Type": "application/json" },
+    //             body: JSON.stringify({ function: "ViewEquipment", job_id: jobId, equipment_id: equipment_id }),
+    //         });
+    //         const data = await res.json();
+    //         if (data.success) {
+    //             setViewData(data.data);
+    //         }
+    //     } catch (err) {
+    //     } finally {
+    //         showLoading(false);
+    //     }
+    // };
+
+    const fecthFormDetail = async () => {
         showLoading(true);
         try {
-            const res = await fetch("/api/auth/equipment/get", {
+            const res = await fetch("/api/auth/forms/get", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "ViewEquipment", job_id: jobId, equipment_id: equipment_id }),
+                body: JSON.stringify({
+                    function: "form1_3",
+                    job_id: jobId,
+                    equipment_id: equipment_id,
+                }),
             });
+
             const data = await res.json();
-            if (data.success) {
-                setViewData(data.data);
+
+            if (data.success && data.data?.form_data) {
+                // ✅ ตรวจ type ก่อน parse
+                const form =
+                    typeof data.data.form_data === "string"
+                        ? JSON.parse(data.data.form_data)
+                        : data.data.form_data;
+
+                // ✅ เซ็ตค่าเข้า state ให้ครบ
+                setFormData((prev) => ({
+                    ...prev,
+                    form_code: data.data.form_code ?? "",
+                    ...form,
+                    sectionTwo: form.sectionTwo ?? {},
+                    sectionThree: form.sectionThree ?? {},
+                    sectionFour: form.sectionFour ?? {},
+                    sectionFive: form.sectionFive ?? {},
+                }));
+            } else {
+                console.warn("⚠️ No form_data found in response.");
             }
         } catch (err) {
         } finally {
@@ -147,7 +211,8 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
 
     React.useEffect(() => {
         if (!jobId) return;
-        fecthEquipmentDetail();
+        // fecthEquipmentDetail();
+        fecthFormDetail();
     }, [jobId, equipment_id]);
 
     React.useEffect(() => {
@@ -158,6 +223,54 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
             return () => URL.revokeObjectURL(url);
         }
     }, [formData.cover]);
+
+    const handleSave = async () => {
+        showLoading(true);
+        try {
+            const { cover, ...rest } = formData;
+            const payload = {
+                entity: "form1_3",
+                data: {
+                    ...rest,
+                    job_id: jobId,
+                    equipment_id: equipment_id,
+                    is_active: 1,
+                    created_by: "admin",
+                    updated_by: "admin",
+                },
+            };
+
+            if (formData.form_code) {
+                payload.data.form_code = formData.form_code;
+            }
+
+            // ✅ เรียก API แบบ POST
+            const res = await fetch("/api/auth/forms/post", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+
+            // ✅ ตรวจสอบผลลัพธ์
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showLoading(false);
+                await showAlert("success", data.message);
+                
+                if (data.form_code && !formData.form_code) {
+                    setFormData((prev) => ({ ...prev, form_code: data.form_code }));
+                }
+            } else {
+                showLoading(false);
+                showAlert("error", data.message);
+            }
+        } catch (err) {
+            showLoading(false);
+            showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        }
+    };
 
     return (
         <>
@@ -325,7 +438,7 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
                         <div className="overflow-hidden">
                             <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
                                 <SectionTwoDetails
-                                    data={viewData}
+                                    data={formData.sectionTwo ?? {}}
                                     value={formData.sectionTwo ?? {}}
                                     onChange={onSectionTwoChange}
                                 />
@@ -447,23 +560,28 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
                         </div>
                     </div>
                 </section>
-                {/* <div className="flex">
+
+                <div className="flex">
                     <button
                         type="button"
-                        className="ml-auto inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2
-  font-medium text-white shadow-sm transition-colors
-  hover:bg-sky-500 active:bg-sky-700
-  focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400
-  focus-visible:ring-offset-2 focus-visible:ring-offset-white
-  disabled:pointer-events-none disabled:opacity-50"
+                        onClick={handleSave}
+                        className="ml-auto inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 font-medium text-white shadow-sm transition-colors hover:bg-sky-500 active:bg-sky-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-                            className="h-5 w-5" fill="currentColor" aria-hidden="true">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            className="h-5 w-5"
+                            fill="currentColor"
+                            aria-hidden="true"
+                        >
                             <path d="M3 4a2 2 0 0 1 2-2h7.586a2 2 0 0 1 1.414.586l2.414 2.414A2 2 0 0 1 17 6.414V17a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4Zm3 0h6v4H6V4Zm0 7a1 1 0 0 0-1 1v4h8v-4a1 1 0 0 0-1-1H6Z" />
                         </svg>
                         Save
                     </button>
-                </div> */}
+                </div>
+                <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
+                    {JSON.stringify(formData, null, 2)}
+                </pre>
             </div>
         </>
     )

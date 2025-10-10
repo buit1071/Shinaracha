@@ -24,7 +24,7 @@ export async function GET(req: Request) {
 
         return NextResponse.json({ success: true, data: rows });
     } catch (err: any) {
-        console.error("DB Error:", err);
+        
         return NextResponse.json(
             { success: false, message: "Database error", error: err.message },
             { status: 500 }
@@ -125,7 +125,6 @@ export async function POST(req: Request) {
                 await query("ROLLBACK");
             } catch { }
         }
-        console.error("POST /permission error:", err);
         return NextResponse.json(
             { success: false, message: "Database error", error: err?.message ?? String(err) },
             { status: 500 }

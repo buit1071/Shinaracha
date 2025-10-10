@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import type { ViewDataForm } from "@/interfaces/master";
+// import type { ViewDataForm } from "@/interfaces/master";
 
 /* ---------- Reusable Image Upload (single) ---------- */
 function ImageField({
@@ -242,7 +242,7 @@ export type SectionTwoForm = {
 };
 
 type Props = {
-    data: ViewDataForm | null;
+    data: SectionTwoForm | null;
     value?: Partial<SectionTwoForm>;
     onChange?: (patch: Partial<SectionTwoForm>) => void;
 };
@@ -285,10 +285,17 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
     const [signAge, setSignAge] = React.useState<string>(value?.signAge ?? "");
 
     const [mapSketch, setMapSketch] = React.useState<string | null>(value?.mapSketch ?? null);
+    const [mapSketchPreview, setMapSketchPreview] = React.useState<string | null>(null);
+
     const [shapeSketch, setShapeSketch] = React.useState<string | null>(value?.shapeSketch ?? null);
+    const [shapeSketchPreview, setShapeSketchPreview] = React.useState<string | null>(null);
+
     const [photosFront, setPhotosFront] = React.useState<string | null>(value?.photosFront ?? null);
+    const [photosFrontPreview, setPhotosFrontPreview] = React.useState<string | null>(null);
     const [photosSide, setPhotosSide] = React.useState<string | null>(value?.photosSide ?? null);
+    const [photosSidePreview, setPhotosSidePreview] = React.useState<string | null>(null);
     const [photosBase, setPhotosBase] = React.useState<string | null>(value?.photosBase ?? null);
+    const [photosBasePreview, setPhotosBasePreview] = React.useState<string | null>(null);
     const [recorder2, setRecorder2] = React.useState<string>(value?.recorder2 ?? "");
     const [recorder3, setRecorder3] = React.useState<string>(value?.recorder3 ?? "");
 
@@ -334,88 +341,99 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
     const [chkOther, setChkOther] = React.useState<boolean>(value?.chkOther ?? false);
 
     const s = (v?: string | null) => (v && v.trim() !== "" ? v : "");
+    const prevDataRef = React.useRef<string>("");
 
     React.useEffect(() => {
-        // reset ฝั่งโชว์
-        if (!data) {
-            setSignName(""); setAddrNo(""); setAddrAlley(""); setAddrRoad("");
-            setSubDistrict(""); setDistrict(""); setProvince(""); setZip("");
-            setTel(""); setFax("");
-            setProductText(""); setOwnerName(""); setOwnerNo(""); setOwnerMoo("");
-            setOwnerAlley(""); setOwnerRoad(""); setOwnerSub(""); setOwnerDist("");
-            setOwnerProv(""); setOwnerZip(""); setOwnerTel(""); setOwnerFax("");
-            setOwnerEmail(""); setDesignerName(""); setDesignerLicense("");
+        if (!data) return;
 
-            // ส่งเคลียร์ขึ้น parent ด้วย (กันค้างค่าเก่า)
-            onChangeRef.current?.({
-                signName: "", addrNo: "", addrAlley: "", addrRoad: "",
-                subDistrict: "", district: "", province: "", zip: "", tel: "", fax: "",
-                productText: "", ownerName: "", ownerNo: "", ownerMoo: "",
-                ownerAlley: "", ownerRoad: "", ownerSub: "", ownerDist: "",
-                ownerProv: "", ownerZip: "", ownerTel: "", ownerFax: "",
-                ownerEmail: "", designerName: "", designerLicense: "",
-            });
-            return;
-        }
+        const dataStr = JSON.stringify(data);
+        if (dataStr === prevDataRef.current) return;
+        prevDataRef.current = dataStr;
 
-        // เซ็ตฝั่งโชว์จาก data
-        setSignName(s(data.equipment_name));
-        setAddrNo(s(data.address_no));
-        setAddrAlley(s(data.alley));
-        setAddrRoad(s(data.road));
-        setSubDistrict(s(data.sub_district_name_th));
-        setDistrict(s(data.district_name_th));
-        setProvince(s(data.province_name_th));
-        setZip(s(data.zipcode));
-        setTel(s(data.phone));
+        // ===== 5.1 ข้อมูลสถานที่ =====
+        setSignName(s(data.signName));
+        setAddrNo(s(data.addrNo));
+        setAddrAlley(s(data.addrAlley));
+        setAddrRoad(s(data.addrRoad));
+        setSubDistrict(s(data.subDistrict));
+        setDistrict(s(data.district));
+        setProvince(s(data.province));
+        setZip(s(data.zip));
+        setTel(s(data.tel));
         setFax(s(data.fax));
 
-        setProductText(s(data.description));
-        setOwnerName(s(data.owner_name));
-        setOwnerNo(s(data.owner_address_no));
-        setOwnerMoo(s(data.owner_moo));
-        setOwnerAlley(s(data.owner_alley));
-        setOwnerRoad(s(data.owner_road));
-        setOwnerSub(s(data.owner_sub_district_name_th));
-        setOwnerDist(s(data.owner_district_name_th));
-        setOwnerProv(s(data.owner_province_name_th));
-        setOwnerZip(s(data.owner_zipcode));
-        setOwnerTel(s(data.owner_phone));
-        setOwnerFax(s(data.owner_fax));
-        setOwnerEmail(s(data.owner_email));
-        setDesignerName(s(data.designer_name));
-        setDesignerLicense(s(data.designer_license_no));
+        // ===== 5.1 ส่วนผู้ใช้กรอก =====
+        setPermitDay(s(data.permitDay));
+        setPermitMonth(s(data.permitMonth));
+        setPermitYear(s(data.permitYear));
 
-        // ✅ ส่ง patch เข้า parent “ครั้งเดียว” ตาม data
+        setInspectDay2(s(data.inspectDay2));
+        setInspectMonth2(s(data.inspectMonth2));
+        setInspectYear2(s(data.inspectYear2));
+
+        setInspectDay3(s(data.inspectDay3));
+        setInspectMonth3(s(data.inspectMonth3));
+        setInspectYear3(s(data.inspectYear3));
+
+        setHasOriginalPlan(!!data.hasOriginalPlan);
+        setNoOriginalPlan(!!data.noOriginalPlan);
+        setNoPermitInfo(!!data.noPermitInfo);
+        setNoOld(!!data.noOld);
+        setSignAge(s(data.signAge));
+
+        setMapSketch(s(data.mapSketch));
+        setShapeSketch(s(data.shapeSketch));
+        setPhotosFront(s(data.photosFront));
+        setPhotosSide(s(data.photosSide));
+        setPhotosBase(s(data.photosBase));
+        setRecorder2(s(data.recorder2));
+        setRecorder3(s(data.recorder3));
+
+        // ===== 5.2 ประเภทของป้าย =====
+        setTypeGround(!!data.typeGround);
+        setTypeRooftop(!!data.typeRooftop);
+        setTypeOnRoof(!!data.typeOnRoof);
+        setTypeOnBuilding(!!data.typeOnBuilding);
+        setTypeOtherChecked(!!data.typeOtherChecked);
+        setTypeOther(s(data.typeOther));
+
+        // ===== 5.3 เจ้าของป้าย / ผู้ออกแบบ =====
+        setProductText(s(data.productText));
+        setOwnerName(s(data.ownerName));
+        setOwnerNo(s(data.ownerNo));
+        setOwnerMoo(s(data.ownerMoo));
+        setOwnerAlley(s(data.ownerAlley));
+        setOwnerRoad(s(data.ownerRoad));
+        setOwnerSub(s(data.ownerSub));
+        setOwnerDist(s(data.ownerDist));
+        setOwnerProv(s(data.ownerProv));
+        setOwnerZip(s(data.ownerZip));
+        setOwnerTel(s(data.ownerTel));
+        setOwnerFax(s(data.ownerFax));
+        setOwnerEmail(s(data.ownerEmail));
+        setDesignerName(s(data.designerName));
+        setDesignerLicense(s(data.designerLicense));
+
+        // ===== 5.4 วัสดุ/รายละเอียด =====
+        setMatSteel(!!data.matSteel);
+        setMatWood(!!data.matWood);
+        setMatStainless(!!data.matStainless);
+        setMatRCC(!!data.matRCC);
+        setMatOtherChecked(!!data.matOtherChecked);
+        setMatOther(s(data.matOther));
+        setPanelMaterial(s(data.panelMaterial));
+        setPanelFaces(s(data.panelFaces));
+        setPanelOpenings(data.panelOpenings ?? "");
+        setPanelOther(s(data.panelOther));
+        setChkMat(!!data.chkMat);
+        setChkFaces(!!data.chkFaces);
+        setChkOpen(!!data.chkOpen);
+        setChkOther(!!data.chkOther);
+
         onChangeRef.current?.({
-            signName: s(data.equipment_name),
-            addrNo: s(data.address_no),
-            addrAlley: s(data.alley),
-            addrRoad: s(data.road),
-            subDistrict: s(data.sub_district_name_th),
-            district: s(data.district_name_th),
-            province: s(data.province_name_th),
-            zip: s(data.zipcode),
-            tel: s(data.phone),
-            fax: s(data.fax),
-
-            productText: s(data.description),
-            ownerName: s(data.owner_name),
-            ownerNo: s(data.owner_address_no),
-            ownerMoo: s(data.owner_moo),
-            ownerAlley: s(data.owner_alley),
-            ownerRoad: s(data.owner_road),
-            ownerSub: s(data.owner_sub_district_name_th),
-            ownerDist: s(data.owner_district_name_th),
-            ownerProv: s(data.owner_province_name_th),
-            ownerZip: s(data.owner_zipcode),
-            ownerTel: s(data.owner_phone),
-            ownerFax: s(data.owner_fax),
-            ownerEmail: s(data.owner_email),
-            designerName: s(data.designer_name),
-            designerLicense: s(data.designer_license_no),
+            ...data,
         });
-    }, [data]); // 👈 dep แค่ data พอ
+    }, [data]);
 
     React.useEffect(() => {
         const patch: Partial<SectionTwoForm> = {
@@ -455,19 +473,109 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
         onChange,
     ]);
 
-    // adapter: ImageGallery -> state (เอาไฟล์แรกถ้ามาเป็น array)
-    const pickFirst = (v: string[] | string | null | undefined) =>
-        Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
+    const handlePickImage = (
+        fileOrUrl: File | string | null,
+        prefix: string,
+        setPreview: (v: string | null) => void,
+        setFileName: (v: string | null) => void,
+        fieldKey: keyof SectionTwoForm
+    ) => {
+        if (!fileOrUrl) {
+            setPreview(null);
+            setFileName(null);
+            onChange?.({ ...value, [fieldKey]: null });
+            return;
+        }
 
-    // onChange handlers
-    const handleFrontChange = (v: string[] | string | null | undefined) => {
-        setPhotosFront(pickFirst(v));
+        // ✅ ถ้าเป็น string ให้แยก 2 กรณี
+        if (typeof fileOrUrl === "string") {
+            // 👉 กรณี blob URL จาก input (string เริ่มด้วย blob:)
+            if (fileOrUrl.startsWith("blob:")) {
+                setPreview(fileOrUrl);
+
+                const now = new Date();
+                const dd = String(now.getDate()).padStart(2, "0");
+                const mm = String(now.getMonth() + 1).padStart(2, "0");
+                const yyyy = String(now.getFullYear());
+                const hh = String(now.getHours()).padStart(2, "0");
+                const mi = String(now.getMinutes()).padStart(2, "0");
+                const ss = String(now.getSeconds()).padStart(2, "0");
+                const newFileName = `${prefix}_${dd}${mm}${yyyy}_${hh}${mi}${ss}.jpg`;
+
+                setFileName(newFileName);
+                onChange?.({ ...value, [fieldKey]: newFileName });
+                return;
+            }
+
+            // 👉 ถ้าไม่ใช่ blob แปลว่าเป็นไฟล์เดิมในระบบ
+            setPreview(`/uploads/${fileOrUrl}`);
+            setFileName(fileOrUrl);
+            onChange?.({ ...value, [fieldKey]: fileOrUrl });
+            return;
+        }
+
+        // ✅ ถ้าเป็น File ใหม่ (upload จริง ๆ)
+        const file = fileOrUrl;
+        const blobUrl = URL.createObjectURL(file);
+        setPreview(blobUrl);
+
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, "0");
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const yyyy = String(now.getFullYear());
+        const hh = String(now.getHours()).padStart(2, "0");
+        const mi = String(now.getMinutes()).padStart(2, "0");
+        const ss = String(now.getSeconds()).padStart(2, "0");
+        const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+
+        const newFileName = `${prefix}_${dd}${mm}${yyyy}_${hh}${mi}${ss}.${ext}`;
+        setFileName(newFileName);
+
+        onChange?.({
+            ...value,
+            [fieldKey]: newFileName,
+        });
     };
-    const handleSideChange = (v: string[] | string | null | undefined) => {
-        setPhotosSide(pickFirst(v));
-    };
-    const handleBaseChange = (v: string[] | string | null | undefined) => {
-        setPhotosBase(pickFirst(v));
+
+    const handlePickGallery = (
+        v: string[] | string | null | undefined,
+        prefix: string,
+        setPreview: (url: string | null) => void,
+        setFileName: (name: string | null) => void,
+        fieldKey: keyof SectionTwoForm
+    ) => {
+        const picked = Array.isArray(v) ? v[0] ?? null : v ?? null;
+
+        // ถ้าไม่เลือกภาพ
+        if (!picked) {
+            setPreview(null);
+            setFileName(null);
+            onChange?.({ ...value, [fieldKey]: null });
+            return;
+        }
+
+        // ถ้าเป็น blob URL จากการอัปโหลดใหม่
+        if (picked.startsWith("blob:")) {
+            setPreview(picked); // เอาไว้แสดงในหน้า
+
+            // สร้างชื่อไฟล์จริง
+            const now = new Date();
+            const dd = String(now.getDate()).padStart(2, "0");
+            const mm = String(now.getMonth() + 1).padStart(2, "0");
+            const yyyy = String(now.getFullYear());
+            const hh = String(now.getHours()).padStart(2, "0");
+            const mi = String(now.getMinutes()).padStart(2, "0");
+            const ss = String(now.getSeconds()).padStart(2, "0");
+            const newFileName = `${prefix}_${dd}${mm}${yyyy}_${hh}${mi}${ss}.jpg`;
+
+            setFileName(newFileName);
+            onChange?.({ ...value, [fieldKey]: newFileName });
+        } else {
+            // ถ้าเป็นชื่อไฟล์หรือ path เดิมจาก DB
+            setPreview(`/uploads/${picked}`);
+            setFileName(picked);
+            onChange?.({ ...value, [fieldKey]: picked });
+        }
     };
 
     return (
@@ -757,8 +865,10 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                 </div>
                 <ImageField
                     label="แผนที่แสดงตำแหน่งที่ตั้งของป้ายโดยสังเขป"
-                    value={mapSketch}
-                    onChange={setMapSketch}
+                    value={mapSketchPreview} // ← ใช้ preview blob หรือ URL จริง
+                    onChange={(f) =>
+                        handlePickImage(f, "map", setMapSketchPreview, setMapSketch, "mapSketch")
+                    }
                     hint="อัปโหลดภาพแผนที่โดยสังเขป"
                 />
             </section>
@@ -834,8 +944,10 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
 
                     <ImageField
                         label="รูปแบบและขนาดของแผ่นป้าย / สิ่งที่สร้างขึ้น (สเก็ตช์โดยสังเขป)"
-                        value={shapeSketch}
-                        onChange={setShapeSketch}
+                        value={shapeSketchPreview}
+                        onChange={(f) =>
+                            handlePickImage(f, "shape", setShapeSketchPreview, setShapeSketch, "shapeSketch")
+                        }
                         square
                     />
                 </div>
@@ -845,20 +957,28 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                 <div className="grid md:grid-cols-3 gap-6">
                     <ImageGallery
                         label="รูปถ่ายป้าย - ด้านหน้าป้าย"
-                        values={photosFront ? [photosFront] : []}
-                        onChange={handleFrontChange}
+                        values={photosFrontPreview ? [photosFrontPreview] : []}
+                        onChange={(v) =>
+                            handlePickGallery(v, "front", setPhotosFrontPreview, setPhotosFront, "photosFront")
+                        }
                         single
                     />
+
                     <ImageGallery
                         label="รูปถ่ายป้าย - ด้านข้างของป้าย"
-                        values={photosSide ? [photosSide] : []}
-                        onChange={handleSideChange}
+                        values={photosSidePreview ? [photosSidePreview] : []}
+                        onChange={(v) =>
+                            handlePickGallery(v, "side", setPhotosSidePreview, setPhotosSide, "photosSide")
+                        }
                         single
                     />
+
                     <ImageGallery
                         label="รูปถ่ายป้าย - ส่วนฐานของป้าย"
-                        values={photosBase ? [photosBase] : []}
-                        onChange={handleBaseChange}
+                        values={photosBasePreview ? [photosBasePreview] : []}
+                        onChange={(v) =>
+                            handlePickGallery(v, "base", setPhotosBasePreview, setPhotosBase, "photosBase")
+                        }
                         single
                     />
                 </div>

@@ -114,7 +114,6 @@ export async function POST(req: Request) {
                     equipment_id: equipId,
                 });
             } catch (err) {
-                console.error("equipment upsert error:", err);
                 return NextResponse.json(
                     { success: false, message: "เกิดข้อผิดพลาดฝั่งเซิร์ฟเวอร์" },
                     { status: 500 }
@@ -289,7 +288,7 @@ export async function POST(req: Request) {
                         { status: 409 }
                     );
                 }
-                console.error("DB Error:", err);
+                
                 return NextResponse.json(
                     { success: false, message: "Database error", error: err?.message },
                     { status: 500 }
@@ -299,7 +298,7 @@ export async function POST(req: Request) {
             }
         }
     } catch (err: any) {
-        console.error("DB Error:", err);
+        
         return NextResponse.json(
             { success: false, message: "Database error", error: err?.message },
             { status: 500 }

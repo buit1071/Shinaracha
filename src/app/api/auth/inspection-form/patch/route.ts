@@ -80,7 +80,6 @@ export async function PATCH(req: Request) {
       message: "บันทึกข้อมูลเรียบร้อย",
     });
   } catch (err: any) {
-    console.error("PATCH /inspection-form/patch error:", err);
     return NextResponse.json(
       { success: false, message: "Database error", error: err?.message },
       { status: 500 }

@@ -54,7 +54,7 @@ export async function POST(req: Request) {
             { status: 400 }
         );
     } catch (err: any) {
-        console.error("DB Error:", err);
+        
         return NextResponse.json(
             { success: false, message: "Database error", error: err.message },
             { status: 500 }

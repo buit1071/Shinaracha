@@ -46,8 +46,6 @@ export async function POST(req: Request) {
         );
 
     } catch (error) {
-        console.error("=== UPLOAD ERROR ===");
-        console.error(error);
         return new Response(
             JSON.stringify({ success: false, error: (error as Error).message }),
             { status: 500 }
