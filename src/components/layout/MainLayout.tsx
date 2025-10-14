@@ -156,6 +156,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     />
                     {openMenus.includes("company") && !isCollapsed && (
                         <div className="ml-7 mt-1 space-y-1">
+                            <NavLink
+                                href="/company"
+                                currentPath={pathname}
+                                icon={BuildingOfficeIcon}
+                                collapsed={isCollapsed}
+                            >
+                                บริษัท
+                            </NavLink>
                             <NavLink href="/team" currentPath={pathname} icon={UsersIcon} collapsed={isCollapsed}>
                                 ทีมตรวจ
                             </NavLink>
