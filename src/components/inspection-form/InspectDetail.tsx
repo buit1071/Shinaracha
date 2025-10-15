@@ -22,6 +22,7 @@ import {
   TextField,
 } from "@mui/material";
 import { InspectItemsRow } from "@/interfaces/master";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 type Props = {
   InspectId: string;
@@ -29,6 +30,11 @@ type Props = {
 };
 
 export default function InspectDetail({ InspectId, onBack }: Props) {
+  const user = useCurrentUser();
+    const username = React.useMemo(
+        () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+        [user]
+    );
   const [groupName, setGroupName] = React.useState<string>("");
   const [rows, setRows] = React.useState<InspectItemsRow[]>([]);
   const [searchText, setSearchText] = React.useState("");
@@ -41,8 +47,8 @@ export default function InspectDetail({ InspectId, onBack }: Props) {
     inspect_item_id: "",
     inspect_item_name: "",
     is_active: 1,
-    created_by: "admin",
-    updated_by: "admin",
+    created_by: "",
+    updated_by: "",
   });
 
   const fetchInspectItems = async () => {
@@ -98,8 +104,8 @@ export default function InspectDetail({ InspectId, onBack }: Props) {
       inspect_item_id: "",
       inspect_item_name: "",
       is_active: 1,
-      created_by: "admin",
-      updated_by: "admin",
+      created_by: "",
+      updated_by: "",
     });
     setOpen(true);
   };
@@ -162,8 +168,8 @@ export default function InspectDetail({ InspectId, onBack }: Props) {
           inspect_id: formData.inspect_id,
           inspect_item_name: formData.inspect_item_name.trim(),
           is_active: formData.is_active ?? 1,
-          created_by: formData.created_by || "admin",
-          updated_by: formData.updated_by || "admin",
+          created_by: formData.created_by || username,
+          updated_by: formData.updated_by || username,
         },
       };
 

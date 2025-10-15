@@ -23,8 +23,14 @@ import {
 import { showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
 import { CustomerGroupRow } from "@/interfaces/master";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function CustomerGroupPage() {
+    const user = useCurrentUser();
+    const username = React.useMemo(
+        () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+        [user]
+    );
     const [searchText, setSearchText] = React.useState("");
     const [open, setOpen] = React.useState(false);
     const [isEdit, setIsEdit] = React.useState(false);
@@ -35,8 +41,8 @@ export default function CustomerGroupPage() {
         group_id: "",
         group_name: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
     });
 
     const fetchGroup = async () => {
@@ -76,8 +82,8 @@ export default function CustomerGroupPage() {
                     group_id: formData.group_id || undefined,
                     group_name: formData.group_name.trim(),
                     is_active: formData.is_active ?? 1,
-                    created_by: formData.created_by || "admin",
-                    updated_by: formData.updated_by || "admin",
+                    created_by: formData.created_by || username,
+                    updated_by: formData.updated_by || username,
                 },
             };
 
@@ -118,8 +124,8 @@ export default function CustomerGroupPage() {
             group_id: "",
             group_name: "",
             is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
+            created_by: "",
+            updated_by: "",
         });
         setOpen(true);
     };

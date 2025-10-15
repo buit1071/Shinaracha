@@ -23,6 +23,7 @@ import {
 } from "@mui/material";
 import { InspectGroupRow } from "@/interfaces/master";
 import InspectDetail from "@/components/inspection-form/InspectDetail";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 type Props = {
   serviceId: string;
@@ -31,6 +32,11 @@ type Props = {
 };
 
 export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
+  const user = useCurrentUser();
+  const username = React.useMemo(
+    () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+    [user]
+  );
   const [view, setView] = React.useState<null | { type: "detail"; id: string }>(null);
   const openDetail = (id: string) => setView({ type: "detail", id });
   const backToList = () => setView(null);
@@ -46,8 +52,8 @@ export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
     inspect_id: "",
     inspect_name: "",
     is_active: 1,
-    created_by: "admin",
-    updated_by: "admin",
+    created_by: "",
+    updated_by: "",
   });
 
   const fetchInspectGroups = async () => {
@@ -103,8 +109,8 @@ export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
       inspect_id: "",
       inspect_name: "",
       is_active: 1,
-      created_by: "admin",
-      updated_by: "admin",
+      created_by: "",
+      updated_by: "",
     });
     setOpen(true);
   };
@@ -167,8 +173,8 @@ export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
           zone_id: formData.zone_id,
           inspect_name: formData.inspect_name.trim(),
           is_active: formData.is_active ?? 1,
-          created_by: formData.created_by || "admin",
-          updated_by: formData.updated_by || "admin",
+          created_by: formData.created_by || username,
+          updated_by: formData.updated_by || username,
         },
       };
 

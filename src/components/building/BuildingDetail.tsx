@@ -22,6 +22,7 @@ import {
     TextField,
 } from "@mui/material";
 import { FloorRoomRow } from "@/interfaces/master";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 type Props = {
     BuildingId: string;
@@ -30,6 +31,11 @@ type Props = {
 };
 
 export default function BuildingDetail({ BuildingId, BuildingName, onBack }: Props) {
+    const user = useCurrentUser();
+    const username = React.useMemo(
+        () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+        [user]
+    );
     const [rows, setRows] = React.useState<FloorRoomRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
     const [open, setOpen] = React.useState(false);
@@ -42,8 +48,8 @@ export default function BuildingDetail({ BuildingId, BuildingName, onBack }: Pro
         floor_name: "",
         room_name: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
     });
 
     const fetchFloor = async () => {
@@ -80,8 +86,8 @@ export default function BuildingDetail({ BuildingId, BuildingName, onBack }: Pro
             floor_name: "",
             room_name: "",
             is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
+            created_by: "",
+            updated_by: "",
         });
         setOpen(true);
     };
@@ -145,8 +151,8 @@ export default function BuildingDetail({ BuildingId, BuildingName, onBack }: Pro
                     floor_name: formData.floor_name.trim(),
                     room_name: formData.room_name.trim(),
                     is_active: formData.is_active ?? 1,
-                    created_by: formData.created_by || "admin",
-                    updated_by: formData.updated_by || "admin",
+                    created_by: formData.created_by || username,
+                    updated_by: formData.updated_by || username,
                 },
             };
 

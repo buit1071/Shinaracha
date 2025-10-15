@@ -18,15 +18,19 @@ import {
     DialogContent,
     DialogTitle,
     TextField,
-    Switch,
-    Typography
 } from "@mui/material";
 import { showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
 import { BuildingRow } from "@/interfaces/master";
 import BuildingDetail from "@/components/building/BuildingDetail";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function LocationPage() {
+    const user = useCurrentUser();
+    const username = React.useMemo(
+        () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+        [user]
+    );
     const [view, setView] = React.useState<null | { type: "detail"; id: string, name: string }>(null);
     const openDetail = (id: string, name: string) => setView({ type: "detail", id, name });
     const backToList = () => setView(null);
@@ -39,8 +43,8 @@ export default function LocationPage() {
         building_id: "",
         building_name: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
         created_date: "",
         updated_date: "",
         order: undefined,
@@ -75,8 +79,8 @@ export default function LocationPage() {
             building_id: "",
             building_name: "",
             is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
+            created_by: "",
+            updated_by: "",
             created_date: "",
             updated_date: "",
             order: undefined,
@@ -107,8 +111,8 @@ export default function LocationPage() {
                     building_id: formData.building_id || undefined,
                     building_name: formData.building_name.trim(),
                     is_active: formData.is_active ?? 1,
-                    created_by: formData.created_by || "admin",
-                    updated_by: formData.updated_by || "admin",
+                    created_by: formData.created_by || username,
+                    updated_by: formData.updated_by || username,
                 },
             };
 

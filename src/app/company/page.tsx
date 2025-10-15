@@ -23,9 +23,14 @@ import {
 import { formatDateTime, showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
 import { CompanyRow } from "@/interfaces/master";
-import { Description } from "@mui/icons-material";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function CompanyPage() {
+    const user = useCurrentUser();
+    const username = React.useMemo(
+        () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+        [user]
+    );
     const [rows, setRows] = React.useState<CompanyRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
     const [open, setOpen] = React.useState(false);
@@ -38,8 +43,8 @@ export default function CompanyPage() {
         company_name_en: "",
         description: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
     });
 
     // โหลดข้อมูลและจัดเรียงใหม่
@@ -73,8 +78,8 @@ export default function CompanyPage() {
             company_name_en: "",
             description: "",
             is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
+            created_by: "",
+            updated_by: "",
         });
         setOpen(true);
     };
@@ -102,8 +107,8 @@ export default function CompanyPage() {
                     company_name_en: formData.company_name_en.trim(),
                     description: formData.description.trim(),
                     is_active: formData.is_active ?? 1,
-                    created_by: formData.created_by || "admin",
-                    updated_by: formData.updated_by || "admin",
+                    created_by: formData.created_by || username,
+                    updated_by: formData.updated_by || username,
                 },
             };
 

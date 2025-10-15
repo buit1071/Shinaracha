@@ -15,7 +15,6 @@ dayjs.extend(customParseFormat);
 import {
     DataGrid,
     GridColDef,
-    GridRenderCellParams,
 } from "@mui/x-data-grid";
 import {
     Box,
@@ -35,20 +34,23 @@ import {
     TeamRow,
     ProjectRow,
     JobStatusRow,
-    CustomerRow,
     CustomerBranchRow,
     EquipmentRow,
     EquipmentBranchRow
 } from "@/interfaces/master";
 import { showLoading } from "@/lib/loading";
 import { formatToThaiDate, parseToInputDate, showAlert, showConfirm, formatDate } from "@/lib/fetcher";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function JobPage() {
+    const user = useCurrentUser();
+    const username = React.useMemo(
+        () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+        [user]
+    );
     const DATE_COL_WIDTH = 170;
     const [rows, setRows] = React.useState<JobsRow[]>([]);
     const [teams, setTeams] = React.useState<TeamRow[]>([]);
-    const [customers, setCustomers] = React.useState<CustomerRow[]>([]);
-    const customersRef = React.useRef<CustomerRow[]>([]);
     const [branchs, setBranchs] = React.useState<CustomerBranchRow[]>([]);
     const [projects, setProjects] = React.useState<ProjectRow[]>([]);
     const [status, setStatus] = React.useState<JobStatusRow[]>([]);
@@ -67,8 +69,8 @@ export default function JobPage() {
         equipment_id: "",
         equipment_name: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
     });
 
     // form
@@ -90,8 +92,8 @@ export default function JobPage() {
         status_id: "",
         status_name: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
     });
 
 
@@ -228,8 +230,8 @@ export default function JobPage() {
             status_id: "",
             status_name: "",
             is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
+            created_by: "",
+            updated_by: "",
         });
         setOpen(true);
     };
@@ -267,8 +269,8 @@ export default function JobPage() {
             status_name: row.status_name ?? "",
 
             is_active: row.is_active ?? 1,
-            created_by: row.created_by ?? "admin",
-            updated_by: "admin",
+            created_by: row.created_by ?? username,
+            updated_by: username,
         }));
 
         if (row.job_id) {
@@ -312,8 +314,8 @@ export default function JobPage() {
                     status_id: formData.status_id,
                     customer_id: formData.customer_id,
                     is_active: formData.is_active ?? 1,
-                    created_by: formData.created_by || "admin",
-                    updated_by: formData.updated_by || "admin",
+                    created_by: formData.created_by || username,
+                    updated_by: formData.updated_by || username,
                 },
             };
 
@@ -451,8 +453,8 @@ export default function JobPage() {
                     equipment_id: id,
                     equipment_name: name,
                     is_active: draftEquipment.is_active ?? 1,
-                    created_by: draftEquipment.created_by || "admin",
-                    updated_by: draftEquipment.updated_by || "admin",
+                    created_by: draftEquipment.created_by || username,
+                    updated_by: draftEquipment.updated_by || username,
                 },
             };
 
@@ -521,8 +523,8 @@ export default function JobPage() {
             equipment_id: "",
             equipment_name: "",
             is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
+            created_by: "",
+            updated_by: "",
         };
         setEquipmentRows(prev => [newRow, ...prev]); // ใส่บนสุดจะเห็นชัด
         startEditEquipment(newRow);

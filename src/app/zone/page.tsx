@@ -23,8 +23,14 @@ import {
 import { formatDateTime, showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
 import { ZoneRow } from "@/interfaces/master";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function ZonePage() {
+    const user = useCurrentUser();
+    const username = React.useMemo(
+        () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+        [user]
+    );
     const [rows, setRows] = React.useState<ZoneRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
     const [open, setOpen] = React.useState(false);
@@ -35,8 +41,8 @@ export default function ZonePage() {
         zone_id: "",
         zone_name: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
     });
 
     // โหลดข้อมูลและจัดเรียงใหม่
@@ -77,8 +83,8 @@ export default function ZonePage() {
             zone_id: "",
             zone_name: "",
             is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
+            created_by: "",
+            updated_by: "",
         });
         setOpen(true);
     };
@@ -98,10 +104,19 @@ export default function ZonePage() {
         }
         showLoading(true);
         try {
+            const audit = isEdit
+                ? { updated_by: username }
+                : { created_by: username, updated_by: username };
+
+            const payload = {
+                ...formData,
+                ...audit,
+            };
+
             const res = await fetch("/api/auth/zone", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             });
 
             const result = await res.json();

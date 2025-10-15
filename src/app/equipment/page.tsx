@@ -25,6 +25,7 @@ import { showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
 import { EquipmentRow, ServiceRow, ZoneRow, MasterProvinceRow, MasterDistrictRow, MasterSubdistrictRow, BuildingRow, FloorRoomRow, SystemTypeRow, EquipmentTypeRow } from "@/interfaces/master";
 import type { IFormStorage } from "@react-form-builder/designer";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 class LocalFormStorage implements IFormStorage {
     private last = "{}";
@@ -62,6 +63,11 @@ class LocalFormStorage implements IFormStorage {
 }
 
 export default function EquipmentPage() {
+    const user = useCurrentUser();
+    const username = React.useMemo(
+        () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+        [user]
+    );
     const storageRef = React.useRef<LocalFormStorage | null>(null);
     if (!storageRef.current) {
         storageRef.current = new LocalFormStorage({ components: [] });
@@ -95,8 +101,8 @@ export default function EquipmentPage() {
         zone_id: "",
         zone_name: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
         created_date: "",
         updated_date: "",
         order: undefined,
@@ -534,8 +540,8 @@ export default function EquipmentPage() {
             zone_id: "",
             zone_name: "",
             is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
+            created_by: "",
+            updated_by: "",
             created_date: "",
             updated_date: "",
             order: undefined,
@@ -603,10 +609,16 @@ export default function EquipmentPage() {
         showLoading(true);
 
         try {
+            const payload = {
+                ...formData,
+                created_by: formData.created_by || username,
+                updated_by: username,
+            };
+
             const res = await fetch("/api/auth/equipment", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             });
 
             const result = await res.json();

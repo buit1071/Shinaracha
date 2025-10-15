@@ -23,6 +23,7 @@ import Select from "react-select";
 import { CustomerBranchRow, CustomerGroupRow, ServiceEquipmentRow, ContactRow } from "@/interfaces/master";
 import { generateId } from "@/lib/fetcher";
 import GoogleMapBox from "@/components/google-map/GoogleMapBox";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 type Props = {
     customerId: string;
@@ -30,6 +31,11 @@ type Props = {
 };
 
 export default function CustomerBranchDetail({ customerId, onBack }: Props) {
+    const user = useCurrentUser();
+    const username = React.useMemo(
+        () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+        [user]
+    );
     const [groups, setGroups] = React.useState<CustomerGroupRow[]>([]);
     const [error, setError] = React.useState(false);
     const [errorContact, setErrorContact] = React.useState(false);
@@ -47,8 +53,8 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
         latitude: "",
         longitude: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
     });
 
     const [formEquipmentData, setFormEquipmentData] = React.useState<ServiceEquipmentRow>({
@@ -56,8 +62,8 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
         zone_id: "",
         service_inspec_id: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
         inspection: [
             {
                 inspection_id: "",
@@ -83,8 +89,8 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
         email: "",
         tel: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
     });
 
     const startEdit = (row: ContactRow) => {
@@ -147,8 +153,8 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
             email: "",
             tel: "",
             is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
+            created_by: "",
+            updated_by: "",
         };
         setContactRows((prev) => [...prev, newRow]);
         startEdit(newRow);
@@ -223,8 +229,8 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
                     email,
                     tel,
                     is_active: formContactData.is_active ?? 1,
-                    created_by: formContactData.created_by || "admin",
-                    updated_by: formContactData.updated_by || "admin",
+                    created_by: formContactData.created_by || username,
+                    updated_by: formContactData.updated_by || username,
                 },
             };
 
@@ -248,8 +254,8 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
                     contact_id: id,
                     name, email, tel,
                     is_active: formContactData.is_active ?? 1,
-                    created_by: formContactData.created_by || "admin",
-                    updated_by: formContactData.updated_by || "admin",
+                    created_by: formContactData.created_by || username,
+                    updated_by: formContactData.updated_by || username,
                 };
                 if (idx >= 0) {
                     const next = [...prev];
@@ -429,8 +435,8 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
                     latitude: formData.latitude ?? null,
                     longitude: formData.longitude ?? null,
                     is_active: formData.is_active ?? 1,
-                    created_by: formEquipmentData?.created_by || "admin",
-                    updated_by: formData.updated_by || "admin",
+                    created_by: formEquipmentData?.created_by || username,
+                    updated_by: formData.updated_by || username,
                 },
             };
 

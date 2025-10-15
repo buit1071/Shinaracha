@@ -25,11 +25,17 @@ import {
 import { formatDateTime, showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
 import { PermissionRow, MenuRow } from "@/interfaces/master";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /* =========================
    Permission Page (ครบไฟล์)
    ========================= */
 export default function PermissionPage() {
+    const user = useCurrentUser();
+    const username = React.useMemo(
+        () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+        [user]
+    );
     const [rows, setRows] = React.useState<PermissionRow[]>([]);
     const [menu, setMenu] = React.useState<MenuRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
@@ -41,8 +47,8 @@ export default function PermissionPage() {
         permission_id: "",
         permission_name: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
         menu_ids: [],
     });
 
@@ -104,8 +110,8 @@ export default function PermissionPage() {
             permission_id: "",
             permission_name: "",
             is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
+            created_by: "",
+            updated_by: "",
             menu_ids: [],
         });
         setOpen(true);
@@ -156,10 +162,19 @@ export default function PermissionPage() {
 
         showLoading(true);
         try {
+            const audit = isEdit
+                ? { updated_by: username }
+                : { created_by: username, updated_by: username };
+
+            const payload = {
+                ...formData,
+                ...audit,
+            };
+
             const res = await fetch("/api/auth/permission", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             });
             const result = await res.json();
 

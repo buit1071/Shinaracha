@@ -22,9 +22,15 @@ import {
 } from "@mui/material";
 import { ServiceRow } from "@/interfaces/master";
 import { showLoading } from "@/lib/loading";
-import { showAlert, showConfirm } from "@/lib/fetcher";
+import { showAlert } from "@/lib/fetcher";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function InspectionTypePage() {
+    const user = useCurrentUser();
+    const username = React.useMemo(
+        () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+        [user]
+    );
     const [rows, setRows] = React.useState<ServiceRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
     const [open, setOpen] = React.useState(false);
@@ -35,8 +41,8 @@ export default function InspectionTypePage() {
         service_id: "",
         service_name: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
     });
 
     // โหลดข้อมูลและจัดเรียงใหม่
@@ -83,8 +89,8 @@ export default function InspectionTypePage() {
             service_id: "",
             service_name: "",
             is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
+            created_by: "",
+            updated_by: "",
         });
         setOpen(true);
     };
@@ -115,7 +121,7 @@ export default function InspectionTypePage() {
                         service_name: formData.service_name.trim(),
                         inspection_duration: formData.inspection_duration ?? 0,
                         inspections_per_year: formData.inspections_per_year ?? 0,
-                        updated_by: formData.updated_by || "admin",
+                        updated_by: formData.updated_by || username,
                     },
                 }),
             });

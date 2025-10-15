@@ -6,10 +6,10 @@ import SectionTwoDetails, { SectionTwoForm } from "@/components/check-form/forms
 import SectionThreeDetails, { SectionThreeForm } from "@/components/check-form/forms/form1-3/SectionThreeDetails";
 import SectionFourDetails, { SectionFourForm, SectionFourRow } from "@/components/check-form/forms/form1-3/SectionFourDetails";
 import SectionFiveDetails, { SectionFiveForm, SectionFiveRow } from "@/components/check-form/forms/form1-3/SectionFiveDetails";
-import type { ViewDataForm } from "@/interfaces/master";
 import { showLoading } from "@/lib/loading";
 import { showAlert } from "@/lib/fetcher";
 import { exportToDocx } from "@/utils/exportToDocx";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 type Props = {
     jobId: string;
@@ -29,10 +29,14 @@ type FormData = {
 };
 
 export default function Form1_3({ jobId, equipment_id, name }: Props) {
+    const user = useCurrentUser();
+    const username = React.useMemo(
+        () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+        [user]
+    );
     const [formData, setFormData] = React.useState<FormData>({});
     const [coverSrc, setCoverSrc] = React.useState<string | null>(null);
     const [openSections, setOpenSections] = React.useState<string[]>([]);
-    // const [viewData, setViewData] = React.useState<ViewDataForm | null>(null);
 
     const onSectionTwoChange = React.useCallback(
         (patch: Partial<SectionTwoForm>) => {
@@ -235,8 +239,8 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
                     job_id: jobId,
                     equipment_id: equipment_id,
                     is_active: 1,
-                    created_by: "admin",
-                    updated_by: "admin",
+                    created_by: username,
+                    updated_by: username,
                 },
             };
 

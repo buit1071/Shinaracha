@@ -26,8 +26,14 @@ import {
 import { showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
 import { EmployeeRow, PermissionRow, CompanyRow } from "@/interfaces/master";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function EmployeePage() {
+    const user = useCurrentUser();
+    const username = React.useMemo(
+        () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+        [user]
+    );
     const [rows, setRows] = React.useState<EmployeeRow[]>([]);
     const [permissions, setPermissions] = React.useState<PermissionRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
@@ -51,8 +57,8 @@ export default function EmployeePage() {
         password: "",
         permission_id: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
     });
 
     const fileRef = React.useRef<HTMLInputElement | null>(null);
@@ -162,8 +168,8 @@ export default function EmployeePage() {
             password: "",
             permission_id: "",
             is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
+            created_by: "",
+            updated_by: "",
         });
         setAvatarPreview("/images/user-empty.png");
         setOpen(true);
@@ -237,7 +243,16 @@ export default function EmployeePage() {
             // ถ้าไม่ได้เปลี่ยนรูป: ใช้ค่าเดิมใน formData.image_url ไปเลย
 
             // 2) บันทึกข้อมูลพนักงาน
-            const payload = { ...formData, image_url: imageFileName };
+            const audit =
+                isEdit
+                    ? { updated_by: username }
+                    : { created_by: username, updated_by: username };
+
+            const payload = {
+                ...formData,
+                image_url: imageFileName,
+                ...audit,
+            };
             const res = await fetch("/api/auth/employee", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -436,7 +451,7 @@ export default function EmployeePage() {
                     initialState={{
                         pagination: { paginationModel: { pageSize: 15, page: 0 } },
                     }}
-                    pageSizeOptions={[15,20]}
+                    pageSizeOptions={[15, 20]}
                     disableRowSelectionOnClick
                     getRowId={(row) => row.emp_id}
                 />

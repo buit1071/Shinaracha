@@ -27,8 +27,14 @@ import {
 import { showLoading } from "@/lib/loading";
 import { TeamRow, ZoneRow, EmployeeRow, EmpStatusRow } from "@/interfaces/master";
 import { showAlert, showConfirm } from "@/lib/fetcher";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function ProjectListPage() {
+    const user = useCurrentUser();
+    const username = React.useMemo(
+        () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+        [user]
+    );
     const [rows, setRows] = React.useState<TeamRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
     const [open, setOpen] = React.useState(false);
@@ -52,8 +58,8 @@ export default function ProjectListPage() {
         uuid: "",
         zone_id: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
     });
 
     // โหลดข้อมูลและจัดเรียงใหม่
@@ -144,8 +150,8 @@ export default function ProjectListPage() {
             uuid: "",
             zone_id: "",
             is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
+            created_by: "",
+            updated_by: "",
         });
         setOpen(true);
     };
@@ -166,10 +172,19 @@ export default function ProjectListPage() {
         }
 
         try {
+            const audit = isEdit
+                ? { updated_by: username }
+                : { created_by: username, updated_by: username };
+
+            const payload = {
+                ...formData,
+                ...audit,
+            };
+
             const res = await fetch("/api/auth/team", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             });
 
             const result = await res.json();
@@ -404,8 +419,8 @@ export default function ProjectListPage() {
             emp_id: row.emp_id,
             status_id: row.status_id,
             is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
+            created_by: username,
+            updated_by: username,
         };
 
         try {

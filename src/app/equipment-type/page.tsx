@@ -22,8 +22,14 @@ import {
 import { showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
 import { SystemTypeRow, EquipmentTypeRow } from "@/interfaces/master";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function EquipmentTypePage() {
+    const user = useCurrentUser();
+    const username = React.useMemo(
+        () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+        [user]
+    );
     const [rows, setRows] = React.useState<SystemTypeRow[]>([]);
     const [rowsEq, setRowsEq] = React.useState<EquipmentTypeRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
@@ -37,8 +43,8 @@ export default function EquipmentTypePage() {
         system_type_id: "",
         system_type_name: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
         created_date: "",
         updated_date: "",
         order: undefined,
@@ -48,8 +54,8 @@ export default function EquipmentTypePage() {
         equipment_type_id: "",
         equipment_type_name: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
         created_date: "",
         updated_date: "",
         order: undefined,
@@ -104,8 +110,8 @@ export default function EquipmentTypePage() {
             system_type_id: "",
             system_type_name: "",
             is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
+            created_by: "",
+            updated_by: "",
             created_date: "",
             updated_date: "",
             order: undefined,
@@ -118,8 +124,8 @@ export default function EquipmentTypePage() {
             equipment_type_id: "",
             equipment_type_name: "",
             is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
+            created_by: "",
+            updated_by: "",
             created_date: "",
             updated_date: "",
             order: undefined,
@@ -159,8 +165,8 @@ export default function EquipmentTypePage() {
                     system_type_id: formData.system_type_id || undefined,
                     system_type_name: formData.system_type_name.trim(),
                     is_active: formData.is_active ?? 1,
-                    created_by: formData.created_by || "admin",
-                    updated_by: formData.updated_by || "admin",
+                    created_by: formData.created_by || username,
+                    updated_by: formData.updated_by || username,
                 },
             };
 
@@ -204,8 +210,8 @@ export default function EquipmentTypePage() {
                     equipment_type_id: formDataEq.equipment_type_id || undefined,
                     equipment_type_name: formDataEq.equipment_type_name.trim(),
                     is_active: formDataEq.is_active ?? 1,
-                    created_by: formDataEq.created_by || "admin",
-                    updated_by: formDataEq.updated_by || "admin",
+                    created_by: formDataEq.created_by || username,
+                    updated_by: formDataEq.updated_by || username,
                 },
             };
 

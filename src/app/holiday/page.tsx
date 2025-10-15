@@ -21,6 +21,7 @@ import listPlugin from "@fullcalendar/list";
 import thLocale from "@fullcalendar/core/locales/th";
 import type { CalendarApi, DatesSetArg } from "@fullcalendar/core";
 import { HolidayRow } from "@/interfaces/master";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 function addDays(dateStr: string, days = 1) {
   const d = new Date(dateStr); // รองรับทั้ง "2025-08-21" และ "2025-08-21T17:00:00.000Z"
@@ -31,6 +32,11 @@ function addDays(dateStr: string, days = 1) {
 }
 
 export default function HolidayPage() {
+  const user = useCurrentUser();
+  const username = React.useMemo(
+    () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+    [user]
+  );
   const [events, setEvents] = React.useState<HolidayRow[]>([]);
   const [form, setForm] = React.useState({
     title: "",
@@ -143,8 +149,8 @@ export default function HolidayPage() {
           start_date: payload.start_date,
           end_date: payload.end_date ?? payload.start_date,
           is_active: 1,
-          created_by: "admin",
-          updated_by: "admin",
+          created_by: username,
+          updated_by: username,
         };
 
         if (dialogMode === "create") {

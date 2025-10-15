@@ -24,8 +24,14 @@ import { formatDateTime, showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
 import { ServiceRow } from "@/interfaces/master";
 import ServiceDetail from "@/components/inspection-form/ServiceDetail";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function InspectionFormPage() {
+    const user = useCurrentUser();
+    const username = React.useMemo(
+        () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+        [user]
+    );
     const [view, setView] = React.useState<null | { type: "detail"; id: string }>(null);
     const openDetail = (id: string) => setView({ type: "detail", id });
     const backToList = () => setView(null);
@@ -39,8 +45,8 @@ export default function InspectionFormPage() {
         service_id: "",
         service_name: "",
         is_active: 1,
-        created_by: "admin",
-        updated_by: "admin",
+        created_by: "",
+        updated_by: "",
     });
 
     // โหลดข้อมูลและจัดเรียงใหม่
@@ -87,8 +93,8 @@ export default function InspectionFormPage() {
             service_id: "",
             service_name: "",
             is_active: 1,
-            created_by: "admin",
-            updated_by: "admin",
+            created_by: "",
+            updated_by: "",
         });
         setOpen(true);
     };
@@ -116,8 +122,8 @@ export default function InspectionFormPage() {
                     service_id: formData.service_id || undefined, // มี = update, ไม่มี = insert
                     service_name: formData.service_name.trim(),
                     is_active: formData.is_active ?? 1,
-                    created_by: formData.created_by || "admin",
-                    updated_by: formData.updated_by || "admin",
+                    created_by: formData.created_by || username,
+                    updated_by: formData.updated_by || username,
                 },
             };
 
@@ -188,7 +194,7 @@ export default function InspectionFormPage() {
                     data: {
                         service_id: row.service_id,
                         is_active: row.is_active === 1 ? 0 : 1,
-                        updated_by: "admin",
+                        updated_by: username,
                     },
                 }),
             });
