@@ -25,6 +25,7 @@ import {
     TextDirection as DocxTextDirection
 } from "docx";
 import { saveAs } from "file-saver";
+import { showLoading } from "@/lib/loading";
 
 import { SectionTwoForm } from "@/components/check-form/forms/form1-3/SectionTwoDetails";
 import { SectionThreeForm, SectionThreeRow, FreqKey } from "@/components/check-form/forms/form1-3/SectionThreeDetails";
@@ -166,14 +167,26 @@ const contentWidthPx =
 // กันชิดขอบเกินไป เผื่อซัก 8px
 const MAX_IMAGE_PX = Math.max(0, contentWidthPx - 8);
 
-async function fileToPngBytesAndSize(file: File): Promise<{ bytes: Uint8Array; width: number; height: number }> {
-    const url = URL.createObjectURL(file);
+async function fileToPngBytesAndSize(fileName: string): Promise<{ bytes: Uint8Array; width: number; height: number }> {
+    // ✅ สร้าง URL โหลดจาก n8n
+    const imgUrl = `${process.env.NEXT_PUBLIC_N8N_UPLOAD_FILE}?name=${encodeURIComponent(fileName)}`;
+    const res = await fetch(imgUrl);
+
+    if (!res.ok) {
+        throw new Error(`โหลดรูปจาก n8n ไม่สำเร็จ: ${res.statusText}`);
+    }
+
+    // ✅ อ่านเป็น blob แล้วใช้ Image เพื่อวัดขนาด
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+
     try {
         const img = new Image();
         img.crossOrigin = "anonymous";
         img.src = url;
         await img.decode();
 
+        // แปลงเป็น PNG bytes
         const canvas = document.createElement("canvas");
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
@@ -181,32 +194,17 @@ async function fileToPngBytesAndSize(file: File): Promise<{ bytes: Uint8Array; w
         ctx.drawImage(img, 0, 0);
 
         const dataUrl = canvas.toDataURL("image/png");
-        const res = await fetch(dataUrl);
-        const ab = await res.arrayBuffer();
+        const pngRes = await fetch(dataUrl);
+        const ab = await pngRes.arrayBuffer();
 
-        return { bytes: new Uint8Array(ab), width: img.naturalWidth, height: img.naturalHeight };
+        return {
+            bytes: new Uint8Array(ab),
+            width: img.naturalWidth,
+            height: img.naturalHeight,
+        };
     } finally {
         URL.revokeObjectURL(url);
     }
-}
-
-async function loadAsPngBytesAndSize(url: string): Promise<{ bytes: Uint8Array; width: number; height: number }> {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = url;
-    await img.decode();
-
-    const canvas = document.createElement("canvas");
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(img, 0, 0);
-
-    const dataUrl = canvas.toDataURL("image/png");
-    const res = await fetch(dataUrl);
-    const ab = await res.arrayBuffer();
-
-    return { bytes: new Uint8Array(ab), width: img.naturalWidth, height: img.naturalHeight };
 }
 
 /* ---------------- Helpers: standard paragraph styles ---------------- */
@@ -550,7 +548,9 @@ function buildSectionOne(): Paragraph[] {
 }
 
 type FormDataLite = {
+    job_id?: string;
     cover?: File;
+    coverfilename?: string;
     placeName?: string;
     sectionTwo?: Partial<SectionTwoForm>;
     sectionThree?: Partial<SectionThreeForm>
@@ -659,7 +659,7 @@ async function buildPhotosSection(
     // ตัวช่วย: ทำให้รูป "สูง 3.5 นิ้ว" แล้วคำนวณความกว้างตามอัตราส่วน
     // ถ้ากว้างเกินเพดานคอลัมน์ จะลดสเกลลงทั้งกว้าง/สูงให้พอดีคอลัมน์ (อาจเตี้ยกว่า 3.5 เล็กน้อยเพื่อไม่ล้น)
     const loadFitFixedHeight = async (src: string, maxWIn: number) => {
-        const { bytes, width, height } = await loadAsPngBytesAndSize(src);
+        const { bytes, width, height } = await fileToPngBytesAndSize(src);
         const aspect = width / height;
 
         // เริ่มด้วยให้สูง 3.5"
@@ -931,15 +931,26 @@ async function buildSectionTwo(formData: FormDataLite) {
     let MapImg: Paragraph[] = [];
     if (s2.mapSketch) {
         try {
-            const bytes = await loadAsPngBytes(s2.mapSketch);
+            const { bytes, width, height } = await fileToPngBytesAndSize(s2.mapSketch);
+            const ratio = Math.min(1, MAX_IMAGE_PX / width);
+            const w = Math.round(width * ratio);
+            const h = Math.round(height * ratio);
+
             MapImg = [
                 new Paragraph({
                     alignment: AlignmentType.CENTER,
                     spacing: { before: 160, after: 0 },
-                    children: [new ImageRun({ data: bytes, type: "png", transformation: { width: W_PX, height: H_PX } })],
+                    children: [
+                        new ImageRun({
+                            data: bytes,
+                            type: "png",
+                            transformation: { width: w, height: h },
+                        }),
+                    ],
                 }),
             ];
-        } catch { }
+        } catch (err) {
+        }
     }
 
     const BR1 = new Paragraph({ spacing: { before: 240, after: 0 } }); // 1 บรรทัด ~ 12pt
@@ -960,12 +971,18 @@ async function buildSectionTwo(formData: FormDataLite) {
     let ShapeImg: Paragraph[] = [];
     if (s2.shapeSketch) {
         try {
-            const bytes = await loadAsPngBytes(s2.shapeSketch);
+            const { bytes } = await fileToPngBytesAndSize(s2.shapeSketch);
             ShapeImg = [
                 new Paragraph({
                     alignment: AlignmentType.CENTER,
                     spacing: { before: 160, after: 0 },
-                    children: [new ImageRun({ data: bytes, type: "png", transformation: { width: W_PX, height: H_PX } })],
+                    children: [
+                        new ImageRun({
+                            data: bytes,
+                            type: "png",
+                            transformation: { width: W_PX, height: H_PX }, // อาจบิดรูป
+                        }),
+                    ],
                 }),
             ];
         } catch { }
@@ -1867,7 +1884,7 @@ async function buildSectionFive(formData: FormDataLite) {
 
     // สรุปความเห็น
     const h5_1 = heading("สรุปความเห็นของผู้ตรวจสอบอาคาร", false);
-    const l1 = pn(`สรุปผลการตรวจสอบป้ายโฆษณา ${siteName} ซึ่งป้ายติดตั้งบนพื้นดินพบว่า ณ วันที่เข้า`, 1);
+    const l1 = pn(`สรุปผลการตรวจสอบป้ายโฆษณา ${siteName || formData.placeName?.trim() || formData.sectionTwo?.signName?.trim()} ซึ่งป้ายติดตั้งบนพื้นดินพบว่า ณ วันที่เข้า`, 1);
     const l2 = pn(`ตรวจสอบ รอบที่ ${roundNo} เมื่อวันที่ ${d} ${mm} ${y} ในส่วนของโครงสร้าง ความมั่นคงแข็งแรงของป้าย พร้อมอุปกรณ์`, 0);
     const l3 = pn("ประกอบป้ายอยู่ในสภาพมั่นคงแข็งแรงพร้อมใช้งานต่อไป และปลอดภัยต่อทรัพย์สิน", 0);
 
@@ -1903,6 +1920,24 @@ async function buildSectionFive(formData: FormDataLite) {
 
 /* ---------------- Export main ---------------- */
 export async function exportToDocx(formData: FormDataLite) {
+    showLoading(true);
+
+    const fetchBranchName = async (job_id?: string): Promise<string> => {
+        if (!job_id) return "";
+        try {
+            const res = await fetch("/api/auth/customer/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "branchName", job_id }),
+            });
+            const r = await res.json();
+            return r?.success && r?.data?.length ? (r.data[0]?.branch_name ?? "") : "";
+        } catch {
+            return "";
+        }
+    };
+
+    const branchName = await fetchBranchName(formData.job_id);
     const header = await buildCompanyHeader({
         companyTh: "บริษัท ชินรัช โพรเทคเตอร์ จำกัด",
         companyEn: "Shinaracha Protector Co., Ltd.",
@@ -1911,7 +1946,7 @@ export async function exportToDocx(formData: FormDataLite) {
     });
 
     // หน้าถัดไปค่อยมี footer — หน้าปกไม่ใส่
-    const footer = buildFooter(formData.placeName ?? "");
+    const footer = buildFooter(branchName);
     const PT = 20;                           // 1pt = 20 twips
     const GAP_HEADER_TO_IMG = 60 * PT;       // 60pt
     const GAP_IMG_TO_TITLE = 30 * PT;        // 30pt
@@ -1922,10 +1957,10 @@ export async function exportToDocx(formData: FormDataLite) {
     coverChildren.push(new Paragraph({ spacing: { before: GAP_HEADER_TO_IMG } }));
 
     // 1) รูปปก (มาก่อน)
-    if (formData.cover) {
-        const { bytes, width, height } = await fileToPngBytesAndSize(formData.cover);
+    if (formData.coverfilename) {
+        const { bytes, width, height } = await fileToPngBytesAndSize(formData.coverfilename);
 
-        // ใช้ MAX_IMAGE_PX ที่คำนวณจากความกว้างเนื้อหา (ตามที่ตั้งไว้ก่อนหน้า)
+        // ปรับขนาดตาม MAX_IMAGE_PX เหมือนเดิม
         const ratio = Math.min(1, MAX_IMAGE_PX / width);
         const w = Math.round(width * ratio);
         const h = Math.round(height * ratio);
@@ -1934,7 +1969,11 @@ export async function exportToDocx(formData: FormDataLite) {
             new Paragraph({
                 alignment: AlignmentType.CENTER,
                 children: [
-                    new ImageRun({ data: bytes, type: "png", transformation: { width: w, height: h } }),
+                    new ImageRun({
+                        data: bytes,
+                        type: "png",
+                        transformation: { width: w, height: h },
+                    }),
                 ],
             })
         );
@@ -2047,4 +2086,5 @@ export async function exportToDocx(formData: FormDataLite) {
 
     const filename = `รายงาน${place}_${dateTime}.docx`;
     saveAs(blob, filename);
+    showLoading(false);
 }

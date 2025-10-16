@@ -1,5 +1,5 @@
 import * as React from "react";
-
+import { showLoading } from "@/lib/loading";
 // import type { ViewDataForm } from "@/interfaces/master";
 
 /* ---------- Reusable Image Upload (single) ---------- */
@@ -202,6 +202,11 @@ export type SectionTwoForm = {
     signAge?: string;
     mapSketch?: string | null; shapeSketch?: string | null;
     photosFront?: string | null; photosSide?: string | null; photosBase?: string | null;
+    mapSketchPreview?: string | null;
+    shapeSketchPreview?: string | null;
+    photosFrontPreview?: string | null;
+    photosSidePreview?: string | null;
+    photosBasePreview?: string | null;
     recorder2?: string; recorder3?: string;
     // 5.2
     typeGround?: boolean; typeRooftop?: boolean; typeOnRoof?: boolean; typeOnBuilding?: boolean;
@@ -249,6 +254,8 @@ type Props = {
 
 /* ========================== SECTION TWO ========================== */
 export default function SectionTwoDetails({ data, value, onChange }: Props) {
+    const buildRemoteImgUrl = (name: string) =>
+        `${process.env.NEXT_PUBLIC_N8N_UPLOAD_FILE}?name=${encodeURIComponent(name)}`;
     const onChangeRef = React.useRef(onChange);
     React.useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
 
@@ -444,6 +451,8 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
             signAge,
             mapSketch, shapeSketch,
             photosFront, photosSide, photosBase,
+            mapSketchPreview, shapeSketchPreview,
+            photosFrontPreview, photosSidePreview, photosBasePreview,
             recorder2, recorder3,
 
             typeGround, typeRooftop, typeOnRoof, typeOnBuilding,
@@ -463,6 +472,8 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
         signAge,
         mapSketch, shapeSketch,
         photosFront, photosSide, photosBase,
+        mapSketchPreview, shapeSketchPreview,
+        photosFrontPreview, photosSidePreview, photosBasePreview,
         recorder2, recorder3,
         typeGround, typeRooftop, typeOnRoof, typeOnBuilding,
         typeOtherChecked, typeOther,
@@ -471,6 +482,86 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
         panelMaterial, panelFaces, panelOpenings, panelOther,
         chkMat, chkFaces, chkOpen, chkOther,
         onChange,
+    ]);
+
+    React.useEffect(() => {
+        let canceled = false;
+
+        // helper: preload ให้แน่ใจว่าไฟล์มีอยู่จริงก่อนเซ็ต src
+        const preload = (url: string) =>
+            new Promise<boolean>((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve(true);
+                img.onerror = () => resolve(false);
+                img.src = url;
+            });
+
+        // helper: ถ้าย้ายจาก blob → remote ให้ revoke blob เดิม
+        const setPreviewSafely = (
+            currentPreview: string | null,
+            nextSrc: string | null,
+            setter: (v: string | null) => void
+        ) => {
+            if (currentPreview && currentPreview.startsWith("blob:") && currentPreview !== nextSrc) {
+                URL.revokeObjectURL(currentPreview);
+            }
+            setter(nextSrc);
+        };
+
+        // อัปเดตรูปทีละฟิลด์
+        const updateOne = async (
+            filename: string | null | undefined,
+            currentPreview: string | null,
+            setter: (v: string | null) => void
+        ) => {
+            // ถ้ากำลังแสดง blob ของไฟล์ที่ผู้ใช้เพิ่งเลือก → อย่าทับ
+            if (currentPreview && currentPreview.startsWith("blob:")) return;
+
+            if (!filename) {
+                setPreviewSafely(currentPreview, null, setter);
+                return;
+            }
+
+            const remoteUrl = buildRemoteImgUrl(filename);
+            const ok = await preload(remoteUrl);
+            if (!canceled) {
+                setPreviewSafely(currentPreview, ok ? remoteUrl : null, setter);
+            }
+        };
+
+        // ถ้าทั้ง 5 ฟิลด์ว่างหมด = ไม่ต้องโหลด
+        const allEmpty =
+            !mapSketch && !shapeSketch && !photosFront && !photosSide && !photosBase;
+
+        if (allEmpty) {
+            // เคลียร์เฉพาะพรีวิวที่ไม่ใช่ blob
+            if (!mapSketchPreview?.startsWith("blob:")) setMapSketchPreview(null);
+            if (!shapeSketchPreview?.startsWith("blob:")) setShapeSketchPreview(null);
+            if (!photosFrontPreview?.startsWith("blob:")) setPhotosFrontPreview(null);
+            if (!photosSidePreview?.startsWith("blob:")) setPhotosSidePreview(null);
+            if (!photosBasePreview?.startsWith("blob:")) setPhotosBasePreview(null);
+            return;
+        }
+
+        Promise.all([
+            updateOne(mapSketch, mapSketchPreview, setMapSketchPreview),
+            updateOne(shapeSketch, shapeSketchPreview, setShapeSketchPreview),
+            updateOne(photosFront, photosFrontPreview, setPhotosFrontPreview),
+            updateOne(photosSide, photosSidePreview, setPhotosSidePreview),
+            updateOne(photosBase, photosBasePreview, setPhotosBasePreview),
+        ])
+            .catch(() => { }) // ไม่ให้ล้ม useEffect
+            .finally(() => {
+                if (!canceled) showLoading(false);
+            });
+
+        return () => {
+            canceled = true;
+        };
+        // ให้ effect ทำงานเมื่อชื่อไฟล์เปลี่ยน หรือพรีวิว (กรณีเป็น blob) เปลี่ยน
+    }, [
+        mapSketch, shapeSketch, photosFront, photosSide, photosBase,
+        mapSketchPreview, shapeSketchPreview, photosFrontPreview, photosSidePreview, photosBasePreview,
     ]);
 
     const handlePickImage = (

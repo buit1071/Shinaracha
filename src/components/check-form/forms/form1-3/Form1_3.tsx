@@ -34,6 +34,9 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
         () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
         [user]
     );
+    const buildRemoteCoverUrl = (name: string) =>
+        `${process.env.NEXT_PUBLIC_N8N_UPLOAD_FILE}?name=${encodeURIComponent(name)}`;
+
     const [formData, setFormData] = React.useState<FormData>({});
     const [coverSrc, setCoverSrc] = React.useState<string | null>(null);
     const [openSections, setOpenSections] = React.useState<string[]>([]);
@@ -154,24 +157,6 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
         }));
     };
 
-    // const fecthEquipmentDetail = async () => {
-    //     showLoading(true);
-    //     try {
-    //         const res = await fetch("/api/auth/equipment/get", {
-    //             method: "POST",
-    //             headers: { "Content-Type": "application/json" },
-    //             body: JSON.stringify({ function: "ViewEquipment", job_id: jobId, equipment_id: equipment_id }),
-    //         });
-    //         const data = await res.json();
-    //         if (data.success) {
-    //             setViewData(data.data);
-    //         }
-    //     } catch (err) {
-    //     } finally {
-    //         showLoading(false);
-    //     }
-    // };
-
     const fecthFormDetail = async () => {
         showLoading(true);
         try {
@@ -215,27 +200,119 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
 
     React.useEffect(() => {
         if (!jobId) return;
-        // fecthEquipmentDetail();
         fecthFormDetail();
     }, [jobId, equipment_id]);
 
     React.useEffect(() => {
-        if (formData.cover) {
-            if (coverSrc) URL.revokeObjectURL(coverSrc);
+        let revokeUrl: string | null = null;
+
+        if (formData.cover instanceof File) {
             const url = URL.createObjectURL(formData.cover);
             setCoverSrc(url);
-            return () => URL.revokeObjectURL(url);
+            revokeUrl = url;
+            return () => {
+                if (revokeUrl) URL.revokeObjectURL(revokeUrl);
+            };
         }
-    }, [formData.cover]);
+
+        if (formData.coverfilename) {
+            const remoteUrl = buildRemoteCoverUrl(formData.coverfilename);
+            showLoading(true);
+
+            const img = new Image();
+            img.onload = () => {
+                setCoverSrc(remoteUrl);
+                showLoading(false);
+            };
+            img.onerror = () => {
+                setCoverSrc(null);
+                showLoading(false);
+            };
+            img.src = remoteUrl;
+        } else {
+            setCoverSrc(null);
+        }
+
+        return () => {
+            if (revokeUrl) URL.revokeObjectURL(revokeUrl);
+        };
+    }, [formData.cover, formData.coverfilename]);
 
     const handleSave = async () => {
         showLoading(true);
         try {
-            const { cover, ...rest } = formData;
+            const { cover, sectionTwo, ...rest } = formData;
+
+            // ---------- 1. Upload cover ----------
+            if (cover instanceof File) {
+                const fd = new FormData();
+                fd.append("file", cover);
+                fd.append("filename", String(formData.coverfilename || cover.name));
+
+                const uploadRes = await fetch("/api/auth/upload-file", {
+                    method: "POST",
+                    body: fd,
+                });
+
+                const uploadData = await uploadRes.json();
+                if (!uploadRes.ok || !uploadData.success) {
+                    showLoading(false);
+                    return showAlert("error", uploadData.error || "อัปโหลดไฟล์ไม่สำเร็จ");
+                }
+            }
+
+            // ---------- 2. Upload SectionTwo images ----------
+            // helper function
+            const uploadImageIfNeeded = async (
+                previewUrl: string | null | undefined,
+                filename: string | null | undefined
+            ) => {
+                // ✅ อัปโหลดเฉพาะกรณี preview เป็น blob:
+                if (previewUrl && previewUrl.startsWith("blob:") && filename) {
+                    const response = await fetch(previewUrl);
+                    const blob = await response.blob();
+                    const fd = new FormData();
+                    fd.append("file", blob, filename);
+                    fd.append("filename", filename);
+
+                    const uploadRes = await fetch("/api/auth/upload-file", {
+                        method: "POST",
+                        body: fd,
+                    });
+                    const result = await uploadRes.json();
+                    if (!uploadRes.ok || !result.success) {
+                        console.error("❌ Upload failed for", filename, result.error);
+                    }
+                }
+            };
+
+            // upload ทั้ง 5 ภาพ (ถ้ามี)
+            if (sectionTwo) {
+                await Promise.all([
+                    uploadImageIfNeeded(sectionTwo.mapSketchPreview, sectionTwo.mapSketch),
+                    uploadImageIfNeeded(sectionTwo.shapeSketchPreview, sectionTwo.shapeSketch),
+                    uploadImageIfNeeded(sectionTwo.photosFrontPreview, sectionTwo.photosFront),
+                    uploadImageIfNeeded(sectionTwo.photosSidePreview, sectionTwo.photosSide),
+                    uploadImageIfNeeded(sectionTwo.photosBasePreview, sectionTwo.photosBase),
+                ]);
+            }
+
+            // ---------- 3. เตรียม payload ----------
+            // ตัดฟิลด์ preview ทั้งหมดออกก่อนส่ง
+            const {
+                mapSketchPreview,
+                shapeSketchPreview,
+                photosFrontPreview,
+                photosSidePreview,
+                photosBasePreview,
+                ...sectionTwoClean
+            } = sectionTwo || {};
+
             const payload = {
                 entity: "form1_3",
                 data: {
                     ...rest,
+                    sectionTwo: sectionTwoClean, // ✅ ส่งเฉพาะข้อมูลจริง ไม่รวม preview
                     job_id: jobId,
                     equipment_id: equipment_id,
                     is_active: 1,
@@ -248,29 +325,26 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
                 payload.data.form_code = formData.form_code;
             }
 
-            // ✅ เรียก API แบบ POST
+            // ---------- 4. บันทึกข้อมูล ----------
             const res = await fetch("/api/auth/forms/post", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             });
 
-            // ✅ ตรวจสอบผลลัพธ์
             const data = await res.json();
+            showLoading(false);
+
             if (res.ok && data.success) {
-                showLoading(false);
                 await showAlert("success", data.message);
-                
                 if (data.form_code && !formData.form_code) {
                     setFormData((prev) => ({ ...prev, form_code: data.form_code }));
                 }
             } else {
-                showLoading(false);
                 showAlert("error", data.message);
             }
         } catch (err) {
+            console.error(err);
             showLoading(false);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         }
@@ -339,13 +413,19 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
                         {coverSrc && (
                             <button
                                 onClick={() => {
-                                    URL.revokeObjectURL(coverSrc);
-                                    setCoverSrc(null);
+                                    // ถ้ามี objectURL จากไฟล์ที่เพิ่งเลือก ให้ revoke ก่อน
+                                    if (coverSrc.startsWith("blob:")) URL.revokeObjectURL(coverSrc);
+
                                     setFormData(prev => ({ ...prev, cover: undefined }));
+                                    if (formData.coverfilename) {
+                                        setCoverSrc(buildRemoteCoverUrl(formData.coverfilename));
+                                    } else {
+                                        setCoverSrc(null);
+                                    }
                                 }}
                                 className="ml-2 inline-flex items-center rounded-md px-3 py-2 text-sm
-               border border-red-500 text-red-600 hover:bg-red-50 cursor-pointer
-               focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1"
+      border border-red-500 text-red-600 hover:bg-red-50 cursor-pointer
+      focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1"
                             >
                                 ล้างรูป
                             </button>
@@ -583,9 +663,9 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
                         Save
                     </button>
                 </div>
-                <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
+                {/* <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
                     {JSON.stringify(formData, null, 2)}
-                </pre>
+                </pre> */}
             </div>
         </>
     )
