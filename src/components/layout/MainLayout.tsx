@@ -250,7 +250,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                 icon={DocumentTextIcon}
                                 collapsed={isCollapsed}
                             >
-                                จัดการแบบฟอร์ม
+                                แบบฟอร์ม
                             </NavLink>
                             <NavLink
                                 href="/customer"

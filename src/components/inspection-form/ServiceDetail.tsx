@@ -6,10 +6,10 @@ import {
   GridColDef,
   GridRenderCellParams,
 } from "@mui/x-data-grid";
-import { showAlert, showConfirm } from "@/lib/fetcher";
+import { formatDateTime, showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
+// import EditIcon from "@mui/icons-material/Edit";
+// import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import IconButton from "@mui/material/IconButton";
@@ -20,6 +20,7 @@ import {
   DialogContent,
   DialogTitle,
   TextField,
+  Switch
 } from "@mui/material";
 import { DataZonesRow } from "@/interfaces/master";
 import ZoneDetail from "@/components/inspection-form/ZoneDetail";
@@ -32,12 +33,12 @@ type Props = {
 
 export default function ServiceDetail({ serviceId, onBack }: Props) {
   const user = useCurrentUser();
-    const username = React.useMemo(
-        () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
-        [user]
-    );
+  const username = React.useMemo(
+    () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
+    [user]
+  );
   const [view, setView] = React.useState<null | { type: "detail"; id: string }>(null);
-  const openDetail = (id: string) => setView({ type: "detail", id });
+  // const openDetail = (id: string) => setView({ type: "detail", id });
   const backToList = () => setView(null);
   const [serviceName, setServiceName] = React.useState<string>("");
   const [rows, setRows] = React.useState<DataZonesRow[]>([]);
@@ -110,42 +111,71 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
     setOpen(true);
   };
 
-  const handleOpenEdit = (row: DataZonesRow) => {
-    setIsEdit(true);
-    setFormData(row);
-    setOpen(true);
-  };
+  // const handleOpenEdit = (row: DataZonesRow) => {
+  //   setIsEdit(true);
+  //   setFormData(row);
+  //   setOpen(true);
+  // };
 
-  const handleDelete = async (zone_id: string) => {
-    const confirmed = await showConfirm(
-      "หากลบแล้วจะไม่สามารถนำกลับมาได้",
-      "คุณต้องการลบข้อมูลนี้หรือไม่?"
-    );
-    if (!confirmed) return;
+  // const handleDelete = async (zone_id: string) => {
+  //   const confirmed = await showConfirm(
+  //     "หากลบแล้วจะไม่สามารถนำกลับมาได้",
+  //     "คุณต้องการลบข้อมูลนี้หรือไม่?"
+  //   );
+  //   if (!confirmed) return;
 
+  //   showLoading(true);
+  //   try {
+  //     const res = await fetch("/api/auth/inspection-form/delete", {
+  //       method: "POST", // ใช้ POST เพราะมี body
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({
+  //         id: zone_id,
+  //         function: "zone", // บอกชนิดที่ลบ
+  //       }),
+  //     });
+
+  //     const result = await res.json();
+  //     showLoading(false);
+
+  //     if (result.success) {
+  //       await showAlert("success", result.message);
+  //       fetchServiceZones(); // รีเฟรชรายการโซน
+  //     } else {
+  //       await showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
+  //     }
+  //   } catch (err) {
+  //     await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+  //   } finally {
+  //     showLoading(false);
+  //   }
+  // };
+
+  const toggleStatus = async (row: DataZonesRow) => {
     showLoading(true);
     try {
-      const res = await fetch("/api/auth/inspection-form/delete", {
-        method: "POST", // ใช้ POST เพราะมี body
+      const res = await fetch("/api/auth/inspection-form/post", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: zone_id,
-          function: "zone", // บอกชนิดที่ลบ
+          entity: "active",
+          data: {
+            zone_id: row.zone_id,
+            is_active: row.is_active === 1 ? 0 : 1,
+            updated_by: username,
+          },
         }),
       });
 
       const result = await res.json();
       showLoading(false);
 
-      if (result.success) {
-        await showAlert("success", result.message);
-        fetchServiceZones(); // รีเฟรชรายการโซน
+      if (res.ok && result.success) {
+        fetchServiceZones();
+        showAlert("success", result.message);
       } else {
-        await showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
       }
     } catch (err) {
-      await showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
-    } finally {
       showLoading(false);
     }
   };
@@ -208,35 +238,65 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
     },
     {
       field: "zone_name", headerName: "ฟอร์ม", flex: 1, headerAlign: "center", align: "left",
-      renderCell: (params: GridRenderCellParams<DataZonesRow>) => (
-        <button
-          onClick={() => openDetail(params.row.zone_id)}
-          className="hover:no-underline text-blue-900 hover:opacity-80 cursor-pointer"
-          title="เปิดรายละเอียด"
-        >
-          {params.row.zone_name}
-        </button>
-      ),
+      // renderCell: (params: GridRenderCellParams<DataZonesRow>) => (
+      //   <button
+      //     onClick={() => openDetail(params.row.zone_id)}
+      //     className="hover:no-underline text-blue-900 hover:opacity-80 cursor-pointer"
+      //     title="เปิดรายละเอียด"
+      //   >
+      //     {params.row.zone_name}
+      //   </button>
+      // ),
     },
     {
-      field: "actions",
-      headerName: "Action",
-      sortable: false,
-      filterable: false,
-      disableColumnMenu: true,
-      width: 150,
+      field: "created_date",
+      headerName: "วันที่สร้าง",
+      flex: 1,
+      headerAlign: "center",
+      align: "center",
+      renderCell: (params) => formatDateTime(params.row.created_date),
+    },
+    {
+      field: "updated_date",
+      headerName: "อัปเดทล่าสุด",
+      flex: 1,
+      headerAlign: "center",
+      align: "center",
+      renderCell: (params) => formatDateTime(params.row.updated_date),
+    },
+    {
+      field: "is_active",
+      headerName: "สถานะ",
+      flex: 1,
       headerAlign: "center",
       align: "center",
       renderCell: (params: GridRenderCellParams<DataZonesRow>) => (
-        <>
-          <IconButton color="primary" onClick={() => handleOpenEdit(params.row)}>
-            <EditIcon />
-          </IconButton>
-          <IconButton color="error" onClick={() => handleDelete(params.row.zone_id)}>
-            <DeleteIcon />
-          </IconButton></>
+        <Switch
+          checked={params.row.is_active === 1}
+          onChange={() => toggleStatus(params.row)}
+          color="success"
+        />
       ),
     },
+    // {
+    //   field: "actions",
+    //   headerName: "Action",
+    //   sortable: false,
+    //   filterable: false,
+    //   disableColumnMenu: true,
+    //   width: 150,
+    //   headerAlign: "center",
+    //   align: "center",
+    //   renderCell: (params: GridRenderCellParams<DataZonesRow>) => (
+    //     <>
+    //       <IconButton color="primary" onClick={() => handleOpenEdit(params.row)}>
+    //         <EditIcon />
+    //       </IconButton>
+    //       <IconButton color="error" onClick={() => handleDelete(params.row.zone_id)}>
+    //         <DeleteIcon />
+    //       </IconButton></>
+    //   ),
+    // },
   ];
 
   const filteredRows = rows
@@ -273,14 +333,14 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
               />
-              <Button
+              {/* <Button
                 variant="contained"
                 color="primary"
                 startIcon={<AddIcon />}
                 onClick={handleOpenAdd}
               >
                 เพิ่มข้อมูล
-              </Button>
+              </Button> */}
             </div>
           </div>
 

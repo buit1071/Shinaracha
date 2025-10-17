@@ -6,10 +6,10 @@ import {
     GridColDef,
     GridRenderCellParams,
 } from "@mui/x-data-grid";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
+// import EditIcon from "@mui/icons-material/Edit";
+// import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
-import IconButton from "@mui/material/IconButton";
+// import IconButton from "@mui/material/IconButton";
 import {
     Box,
     Button,
@@ -99,11 +99,11 @@ export default function InspectionFormPage() {
         setOpen(true);
     };
 
-    const handleOpenEdit = (row: ServiceRow) => {
-        setIsEdit(true);
-        setFormData(row);
-        setOpen(true);
-    };
+    // const handleOpenEdit = (row: ServiceRow) => {
+    //     setIsEdit(true);
+    //     setFormData(row);
+    //     setOpen(true);
+    // };
 
     const handleClose = () => setOpen(false);
 
@@ -152,36 +152,36 @@ export default function InspectionFormPage() {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        const confirmed = await showConfirm(
-            "หากลบแล้วจะไม่สามารถนำกลับมาได้",
-            "คุณต้องการลบข้อมูลนี้หรือไม่?"
-        );
-        if (!confirmed) return;
-        showLoading(true);
+    // const handleDelete = async (id: string) => {
+    //     const confirmed = await showConfirm(
+    //         "หากลบแล้วจะไม่สามารถนำกลับมาได้",
+    //         "คุณต้องการลบข้อมูลนี้หรือไม่?"
+    //     );
+    //     if (!confirmed) return;
+    //     showLoading(true);
 
-        try {
-            const res = await fetch(`/api/auth/inspection-form/delete`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id, function: "service" }),
-            });
+    //     try {
+    //         const res = await fetch(`/api/auth/inspection-form/delete`, {
+    //             method: "POST",
+    //             headers: { "Content-Type": "application/json" },
+    //             body: JSON.stringify({ id, function: "service" }),
+    //         });
 
-            const result = await res.json();
-            if (result.success) {
-                showLoading(false);
-                await showAlert("success", result.message);
-                fetchService();
-            } else {
-                showLoading(false);
-                showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
-            }
-        } catch (err) {
-            showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
-        } finally {
-            showLoading(false);
-        }
-    };
+    //         const result = await res.json();
+    //         if (result.success) {
+    //             showLoading(false);
+    //             await showAlert("success", result.message);
+    //             fetchService();
+    //         } else {
+    //             showLoading(false);
+    //             showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
+    //         }
+    //     } catch (err) {
+    //         showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+    //     } finally {
+    //         showLoading(false);
+    //     }
+    // };
 
     const toggleStatus = async (row: ServiceRow) => {
         showLoading(true);
@@ -203,6 +203,7 @@ export default function InspectionFormPage() {
             showLoading(false);
 
             if (res.ok && result.success) {
+                showAlert("success", result.message);
                 fetchService();
             } else {
             }
@@ -265,25 +266,25 @@ export default function InspectionFormPage() {
                 />
             ),
         },
-        {
-            field: "actions",
-            headerName: "Action",
-            sortable: false,
-            filterable: false,
-            disableColumnMenu: true,
-            width: 150,
-            headerAlign: "center",
-            align: "center",
-            renderCell: (params: GridRenderCellParams<ServiceRow>) => (
-                <>
-                    <IconButton color="primary" onClick={() => handleOpenEdit(params.row)}>
-                        <EditIcon />
-                    </IconButton>
-                    <IconButton color="error" onClick={() => handleDelete(params.row.service_id)}>
-                        <DeleteIcon />
-                    </IconButton></>
-            ),
-        },
+        // {
+        //     field: "actions",
+        //     headerName: "Action",
+        //     sortable: false,
+        //     filterable: false,
+        //     disableColumnMenu: true,
+        //     width: 150,
+        //     headerAlign: "center",
+        //     align: "center",
+        //     renderCell: (params: GridRenderCellParams<ServiceRow>) => (
+        //         <>
+        //             <IconButton color="primary" onClick={() => handleOpenEdit(params.row)}>
+        //                 <EditIcon />
+        //             </IconButton>
+        //             <IconButton color="error" onClick={() => handleDelete(params.row.service_id)}>
+        //                 <DeleteIcon />
+        //             </IconButton></>
+        //     ),
+        // },
     ];
 
     // Filter + reindex ใหม่
@@ -314,9 +315,9 @@ export default function InspectionFormPage() {
                                 value={searchText}
                                 onChange={(e) => setSearchText(e.target.value)}
                             />
-                            <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenAdd}>
+                            {/* <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenAdd}>
                                 เพิ่มข้อมูล
-                            </Button>
+                            </Button> */}
                         </div>
                     </div>
 

@@ -198,6 +198,29 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, message: "อัปเดตสถานะเรียบร้อย" });
         }
 
+        if (entity === "active") {
+            const { zone_id, is_active, updated_by } = data;
+
+            if (!zone_id) {
+                return NextResponse.json(
+                    { success: false, message: "กรุณาระบุ zone_id" },
+                    { status: 400 }
+                );
+            }
+
+            const activeVal =
+                typeof is_active === "string" ? parseInt(is_active, 10) || 0 : Number(is_active ?? 0);
+
+            await query(
+                `UPDATE data_service_form
+       SET is_active = ?, updated_by = ?, updated_date = NOW()
+     WHERE zone_id = ?`,
+                [activeVal, updated_by ?? "system", zone_id]
+            );
+
+            return NextResponse.json({ success: true, message: "อัปเดตสถานะเรียบร้อย" });
+        }
+
         // entity ไม่ตรง
         return NextResponse.json(
             { success: false, message: "entity ไม่ถูกต้อง (service | zone | inspect)" },

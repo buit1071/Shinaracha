@@ -1408,7 +1408,7 @@ async function buildSectionThree(formData: FormDataLite) {
     const PAGEBREAK = new Paragraph({ pageBreakBefore: true });
     const h3 = headingBoxedCompact(
         3,
-        "ช่วงเวลาความถี่ในการตรวจสอบประจำปี\nของผู้ตรวจสอบอาคาร และแนวทางการตรวจสอบตามแผน"
+        "ช่วงเวลาความถี่ในการตรวจสอบประจำปี\nของผู้ตรวจสอบอาคาร"
     );
     const h3_1 = pn("1. ความถี่ในการตรวจบำรุงรักษาป้ายด้านความมั่นคงแข็งแรงของป้าย", 1);
     const h3_2 = pn("2. ความถี่ในการตรวจบำรุงรักษาระบบอุปกรณ์ประกอบต่าง ๆ ของป้าย", 1);
