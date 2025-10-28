@@ -492,3 +492,19 @@ export interface EquipmentTypeRow {
     updated_date?: string;
     order?: number;
 }
+export interface DefectRow {
+    id: number | null;
+    defect_no: string;
+    type: string;
+    inspection_item?: string;
+    illegal_problem?: string;
+    illegal_suggestion?: string;
+    general_problem?: string;
+    general_suggestion?: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+}

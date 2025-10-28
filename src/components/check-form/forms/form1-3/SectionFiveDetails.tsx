@@ -103,7 +103,7 @@ export default function SectionFiveDetails({ name, value, onChange }: Props) {
     const vRows = value?.rows ?? {};
     const vMeta = value?.meta ?? {};
 
-    const td = "border border-gray-300 px-2 py-2 align-top text-gray-900";
+    const td = "border border-gray-300 px-2 py-2 text-gray-900";
     const th = "border border-gray-300 px-3 py-2 text-gray-700";
 
     // ---- emit helpers (event-based, ไม่ลูป) ----

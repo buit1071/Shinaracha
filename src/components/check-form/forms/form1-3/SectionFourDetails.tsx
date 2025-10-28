@@ -1,5 +1,7 @@
 import * as React from "react";
-
+import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import IconButton from "@mui/material/IconButton";
 /* ========= CONFIG ========= */
 export type VisitKey = "v1";
 const VISITS: { key: VisitKey; label: string }[] = [{ key: "v1", label: "ครั้งที่ 1" }];
@@ -73,10 +75,13 @@ const table2Groups: { title: string; rows: RowItem[] }[] = [
     },
 ];
 
+type PhotoItem = { src?: string; filename: string };
+
 export type SectionFourRow = {
     visits?: Partial<Record<VisitKey, "ok" | "ng" | undefined>>; // สถานะต่อ visit
     note?: string;
     extra?: string;
+    photos?: PhotoItem[];
 };
 
 export type SectionFourForm = {
@@ -91,9 +96,27 @@ type Props = {
 
 /* ========= COMPONENT ========= */
 export default function SectionFourDetails({ value, onChange }: Props) {
-    const td = "border border-gray-300 px-2 py-2 align-top text-gray-900";
+    const buildRemoteImgUrl = (name: string) =>
+        `${process.env.NEXT_PUBLIC_N8N_UPLOAD_FILE}?name=${encodeURIComponent(name)}`;
+    const videoRef = React.useRef<HTMLVideoElement>(null);
+    const canvasRef = React.useRef<HTMLCanvasElement>(null);
+    const fileRef = React.useRef<HTMLInputElement>(null);
+    const streamRef = React.useRef<MediaStream | null>(null);
+
+    const [camOpen, setCamOpen] = React.useState(false);
+    const [captured, setCaptured] = React.useState<string | null>(null);
+    const [capturedName, setCapturedName] = React.useState<string | null>(null);
+    const [camTarget, setCamTarget] = React.useState<{ group: "table1" | "table2"; id: string } | null>(null);
+    const [overlayMode, setOverlayMode] = React.useState<"camera" | "view">("camera");
+    const [viewIndex, setViewIndex] = React.useState<number | null>(null);
+
+    const [noteOpen, setNoteOpen] = React.useState(false);
+    const [noteTarget, setNoteTarget] = React.useState<{ group: "table1" | "table2"; id: string } | null>(null);
+    const [noteDraft, setNoteDraft] = React.useState("");
+
+    const td = "border border-gray-300 px-2 py-2 text-gray-900";
     const th = "border border-gray-300 px-3 py-2 text-gray-700";
-    const TOTAL_COLS = 2 + VISITS.length * 2 + 1;
+    const TOTAL_COLS = 3 + VISITS.length * 2 + 1;
 
     const v1 = value?.table1 ?? {};
     const v2 = value?.table2 ?? {};
@@ -120,6 +143,7 @@ export default function SectionFourDetails({ value, onChange }: Props) {
             {VISITS.map((v) => (
                 <th key={v.key} colSpan={2} className={`${th} text-center w-40`}>{v.label}</th>
             ))}
+            <th rowSpan={2} className={`${th} w-25 text-center`}>รูปภาพ</th>
             <th rowSpan={2} className={`${th} w-56 text-center`}>หมายเหตุ</th>
         </>
     );
@@ -135,23 +159,205 @@ export default function SectionFourDetails({ value, onChange }: Props) {
         </>
     );
 
+    const openNote = (group: "table1" | "table2", id: string, current: string) => {
+        setNoteTarget({ group, id });
+        setNoteDraft(current ?? "");
+        setNoteOpen(true);
+    };
+
+    const closeNote = () => {
+        setNoteOpen(false);
+        setNoteTarget(null);
+        setNoteDraft("");
+    };
+
+    const saveNote = () => {
+        if (!noteTarget) return;
+        emit(noteTarget.group, noteTarget.id, { note: noteDraft });
+        closeNote();
+    };
+
     const ResultCells: React.FC<{ group: "table1" | "table2"; id: string }> = ({ group, id }) => {
         const row = group === "table1" ? v1[id] : v2[id];
         return (
             <>
                 {VISITS.map((v) => (
                     <React.Fragment key={`${id}-${v.key}`}>
-                        <td className={`${td} text-center`}>
-                            <CheckTick checked={row?.visits?.[v.key] === "ok"} onChange={() => toggle(group, id, v.key, "ok")} />
+                        <td className={`${td} text-center align-middle`}>
+                            <div className="flex items-center justify-center">
+                                <CheckTick checked={row?.visits?.[v.key] === "ok"} onChange={() => toggle(group, id, v.key, "ok")} />
+                            </div>
                         </td>
-                        <td className={`${td} text-center`}>
-                            <CheckTick checked={row?.visits?.[v.key] === "ng"} onChange={() => toggle(group, id, v.key, "ng")} />
+                        <td className={`${td} text-center align-middle`}>
+                            <div className="flex items-center justify-center">
+                                <CheckTick checked={row?.visits?.[v.key] === "ng"} onChange={() => toggle(group, id, v.key, "ng")} />
+                            </div>
                         </td>
                     </React.Fragment>
                 ))}
             </>
         );
     };
+
+    const getPhotos = (group: "table1" | "table2", id: string): PhotoItem[] =>
+        (group === "table1" ? v1[id]?.photos : v2[id]?.photos) ?? [];
+
+    const setPhotos = (group: "table1" | "table2", id: string, next: PhotoItem[]) =>
+        emit(group, id, { photos: next });
+
+    const openViewer = (group: "table1" | "table2", id: string, index: number) => {
+        const p = getPhotos(group, id)[index];
+        if (!p) return;
+
+        setCamTarget({ group, id });
+        setOverlayMode("view");
+        setViewIndex(index); // ⭐ จำ index
+
+        const src = p.src && p.src.startsWith("data:")
+            ? p.src
+            : buildRemoteImgUrl(p.filename);
+
+        setCaptured(src);
+        setCapturedName(p.filename);
+        setCamOpen(true);
+        stopStream();
+    };
+
+    const clearPhotos = () => {
+        if (!camTarget || viewIndex == null) return;
+        const { group, id } = camTarget;
+
+        const cur = getPhotos(group, id);
+        if (!cur.length) { closeCamera(); return; }
+
+        // ลบรูปตาม index ปัจจุบัน
+        const next = cur.filter((_, i) => i !== viewIndex);
+        setPhotos(group, id, next);
+
+        closeCamera();
+    };
+
+    const startStream = async () => {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: false,
+        });
+        streamRef.current = stream;
+        if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            try { await videoRef.current.play(); } catch { }
+        }
+    };
+
+    const stopStream = () => {
+        streamRef.current?.getTracks().forEach(t => t.stop());
+        streamRef.current = null;
+    };
+
+    const openCamera = async (group: "table1" | "table2", id: string) => {
+        if (getPhotos(group, id).length >= 2) return; // จำกัด 2 ไฟล์
+        setCamTarget({ group, id });
+        setOverlayMode("camera");
+        setCaptured(null);
+        setCamOpen(true);
+        try {
+            await startStream();
+        } catch {
+            fileRef.current?.click();
+        }
+    };
+
+    const closeCamera = () => {
+        stopStream();
+        setCamOpen(false);
+        setCaptured(null);
+        setCapturedName(null);
+        setViewIndex(null);
+    };
+
+    const capturePhoto = () => {
+        if (!videoRef.current || !canvasRef.current) return;
+        const v = videoRef.current, c = canvasRef.current;
+        const ctx = c.getContext("2d"); if (!ctx) return;
+        c.width = v.videoWidth; c.height = v.videoHeight;
+        ctx.drawImage(v, 0, 0, c.width, c.height);
+        setCaptured(c.toDataURL("image/png"));
+        setCapturedName(makeDefectName());     // ⭐ ตั้งชื่อไฟล์ทันที
+        stopStream();
+    };
+
+    const confirmPhoto = () => {
+        if (!captured || !camTarget) return;
+        const { group, id } = camTarget;
+        const cur = getPhotos(group, id);
+        if (cur.length >= 2) return;
+        const next: PhotoItem[] = [...cur, { src: captured, filename: capturedName ?? makeDefectName() }].slice(0, 2);
+        setPhotos(group, id, next);
+        closeCamera();
+    };
+
+    const retakePhoto = async () => {
+        setCaptured(null);
+        await startStream();
+    };
+
+    const onFilePicked: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+        const file = e.target.files?.[0];
+        if (!file || !camTarget) return;
+        const { group, id } = camTarget;
+        const cur = getPhotos(group, id);
+        if (cur.length >= 2) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            const next: PhotoItem[] = [...cur, { src: reader.result as string, filename: makeDefectName() }].slice(0, 2);
+            setPhotos(group, id, next);
+            if (fileRef.current) fileRef.current.value = "";
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const makeDefectName = () => {
+        const d = new Date();
+        const dd = pad(d.getDate());
+        const MM = pad(d.getMonth() + 1);
+        const yyyy = d.getFullYear();
+        const hh = pad(d.getHours());
+        const mm = pad(d.getMinutes());
+        const ss = pad(d.getSeconds());
+        return `defect_${dd}${MM}${yyyy}${hh}${mm}${ss}`;
+    };
+
+    React.useEffect(() => () => stopStream(), []);
+
+    React.useEffect(() => {
+        if (!value || !onChange) return;
+
+        let changed = false;
+        const patch: Partial<SectionFourForm> = { table1: {}, table2: {} };
+
+        const normalize = (tableName: "table1" | "table2", table?: Record<string, SectionFourRow>) => {
+            if (!table) return;
+            Object.entries(table).forEach(([rid, row]) => {
+                if (!row?.photos?.length) return;
+                const updated = row.photos.map(p =>
+                    p?.src ? p : { ...p, src: buildRemoteImgUrl(p.filename) } // ⭐ เติม src ถ้ายังไม่มี
+                );
+                // ถ้ามีตัวไหนไม่มี src มาก่อน แปลว่าเราเติม → ต้อง patch
+                if (updated.some((u, i) => !row.photos![i].src)) {
+                    (patch as any)[tableName] = { ...(patch as any)[tableName], [rid]: { photos: updated } };
+                    changed = true;
+                }
+            });
+        };
+
+        normalize("table1", value.table1);
+        normalize("table2", value.table2);
+
+        if (changed) onChange(patch);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [value?.table1, value?.table2]);
 
     return (
         <section className="space-y-8 text-gray-900 p-2">
@@ -184,13 +390,52 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                                         )}
                                     </td>
                                     <ResultCells group="table1" id={id} />
-                                    <td className={td}>
-                                        <DottedInput
-                                            className="w-full"
-                                            placeholder="ระบุหมายเหตุ (ถ้ามี)"
-                                            value={r.note ?? ""}
-                                            onChange={(e) => emit("table1", id, { note: e.target.value })}
-                                        />
+                                    <td className={`${td} text-center`}>
+                                        <div className="flex items-center justify-center gap-2">
+                                            {(v1[id]?.photos ?? []).slice(0, 2).map((p, idx) => (
+                                                <img
+                                                    key={idx}
+                                                    src="/images/IconFile.png"
+                                                    alt={`file-${idx + 1}`}
+                                                    title={p.filename}                  // ⭐ ชื่อไฟล์บน tooltip
+                                                    className="w-6 h-6 cursor-pointer"
+                                                    onClick={() => openViewer("table1", id, idx)}
+                                                />
+                                            ))}
+
+                                            {(v1[id]?.photos?.length ?? 0) < 2 && (
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => openCamera("table1", id)}
+                                                    title="ถ่าย/แนบรูป"
+                                                    sx={{
+                                                        color: "gray",
+                                                        "&:hover": { color: "#2563eb" }, // hover:text-blue-600
+                                                    }}
+                                                >
+                                                    <PhotoCameraIcon fontSize="small" />
+                                                </IconButton>
+                                            )}
+                                        </div>
+                                    </td>
+
+                                    <td className={`${td} align-middle`}>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span
+                                                title={r.note ?? ""}                               // โชว์เต็มเมื่อ hover
+                                                className="min-w-0 block max-w-[150px] truncate text-gray-800"
+                                            >
+                                                {r.note ? r.note : <span className="text-gray-400">หมายเหตุ (ถ้ามี)</span>}
+                                            </span>
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => openNote("table1", id, r.note ?? "")}
+                                                title="แก้ไขหมายเหตุ"
+                                                sx={{ color: "#6b7280", "&:hover": { color: "#111827" } }}
+                                            >
+                                                <EditOutlinedIcon fontSize="small" />
+                                            </IconButton>
+                                        </div>
                                     </td>
                                 </tr>
                             );
@@ -237,13 +482,51 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                                                 )}
                                             </td>
                                             <ResultCells group="table2" id={id} />
-                                            <td className={td}>
-                                                <DottedInput
-                                                    className="w-full"
-                                                    placeholder="ระบุหมายเหตุ (ถ้ามี)"
-                                                    value={r.note ?? ""}
-                                                    onChange={(e) => emit("table2", id, { note: e.target.value })}
-                                                />
+                                            <td className={`${td} text-center`}>
+                                                <div className="flex items-center justify-center gap-2">
+                                                    {(v2[id]?.photos ?? []).slice(0, 2).map((p, idx) => (
+                                                        <img
+                                                            key={idx}
+                                                            src="/images/IconFile.png"
+                                                            alt={`file-${idx + 1}`}
+                                                            title={p.filename}                  // ⭐ ชื่อไฟล์บน tooltip
+                                                            className="w-6 h-6 cursor-pointer"
+                                                            onClick={() => openViewer("table2", id, idx)}
+                                                        />
+                                                    ))}
+
+                                                    {(v2[id]?.photos?.length ?? 0) < 2 && (
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => openCamera("table2", id)}
+                                                            title="ถ่าย/แนบรูป"
+                                                            sx={{
+                                                                color: "gray",
+                                                                "&:hover": { color: "#2563eb" }, // hover:text-blue-600
+                                                            }}
+                                                        >
+                                                            <PhotoCameraIcon fontSize="small" />
+                                                        </IconButton>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className={`${td} align-middle`}>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span
+                                                        title={r.note ?? ""}
+                                                        className="min-w-0 block max-w-[150px] truncate text-gray-800"
+                                                    >
+                                                        {r.note ? r.note : <span className="text-gray-400">หมายเหตุ (ถ้ามี)</span>}
+                                                    </span>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => openNote("table2", id, r.note ?? "")}
+                                                        title="แก้ไขหมายเหตุ"
+                                                        sx={{ color: "#6b7280", "&:hover": { color: "#111827" } }}
+                                                    >
+                                                        <EditOutlinedIcon fontSize="small" />
+                                                    </IconButton>
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -253,6 +536,108 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                     </tbody>
                 </table>
             </div>
+
+            <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={onFilePicked}
+            />
+
+            {camOpen && (
+                <div className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4">
+                    <div className="relative w-full max-w-4xl">
+                        <button
+                            onClick={closeCamera}
+                            className="absolute -top-4 -right-4 bg-white text-rose-600 border border-rose-300 rounded-full w-9 h-9 shadow flex items-center justify-center hover:bg-rose-50 cursor-pointer"
+                            aria-label="ปิด"
+                            title="ปิด"
+                        >
+                            ✕
+                        </button>
+
+                        <div className="rounded-xl overflow-hidden border-2 border-white shadow-xl bg-black">
+                            {overlayMode === "camera" && !captured ? (
+                                <video ref={videoRef} autoPlay playsInline muted className="w-full max-h-[75vh] object-contain" />
+                            ) : (
+                                <img src={captured ?? ""} alt="preview" className="w-full max-h-[75vh] object-contain bg-black" />
+                            )}
+                        </div>
+
+                        <div className="mt-4 flex items-center justify-center gap-3">
+                            {overlayMode === "camera" ? (
+                                !captured ? (
+                                    <button
+                                        onClick={capturePhoto}
+                                        className="inline-flex items-center gap-2 rounded-full bg-emerald-600 text-white px-6 py-3 font-medium shadow hover:bg-emerald-700 cursor-pointer"
+                                    >
+                                        📸 ถ่ายภาพ
+                                    </button>
+                                ) : (
+                                    <>
+                                        <button
+                                            onClick={confirmPhoto}
+                                            className="inline-flex items-center gap-2 rounded-full bg-emerald-600 text-white px-6 py-3 font-medium shadow hover:bg-emerald-700 cursor-pointer"
+                                        >
+                                            ✅ ยืนยัน
+                                        </button>
+                                        <button
+                                            onClick={retakePhoto}
+                                            className="inline-flex items-center gap-2 rounded-full bg-gray-200 text-gray-800 px-6 py-3 font-medium shadow hover:bg-gray-300 cursor-pointer"
+                                        >
+                                            🔄 ถ่ายใหม่
+                                        </button>
+                                    </>
+                                )
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={clearPhotos}
+                                        className="inline-flex items-center gap-2 rounded-full bg-rose-600 text-white px-6 py-3 font-medium shadow hover:bg-rose-700 cursor-pointer"
+                                    >
+                                        🗑️ ลบรูป
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                    <canvas ref={canvasRef} className="hidden" />
+                </div>
+            )}
+            {noteOpen && (
+                <div className="fixed inset-0 z-[9998] bg-black/50 flex items-center justify-center p-4">
+                    <div className="w-full max-w-xl bg-white rounded-2xl shadow-2xl overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-3 border-b">
+                            <h3 className="font-semibold text-gray-900">แก้ไขหมายเหตุ</h3>
+                            <button
+                                onClick={closeNote}
+                                className="rounded-full w-9 h-9 bg-gray-100 hover:bg-gray-200 text-gray-600"
+                                aria-label="ปิด"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="p-4">
+                            <textarea
+                                value={noteDraft}
+                                onChange={(e) => setNoteDraft(e.target.value)}
+                                placeholder="พิมพ์หมายเหตุ..."
+                                className="w-full h-48 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2 px-4 pb-4">
+                            <button onClick={closeNote} className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700">
+                                ยกเลิก
+                            </button>
+                            <button onClick={saveNote} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">
+                                บันทึก
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </section>
     );
 }

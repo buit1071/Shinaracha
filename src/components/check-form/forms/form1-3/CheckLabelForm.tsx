@@ -14,10 +14,21 @@ type Props = {
 
 export default function CheckLabelForm({ formId, jobId, equipment_id, name, onBack }: Props) {
   // FORM_MAP เปลี่ยนจาก ReactNode เป็น function รับ props
-  const FORM_MAP: Record<string, (jobId: string, equipment_id: string, name: string) => ReactNode> = {
-    "FORM-67554643": (jobId: string, equipment_id: string, name: string) => (
-      <Form1_3 jobId={jobId} equipment_id={equipment_id} name={name}/>
-    ),
+  const FORM_MAP: Record<
+    string,
+    (
+      jobId: string,
+      equipment_id: string,
+      name: string,
+      onBack: () => void
+    ) => ReactNode
+  > = {
+    "FORM-67554643": (
+      jobId: string,
+      equipment_id: string,
+      name: string,
+      onBack: () => void
+    ) => <Form1_3 jobId={jobId} equipment_id={equipment_id} name={name} onBack={onBack} />,
   };
 
   return (
@@ -33,7 +44,7 @@ export default function CheckLabelForm({ formId, jobId, equipment_id, name, onBa
       <div className="h-full w-full overflow-auto">
         {/* พื้นที่ A4 แนวตั้ง */}
         <div className="w-full shadow-sm border bg-white">
-          {FORM_MAP[formId]?.(jobId, equipment_id, name) ?? null}
+          {FORM_MAP[formId]?.(jobId, equipment_id, name, onBack) ?? null}
         </div>
       </div>
     </>

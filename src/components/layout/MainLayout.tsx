@@ -30,7 +30,8 @@ import {
     DocumentMagnifyingGlassIcon,
     ChevronDownIcon,
     MapPinIcon,
-    Squares2X2Icon
+    Squares2X2Icon,
+    ScaleIcon
 } from "@heroicons/react/24/outline";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -310,6 +311,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                 collapsed={isCollapsed}
                             >
                                 แสดงผลรายงาน
+                            </NavLink>
+                            <NavLink
+                                href="/legal-regulations"
+                                currentPath={pathname}
+                                icon={ScaleIcon}
+                                collapsed={isCollapsed}
+                            >
+                                ข้อบังคับกฎหมาย
                             </NavLink>
                         </div>
                     )}

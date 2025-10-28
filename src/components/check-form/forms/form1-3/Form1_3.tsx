@@ -15,6 +15,7 @@ type Props = {
     jobId: string;
     equipment_id: string;
     name: string;
+    onBack: () => void;
 };
 
 type FormData = {
@@ -28,7 +29,7 @@ type FormData = {
     sectionFive?: Partial<SectionFiveForm>
 };
 
-export default function Form1_3({ jobId, equipment_id, name }: Props) {
+export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
     const user = useCurrentUser();
     const username = React.useMemo(
         () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
@@ -241,7 +242,7 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
     const handleSave = async () => {
         showLoading(true);
         try {
-            const { cover, sectionTwo, ...rest } = formData;
+            const { cover, sectionTwo, sectionFour, ...rest } = formData;
 
             // ---------- 1. Upload cover ----------
             if (cover instanceof File) {
@@ -262,7 +263,6 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
             }
 
             // ---------- 2. Upload SectionTwo images ----------
-            // helper function
             const uploadImageIfNeeded = async (
                 previewUrl: string | null | undefined,
                 filename: string | null | undefined
@@ -297,8 +297,61 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
                 ]);
             }
 
-            // ---------- 3. เตรียม payload ----------
-            // ตัดฟิลด์ preview ทั้งหมดออกก่อนส่ง
+            if (sectionFour) {
+                const uploadPromises: Promise<void>[] = [];
+
+                // helper สำหรับ upload src ที่เป็น base64
+                const uploadPhotoItem = async (src: string, filename: string) => {
+                    if (src.startsWith("data:image")) {
+                        const res = await fetch(src);
+                        const blob = await res.blob();
+                        const fd = new FormData();
+                        fd.append("file", blob, filename);
+                        fd.append("filename", filename);
+
+                        const uploadRes = await fetch("/api/auth/upload-file", {
+                            method: "POST",
+                            body: fd,
+                        });
+                        const data = await uploadRes.json();
+                        if (!uploadRes.ok || !data.success) {
+                            console.error("❌ Upload failed for", filename, data.error);
+                        }
+                    }
+                };
+
+                // ✅ loop table1 และ table2
+                const processTable = (table: Record<string, any> | undefined) => {
+                    if (!table) return {};
+                    const clean: Record<string, any> = {};
+
+                    for (const [key, row] of Object.entries(table)) {
+                        const { photos, ...restRow } = row || {};
+                        const cleanedPhotos =
+                            Array.isArray(photos) && photos.length > 0
+                                ? photos.map((p) => {
+                                    if (p?.src && p?.filename) {
+                                        uploadPromises.push(uploadPhotoItem(p.src, p.filename));
+                                    }
+                                    return { filename: p?.filename }; // ❌ ตัด src ออก
+                                })
+                                : [];
+
+                        clean[key] = { ...restRow, photos: cleanedPhotos };
+                    }
+                    return clean;
+                };
+
+                const cleanTable1 = processTable(sectionFour.table1);
+                const cleanTable2 = processTable(sectionFour.table2);
+
+                await Promise.all(uploadPromises);
+
+                sectionFour.table1 = cleanTable1;
+                sectionFour.table2 = cleanTable2;
+            }
+
+             // ---------- 4. เตรียม payload ----------
             const {
                 mapSketchPreview,
                 shapeSketchPreview,
@@ -313,6 +366,7 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
                 data: {
                     ...rest,
                     sectionTwo: sectionTwoClean, // ✅ ส่งเฉพาะข้อมูลจริง ไม่รวม preview
+                    sectionFour: sectionFour,
                     job_id: jobId,
                     equipment_id: equipment_id,
                     is_active: 1,
@@ -325,7 +379,7 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
                 payload.data.form_code = formData.form_code;
             }
 
-            // ---------- 4. บันทึกข้อมูล ----------
+            // ---------- 5. บันทึกข้อมูล ----------
             const res = await fetch("/api/auth/forms/post", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -340,6 +394,8 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
                 if (data.form_code && !formData.form_code) {
                     setFormData((prev) => ({ ...prev, form_code: data.form_code }));
                 }
+                onBack();
+                return;
             } else {
                 showAlert("error", data.message);
             }
@@ -354,14 +410,24 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
         <>
             {/* ระยะขอบกระดาษ */}
             <div className="p-2 relative">
-                <button
-                    type="button"
-                    onClick={() => exportToDocx(formData)}
-                    className="absolute right-2.5 w-[100px] h-10 bg-sky-600 hover:bg-sky-700 active:bg-sky-700 text-white rounded-[5px] inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
-                >
-                    <img src="/images/IconWord.png" alt="Word" className="h-5 w-5 object-contain" />
-                    <span className="leading-none">Export</span>
-                </button>
+                <div className="absolute right-2.5">
+                    <button
+                        type="button"
+                        // onClick={() => exportToExcel(formData)}
+                        className="mr-2 w-[100px] h-10 bg-green-600 hover:bg-green-700 active:bg-green-700 text-white rounded-[5px] inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                    >
+                        <img src="/images/IconExcel.webp" alt="Excel" className="h-5 w-5 object-contain" />
+                        <span className="leading-none">Defect</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => exportToDocx(formData)}
+                        className="w-[100px] h-10 bg-sky-600 hover:bg-sky-700 active:bg-sky-700 text-white rounded-[5px] inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                    >
+                        <img src="/images/IconWord.png" alt="Word" className="h-5 w-5 object-contain" />
+                        <span className="leading-none">Export</span>
+                    </button>
+                </div>
                 <div className="w-full h-[5vh] grid place-items-center">
                     <span className="text-black md:text-3xl font-bold tracking-wide">
                         หน้าปกรายงาน
@@ -663,9 +729,9 @@ export default function Form1_3({ jobId, equipment_id, name }: Props) {
                         Save
                     </button>
                 </div>
-                {/* <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
+                <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
                     {JSON.stringify(formData, null, 2)}
-                </pre> */}
+                </pre>
             </div>
         </>
     )
