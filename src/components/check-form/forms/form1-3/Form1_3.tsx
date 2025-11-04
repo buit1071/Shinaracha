@@ -9,6 +9,7 @@ import SectionFiveDetails, { SectionFiveForm, SectionFiveRow } from "@/component
 import { showLoading } from "@/lib/loading";
 import { showAlert } from "@/lib/fetcher";
 import { exportToDocx } from "@/utils/exportToDocx";
+import { exportToExcel } from "@/utils/exportToExcel";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 type Props = {
@@ -19,6 +20,7 @@ type Props = {
 };
 
 type FormData = {
+    id?: number | null;
     form_code?: string;
     cover?: File;
     coverfilename?: string;
@@ -183,6 +185,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 // ✅ เซ็ตค่าเข้า state ให้ครบ
                 setFormData((prev) => ({
                     ...prev,
+                    id: data.data.id ?? null,
                     form_code: data.data.form_code ?? "",
                     ...form,
                     sectionTwo: form.sectionTwo ?? {},
@@ -191,7 +194,6 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     sectionFive: form.sectionFive ?? {},
                 }));
             } else {
-                console.warn("⚠️ No form_data found in response.");
             }
         } catch (err) {
         } finally {
@@ -281,7 +283,6 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     });
                     const result = await uploadRes.json();
                     if (!uploadRes.ok || !result.success) {
-                        console.error("❌ Upload failed for", filename, result.error);
                     }
                 }
             };
@@ -315,7 +316,6 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         });
                         const data = await uploadRes.json();
                         if (!uploadRes.ok || !data.success) {
-                            console.error("❌ Upload failed for", filename, data.error);
                         }
                     }
                 };
@@ -351,7 +351,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 sectionFour.table2 = cleanTable2;
             }
 
-             // ---------- 4. เตรียม payload ----------
+            // ---------- 4. เตรียม payload ----------
             const {
                 mapSketchPreview,
                 shapeSketchPreview,
@@ -400,7 +400,6 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 showAlert("error", data.message);
             }
         } catch (err) {
-            console.error(err);
             showLoading(false);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         }
@@ -413,7 +412,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 <div className="absolute right-2.5">
                     <button
                         type="button"
-                        // onClick={() => exportToExcel(formData)}
+                        onClick={() => exportToExcel(formData.sectionFour ?? null, formData.id ?? null, jobId ?? "")}
                         className="mr-2 w-[100px] h-10 bg-green-600 hover:bg-green-700 active:bg-green-700 text-white rounded-[5px] inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
                     >
                         <img src="/images/IconExcel.webp" alt="Excel" className="h-5 w-5 object-contain" />

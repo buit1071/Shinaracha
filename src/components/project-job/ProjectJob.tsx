@@ -30,7 +30,6 @@ export default function ProjectJob({ projectId, onBack }: Props) {
     const openDetail = React.useCallback((jobId: string) => {
         const row = rows.find(r => r.job_id === jobId);
         if (!row) {
-            console.warn("job not found:", jobId);
             return;
         }
         setView({ type: "detail", id: row.job_id });

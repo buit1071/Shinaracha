@@ -63,7 +63,6 @@ export default function LegalRegulationPage() {
             const data = await res.json();
             if (data.success) {
                 setRows(data.data);
-                console.log(data.data);
             }
         } catch (err) {
         } finally {

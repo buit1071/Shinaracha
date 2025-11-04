@@ -75,7 +75,6 @@ export default function CheckForm({ jobId, onBack }: Props) {
     const openDetail = React.useCallback((zone_id: string) => {
         const row = rows.find(r => r.zone_id === zone_id);
         if (!row) {
-            console.warn("job not found:", zone_id);
             return;
         }
         setView({ type: "detail", id: row.zone_id, equipment_id: row.equipment_id, name: row.equipment_name });

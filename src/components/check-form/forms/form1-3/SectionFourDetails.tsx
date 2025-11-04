@@ -78,6 +78,7 @@ const table2Groups: { title: string; rows: RowItem[] }[] = [
 type PhotoItem = { src?: string; filename: string };
 
 export type SectionFourRow = {
+    inspection_item?: string;
     visits?: Partial<Record<VisitKey, "ok" | "ng" | undefined>>; // สถานะต่อ visit
     note?: string;
     extra?: string;
@@ -121,12 +122,37 @@ export default function SectionFourDetails({ value, onChange }: Props) {
     const v1 = value?.table1 ?? {};
     const v2 = value?.table2 ?? {};
 
+    const resolveTable1Text = (id: string) => {
+        const m = id.match(/^t1-(\d+)$/);
+        if (!m) return "";
+        const idx = Number(m[1]) - 1;
+        const row = table1Rows[idx];
+        return typeof row === "string" ? row : row?.label ?? "";
+    };
+
+    const resolveTable2Text = (id: string) => {
+        const m = id.match(/^t2-(\d+)-(\d+)$/);
+        if (!m) return "";
+        const gi = Number(m[1]) - 1;
+        const ri = Number(m[2]) - 1;
+        const row = table2Groups[gi]?.rows?.[ri];
+        return typeof row === "string" ? row : row?.label ?? "";
+    };
+
     const emit = React.useCallback(
         (group: "table1" | "table2", rowId: string, delta: Partial<SectionFourRow>) => {
             if (!onChange) return;
-            onChange({ [group]: { [rowId]: delta } } as Partial<SectionFourForm>);
+
+            const inspection_item =
+                group === "table1" ? resolveTable1Text(rowId) : resolveTable2Text(rowId);
+
+            onChange({
+                [group]: {
+                    [rowId]: { ...delta, inspection_item }, // ✅ แนบรายการตรวจสอบทุกครั้ง
+                },
+            } as Partial<SectionFourForm>);
         },
-        [onChange]
+        [onChange] // ถ้า table1Rows/table2Groups มาจาก props/state ให้ใส่ไว้ใน deps ด้วย
     );
 
     const toggle = (group: "table1" | "table2", rowId: string, visit: VisitKey, next: "ok" | "ng") => {
