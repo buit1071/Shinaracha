@@ -373,7 +373,6 @@ export async function exportToExcel(section: Partial<SectionFourForm> | null | u
     a.click();
     URL.revokeObjectURL(a.href);
   } catch (err) {
-    console.error("[exportToExcel] error:", err);
   } finally {
     showLoading(false);
   }
