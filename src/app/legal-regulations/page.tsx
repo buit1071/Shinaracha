@@ -18,9 +18,10 @@ import {
     DialogTitle,
     TextField,
 } from "@mui/material";
+import Select from "react-select";
 import { showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
-import { DefectRow } from "@/interfaces/master";
+import { DefectRow, DataZonesRow } from "@/interfaces/master";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function LegalRegulationPage() {
@@ -34,15 +35,14 @@ export default function LegalRegulationPage() {
     const [openEdit, setOpenEdit] = React.useState(false);
     const [error, setError] = React.useState(false);
 
+    const [forms, setForms] = React.useState<DataZonesRow[]>([]);
+
     const [formData, setFormData] = React.useState<DefectRow>({
         id: null,
-        defect_no: "",
-        type: "",
-        inspection_item: "",
-        illegal_problem: "",
+        defect: "",
+        zone_id: "",
+        zone_name: "",
         illegal_suggestion: "",
-        general_problem: "",
-        general_suggestion: "",
         is_active: 1,
         created_by: "",
         updated_by: "",
@@ -70,20 +70,38 @@ export default function LegalRegulationPage() {
         }
     };
 
+    const fetchZones = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/inspection-form/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "zonesAll" }),
+            });
+
+            const data = await res.json();
+            showLoading(false);
+
+            if (data.success) {
+                setForms(data.data || []);
+            } else {
+            }
+        } catch (err) {
+        }
+    };
+
     React.useEffect(() => {
+        fetchZones();
         fecthDefect();
     }, []);
 
     const handleOpenAdd = () => {
         setFormData({
             id: null,
-            defect_no: "",
-            type: "",
-            inspection_item: "",
-            illegal_problem: "",
+            defect: "",
+            zone_id: "",
+            zone_name: "",
             illegal_suggestion: "",
-            general_problem: "",
-            general_suggestion: "",
             is_active: 1,
             created_by: "",
             updated_by: "",
@@ -104,7 +122,7 @@ export default function LegalRegulationPage() {
     };
 
     const handleSave = async () => {
-        if (!formData.type) {
+        if (!formData.defect) {
             setError(true);
             return;
         }
@@ -115,13 +133,9 @@ export default function LegalRegulationPage() {
                 entity: "defect" as const,
                 data: {
                     id: formData.id || null,
-                    defect_no: formData.defect_no.trim() || undefined,
-                    type: formData.type.trim(),
-                    inspection_item: formData.inspection_item,
-                    illegal_problem: formData.illegal_problem,
+                    defect: formData.defect.trim() || undefined,
                     illegal_suggestion: formData.illegal_suggestion,
-                    general_problem: formData.general_problem,
-                    general_suggestion: formData.general_suggestion,
+                    zone_id: formData.zone_id,
                     is_active: formData.is_active ?? 1,
                     created_by: formData.created_by || username,
                     updated_by: formData.updated_by || username,
@@ -187,35 +201,16 @@ export default function LegalRegulationPage() {
 
     const columns: GridColDef<DefectRow>[] = [
         {
-            field: "defect_no",
-            headerName: "ข้อ",
+            field: "order",
+            headerName: "ลำดับ",
             width: 90,
             headerAlign: "center",
             align: "center",
-            resizable: false,
         },
         {
-            field: "type",
-            headerName: "ประเภท",
-            width: 150,
-            headerAlign: "center",
-            align: "center",
-            resizable: false,
-        },
-        {
-            field: "inspection_item",
-            headerName: "รายการตรวจสอบ",
-            flex: 2,
-            minWidth: 260,
-            headerAlign: "center",
-            align: "left",
-            resizable: false,
-        },
-        {
-            field: "illegal_problem",
-            headerName: "ปัญหาผิดกฏหมาย",
-            flex: 2,
-            minWidth: 260,
+            field: "defect",
+            headerName: "ข้อกฎหมาย",
+            width: 350,
             headerAlign: "center",
             align: "left",
             resizable: false,
@@ -224,28 +219,23 @@ export default function LegalRegulationPage() {
             field: "illegal_suggestion",
             headerName: "ข้อเสนอแนะ",
             flex: 2,
-            minWidth: 260,
+            minWidth: 400,
             headerAlign: "center",
             align: "left",
             resizable: false,
         },
         {
-            field: "general_problem",
-            headerName: "ปัญหาทั่วไป",
-            flex: 2,
-            minWidth: 260,
+            field: "zone_name",
+            headerName: "แบบฟอร์ม",
+            width: 350,
             headerAlign: "center",
-            align: "left",
+            align: "center",
             resizable: false,
-        },
-        {
-            field: "general_suggestion",
-            headerName: "ข้อเสนอแนะ",
-            flex: 2,
-            minWidth: 260,
-            headerAlign: "center",
-            align: "left",
-            resizable: false,
+            renderCell: (params) => {
+                return params.row.zone_name
+                    ?? forms.find(f => f.zone_id === params.row.zone_id)?.zone_name
+                    ?? "";
+            }
         },
         {
             field: "actions",
@@ -323,66 +313,104 @@ export default function LegalRegulationPage() {
                     initialState={{ pagination: { paginationModel: { pageSize: 15, page: 0 } } }}
                     pageSizeOptions={[15, 20, 30]}
                     disableRowSelectionOnClick
-                    getRowId={(row) => row.id ?? row.defect_no}
+                    getRowId={(row) => row.id ?? row.defect}
                 />
             </div>
             {/* Dialog Popup */}
             <Dialog open={openEdit} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
                 <DialogTitle>
-                    {formData.defect_no ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}
+                    {formData.defect ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}
                 </DialogTitle>
                 <DialogContent dividers>
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <Box mt={1}>
+                            <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
+                                แบบฟอร์ม
+                            </label>
+
+                            <Select menuPlacement="auto"
+                                options={forms.map(p => ({
+                                    value: p.zone_id,
+                                    label: p.zone_name || p.zone_id,
+                                }))}
+                                value={
+                                    forms
+                                        .map(p => ({
+                                            value: p.zone_id,
+                                            label: p.zone_name || p.zone_id,
+                                        }))
+                                        .find(opt => opt.value === formData.zone_id) || null
+                                }
+                                onChange={(selected) =>
+                                    setFormData({
+                                        ...formData,
+                                        zone_id: selected?.value || "",
+                                        zone_name: selected?.label || undefined,
+                                    })
+                                }
+                                placeholder="-- เลือกแบบฟอร์ม --"
+                                isClearable
+                                menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                styles={{
+                                    control: (base, state) => ({
+                                        ...base,
+                                        backgroundColor: "#fff",
+                                        borderColor:
+                                            error && !formData.zone_id
+                                                ? "#d32f2f" // 🔴 สีแดงเมื่อ error
+                                                : state.isFocused
+                                                    ? "#3b82f6"
+                                                    : "#d1d5db",
+                                        boxShadow: "none",
+                                        "&:hover": {
+                                            borderColor: error && !formData.zone_id ? "#d32f2f" : "#9ca3af",
+                                        },
+                                    }),
+                                    menu: (base) => ({
+                                        ...base,
+                                        backgroundColor: "#fff",
+                                        boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                        border: "1px solid #e5e7eb",
+                                    }),
+                                    menuPortal: (base) => ({
+                                        ...base,
+                                        zIndex: 2100,
+                                    }),
+                                    option: (base, state) => ({
+                                        ...base,
+                                        backgroundColor: state.isSelected
+                                            ? "#e5f2ff"
+                                            : state.isFocused
+                                                ? "#f3f4f6"
+                                                : "#fff",
+                                        color: "#111827",
+                                    }),
+                                    menuList: (base) => ({
+                                        ...base,
+                                        backgroundColor: "#fff",
+                                        paddingTop: 0,
+                                        paddingBottom: 0,
+                                    }),
+                                    singleValue: (base) => ({
+                                        ...base,
+                                        color: "#111827",
+                                    }),
+                                }}
+                            />
+                        </Box>
 
                         {/* ข้อที่ + ประเภท */}
                         <Box sx={{ display: "flex", gap: 2 }}>
                             <TextField
                                 size="small"
-                                label="ข้อที่"
+                                label="ข้อกฎหมาย"
                                 fullWidth
                                 required
-                                value={formData.defect_no}
-                                onChange={(e) => setFormData({ ...formData, defect_no: e.target.value })}
-                                error={error && !formData.defect_no}
-                            />
-
-                            <TextField
-                                size="small"
-                                label="ประเภท"
-                                fullWidth
-                                required
-                                value={formData.type}
-                                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                error={error && !formData.type}
+                                value={formData.defect}
+                                onChange={(e) => setFormData({ ...formData, defect: e.target.value })}
+                                error={error && !formData.defect}
                             />
                         </Box>
-
-                        {/* รายการตรวจสอบ */}
-                        <TextField
-                            size="small"
-                            label="รายการตรวจสอบ"
-                            fullWidth
-                            required
-                            value={formData.inspection_item}
-                            onChange={(e) => setFormData({ ...formData, inspection_item: e.target.value })}
-                            error={error && !formData.inspection_item}
-                        />
-
-                        {/* ปัญหาผิดกฏหมาย */}
-                        <TextField
-                            label="ปัญหาผิดกฏหมาย"
-                            fullWidth
-                            multiline
-                            value={formData.illegal_problem}
-                            onChange={(e) => setFormData({ ...formData, illegal_problem: e.target.value })}
-                            sx={{
-                                "& .MuiInputBase-inputMultiline": {
-                                    height: 100,
-                                    overflowY: "auto",
-                                },
-                                "& textarea": { resize: "none" },
-                            }}
-                        />
 
                         {/* ข้อเสนอแนะผิดกฏหมาย */}
                         <TextField
@@ -391,38 +419,6 @@ export default function LegalRegulationPage() {
                             multiline
                             value={formData.illegal_suggestion}
                             onChange={(e) => setFormData({ ...formData, illegal_suggestion: e.target.value })}
-                            sx={{
-                                "& .MuiInputBase-inputMultiline": {
-                                    height: 100,
-                                    overflowY: "auto",
-                                },
-                                "& textarea": { resize: "none" },
-                            }}
-                        />
-
-                        {/* ปัญหาทั่วไป */}
-                        <TextField
-                            label="ปัญหาทั่วไป"
-                            fullWidth
-                            multiline
-                            value={formData.general_problem}
-                            onChange={(e) => setFormData({ ...formData, general_problem: e.target.value })}
-                            sx={{
-                                "& .MuiInputBase-inputMultiline": {
-                                    height: 100,
-                                    overflowY: "auto",
-                                },
-                                "& textarea": { resize: "none" },
-                            }}
-                        />
-
-                        {/* ข้อเสนอแนะทั่วไป */}
-                        <TextField
-                            label="ข้อเสนอแนะทั่วไป"
-                            fullWidth
-                            multiline
-                            value={formData.general_suggestion}
-                            onChange={(e) => setFormData({ ...formData, general_suggestion: e.target.value })}
                             sx={{
                                 "& .MuiInputBase-inputMultiline": {
                                     height: 100,

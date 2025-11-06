@@ -304,14 +304,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             >
                                 ตารางแผนงาน
                             </NavLink>
-                            <NavLink
+                            {/* <NavLink
                                 href="/inspection"
                                 currentPath={pathname}
                                 icon={DocumentMagnifyingGlassIcon}
                                 collapsed={isCollapsed}
                             >
                                 แสดงผลรายงาน
-                            </NavLink>
+                            </NavLink> */}
                             <NavLink
                                 href="/legal-regulations"
                                 currentPath={pathname}

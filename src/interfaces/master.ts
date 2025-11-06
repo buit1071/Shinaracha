@@ -494,13 +494,10 @@ export interface EquipmentTypeRow {
 }
 export interface DefectRow {
     id: number | null;
-    defect_no: string;
-    type: string;
-    inspection_item?: string;
-    illegal_problem?: string;
+    defect: string;
+    zone_name?: string;
     illegal_suggestion?: string;
-    general_problem?: string;
-    general_suggestion?: string;
+    zone_id: string;
     is_active: number;
     created_by: string;
     updated_by: string;

@@ -19,13 +19,9 @@ export async function POST(req: Request) {
         if (entity === "defect") {
             const {
                 id,
-                defect_no,
-                type,
-                inspection_item,
-                illegal_problem,
+                defect,
                 illegal_suggestion,
-                general_problem,
-                general_suggestion,
+                zone_id,
                 is_active,
                 created_by,
                 updated_by,
@@ -36,26 +32,18 @@ export async function POST(req: Request) {
                 `
         UPDATE master_defect
         SET
-          defect_no         = ?,
-          type         = ?,
-          inspection_item         = ?,
-          illegal_problem         = ?,
+          defect         = ?,
           illegal_suggestion         = ?,
-          general_problem         = ?,
-          general_suggestion         = ?,
+          zone_id         = ?,
           is_active    = ?,
           updated_by   = ?,
           updated_date = NOW()
         WHERE id = ?
       `,
                 [
-                    defect_no.trim(),
-                    type.trim(),
-                    inspection_item.trim(),
-                    illegal_problem.trim(),
+                    defect.trim(),
                     illegal_suggestion.trim(),
-                    general_problem.trim(),
-                    general_suggestion.trim(),
+                    zone_id.trim(),
                     is_active ?? 1,
                     updated_by ?? "system",
                     id,
@@ -80,19 +68,15 @@ export async function POST(req: Request) {
                 const ins: any = await query(
                     `
     INSERT INTO master_defect
-      (defect_no, \`type\`, inspection_item, illegal_problem, illegal_suggestion,
-       general_problem, general_suggestion, is_active, created_by, created_date, updated_by, updated_date)
+      (defect, illegal_suggestion,
+     zone_id, is_active, created_by, created_date, updated_by, updated_date)
     VALUES
-      (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, NOW())
+      (?, ?, ?, ?, ?, NOW(), ?, NOW())
     `,
                     [
-                        defect_no.trim(),
-                        type.trim(),
-                        inspection_item?.trim() ?? null,
-                        illegal_problem?.trim() ?? null,
+                        defect.trim(),
                         illegal_suggestion?.trim() ?? null,
-                        general_problem?.trim() ?? null,
-                        general_suggestion?.trim() ?? null,
+                        zone_id?.trim() ?? null,
                         is_active ?? 1,
                         created_by ?? "system",
                         updated_by ?? "system",
@@ -117,7 +101,7 @@ export async function POST(req: Request) {
                 if (e?.code === "ER_DUP_ENTRY") {
                     // ปรับข้อความให้สอดคล้องกับตารางนี้
                     return NextResponse.json(
-                        { success: false, message: "ข้อมูลซ้ำ (เช่น defect_no ซ้ำ)" },
+                        { success: false, message: "ข้อมูลซ้ำ (เช่น defect ซ้ำ)" },
                         { status: 409 }
                     );
                 }
