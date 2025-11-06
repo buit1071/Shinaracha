@@ -1,5 +1,5 @@
 "use client";
-import { useState, } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { showLoading } from "@/lib/loading";
 
@@ -20,17 +20,12 @@ export default function LoginForm() {
         body: JSON.stringify({ username: u, password: p }),
       });
 
-      const data = await r.json();               // อ่าน body ก่อน
+      const data = await r.json();
       if (!r.ok || !data.ok) {
         throw new Error(data.message || "Login failed");
       }
 
-      // ✅ เก็บผู้ใช้ที่ล็อกอินสำเร็จไว้ฝั่ง client
       localStorage.setItem("currentUser", JSON.stringify(data.user));
-
-      // กัน timing set-cookie (ถ้าจำเป็นจะหน่วงนิดเดียว)
-      // await new Promise(r => setTimeout(r, 150));
-
       router.replace("/dashboard");
       showLoading(false);
     } catch (e: any) {
@@ -41,42 +36,37 @@ export default function LoginForm() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center relative bg-cover bg-center bg-no-repeat"
+      className="min-h-[100dvh] flex items-center justify-center bg-cover bg-center bg-no-repeat p-4 sm:p-6 lg:p-10"
       style={{ backgroundImage: "url('/images/BackgroudLogin.webp')" }}
     >
       <div
-        className="w-full max-w-5xl mx-auto flex flex-col md:flex-row bg-white 
-             rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.25)] 
-             overflow-hidden border border-gray-300 h-[500px]"
+        className="flex flex-wrap md:flex-nowrap w-full max-w-6xl bg-white rounded-2xl overflow-hidden
+                   shadow-[0_10px_35px_rgba(0,0,0,0.25)] border border-gray-200
+                   min-h-[480px] md:min-h-[560px] lg:min-h-[600px]"
       >
-
         {/* === กล่องซ้าย === */}
-        <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-5 bg-white relative">
-          {/* เอฟเฟกต์แสงบางๆ */}
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-transparent"></div>
-
-          <div className="relative z-10 flex flex-col items-center text-center">
-            <img
-              src="/images/NewLOGOSF.webp"
-              alt="Logo"
-              className="w-40 md:w-52 mb-6 drop-shadow-[0_5px_25px_rgba(0,0,0,0.15)] animate-float"
-            />
-            <h1 className="text-3xl md:text-3xl font-extrabold text-gray-800 tracking-wide">
-              SHINARACHA FROTECTOR
-            </h1>
-            <p className="mt-2 text-sm md:text-base text-rose-600 font-semibold tracking-[0.15em] uppercase">
-              Total Solution For Fire Protection
-            </p>
-          </div>
+        <div className="flex-1 flex flex-col justify-center items-center 
+                        bg-gradient-to-br from-white via-orange-50 to-transparent p-1 sm:p-1 relative">
+          <img
+            src="/images/NewLOGOSF.webp"
+            alt="Logo"
+            className="w-24 sm:w-36 md:w-44 lg:w-56 mb-4 drop-shadow-[0_5px_25px_rgba(0,0,0,0.15)] animate-float"
+          />
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-800 tracking-wide text-center">
+            SHINARACHA FROTECTOR
+          </h1>
+          <p className="mt-2 text-xs sm:text-sm md:text-base lg:text-lg text-rose-600 font-semibold tracking-[0.15em] uppercase text-center">
+            Total Solution For Fire Protection
+          </p>
         </div>
 
-        {/* === กล่องขวา (ฟอร์มล็อกอิน) === */}
-        <div className="w-full md:w-1/2 flex justify-center items-center p-10">
+        {/* === กล่องขวา === */}
+        <div className="flex-1 flex justify-center items-center bg-gray-50 p-1 sm:p-1 lg:p-1">
           <form
             onSubmit={submit}
-            className="w-full max-w-md"
+            className="w-full max-w-sm sm:max-w-md bg-white rounded-2xl border border-gray-100 shadow-md p-1 sm:p-1"
           >
-            <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">
+            <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6 text-gray-800">
               เข้าสู่ระบบ
             </h1>
 
