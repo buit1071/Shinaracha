@@ -728,9 +728,9 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         Save
                     </button>
                 </div>
-                {/* <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
+                <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
                     {JSON.stringify(formData, null, 2)}
-                </pre> */}
+                </pre>
             </div>
         </>
     )

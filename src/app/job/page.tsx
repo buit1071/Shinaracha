@@ -989,7 +989,6 @@ export default function JobPage() {
                                 }
                                 placeholder="-- เลือกสาขา --"
                                 isClearable
-                                isDisabled={!formData.customer_id}
                                 menuPortalTarget={typeof window !== "undefined" ? document.body : null}
                                 styles={{
                                     control: (base, state) => ({

@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { ReactNode } from "react";
 import Form1_3 from "./Form1_3";
+import Form1_9 from "../form1-9/Form1_9";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import IconButton from "@mui/material/IconButton";
 
@@ -28,7 +29,28 @@ export default function CheckLabelForm({ formId, jobId, equipment_id, name, onBa
       equipment_id: string,
       name: string,
       onBack: () => void
-    ) => <Form1_3 jobId={jobId} equipment_id={equipment_id} name={name} onBack={onBack} />,
+    ) => (
+      <Form1_3
+        jobId={jobId}
+        equipment_id={equipment_id}
+        name={name}
+        onBack={onBack}
+      />
+    ),
+
+    "FORM-62864268": (
+      jobId: string,
+      equipment_id: string,
+      name: string,
+      onBack: () => void
+    ) => (
+      <Form1_9
+        jobId={jobId}
+        equipment_id={equipment_id}
+        name={name}
+        onBack={onBack}
+      />
+    ),
   };
 
   return (

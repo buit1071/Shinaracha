@@ -384,7 +384,7 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
               <TextField
                 size="small"
                 margin="dense"
-                label="ชื่อ Zone"
+                label="ชื่อฟอร์ม"
                 fullWidth
                 required
                 value={formData.zone_name}
