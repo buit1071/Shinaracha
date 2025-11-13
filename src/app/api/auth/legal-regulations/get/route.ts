@@ -3,6 +3,7 @@ import { query } from "@/lib-server/db";
 
 type GetBody =
     | { function: "defect"; }
+    | { function: "problem"; }
     ;
 
 export async function POST(req: Request) {
@@ -22,6 +23,16 @@ export async function POST(req: Request) {
                 `
         SELECT *
         FROM master_defect
+        `,
+            );
+            return NextResponse.json({ success: true, data: rows });
+        }
+
+        if (fn === "problem") {
+            const rows = await query(
+                `
+        SELECT *
+        FROM master_problem
         `,
             );
             return NextResponse.json({ success: true, data: rows });
