@@ -38,6 +38,26 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, message: "ลบข้อมูลเรียบร้อย" });
         }
 
+        if (fn === "problem") {
+            const result: any = await query(
+                `DELETE FROM master_problem WHERE problem_id = ?`,
+                [id]
+            );
+
+            // mysql2 จะคืน OkPacket เป็น "rows" จาก helper query()
+            const affected = result?.affectedRows ?? result?.[0]?.affectedRows ?? 0;
+
+            if (affected === 0) {
+                // ไม่พบข้อมูลให้ลบ -> แจ้ง 400 เพื่อง่ายต่อ FE
+                return NextResponse.json(
+                    { success: false, message: "ไม่พบข้อมูลที่จะลบ" },
+                    { status: 400 }
+                );
+            }
+
+            return NextResponse.json({ success: true, message: "ลบข้อมูลเรียบร้อย" });
+        }
+
         return NextResponse.json(
             { success: false, message: "ไม่รู้จัก function ที่ส่งมา" },
             { status: 400 }

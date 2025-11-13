@@ -113,7 +113,7 @@ export default function ProjectJob({ projectId, onBack }: Props) {
         }));
 
     return (
-        <div className="w-full h-[96vh] flex flex-col bg-gray-50 justify-around">
+        <div className="w-full h-[94vh] flex flex-col bg-gray-50 justify-around">
             {view?.type === "detail" ? (
                 <>
                     <CheckForm jobId={view.id} onBack={backToList} />

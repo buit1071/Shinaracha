@@ -504,3 +504,15 @@ export interface DefectRow {
     updated_date?: string;
     order?: number;
 }
+export interface ProblemRow {
+    problem_id: string;
+    problem_name: string;
+    defect: number | null;
+    defect_name?: string;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+}

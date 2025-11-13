@@ -463,7 +463,7 @@ export default function CustomerBranchDetail({ customerId, onBack }: Props) {
     };
 
     return (
-        <div className="w-full h-[96vh] flex flex-col bg-gray-50">
+        <div className="w-full h-[94vh] flex flex-col bg-gray-50">
             <div className="h-[6vh] flex items-center justify-between px-4 py-2 bg-white shadow-md mb-2 rounded-lg">
                 <div className="flex items-center">
                     <IconButton onClick={onBack} color="primary">

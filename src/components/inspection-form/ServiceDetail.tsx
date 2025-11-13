@@ -311,7 +311,7 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
     }));
 
   return (
-    <div className="w-full h-[96vh] flex flex-col bg-gray-50">
+    <div className="w-full h-[94vh] flex flex-col bg-gray-50">
       {view?.type === "detail" ? (
         <ZoneDetail serviceId={serviceId} zoneId={view.id} onBack={backToList} />
       ) : (

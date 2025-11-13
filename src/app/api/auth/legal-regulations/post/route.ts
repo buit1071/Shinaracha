@@ -109,6 +109,92 @@ export async function POST(req: Request) {
             }
         }
 
+        if (entity === "problem") {
+            const {
+                problem_id,
+                problem_name,
+                defect,
+                is_active,
+                created_by,
+                updated_by,
+            } = data;
+
+            const defectValue = defect === null || defect === undefined ? null : Number(defect);
+
+            // 1) UPDATE ก่อน
+            const upd: any = await query(
+                `
+        UPDATE master_problem
+        SET
+          problem_name = ?,
+          defect       = ?,
+          is_active    = ?,
+          updated_by   = ?,
+          updated_date = NOW()
+        WHERE problem_id = ?
+      `,
+                [
+                    problem_name.trim(),
+                    defectValue,
+                    is_active ?? 1,
+                    updated_by ?? "system",
+                    problem_id,
+                ]
+            );
+
+            const affected =
+                (upd && typeof upd === "object" && "affectedRows" in upd && upd.affectedRows) ||
+                (Array.isArray(upd) && upd[0]?.affectedRows) ||
+                0;
+
+            if (affected > 0) {
+                return NextResponse.json({
+                    success: true,
+                    message: "อัปเดตข้อมูลเรียบร้อย",
+                    problem_id,
+                });
+            }
+
+            try {
+                const newProblemId = generateId("PROB");
+
+                const ins: any = await query(
+                    `
+            INSERT INTO master_problem
+              (problem_id, problem_name, defect,
+               is_active, created_by, created_date, updated_by, updated_date)
+            VALUES
+              (?, ?, ?, ?, ?, NOW(), ?, NOW())
+            `,
+                    [
+                        newProblemId,
+                        problem_name.trim(),
+                        defectValue,
+                        is_active ?? 1,
+                        created_by ?? "system",
+                        updated_by ?? "system",
+                    ]
+                );
+
+                return NextResponse.json(
+                    {
+                        success: true,
+                        message: "เพิ่มข้อมูลเรียบร้อย",
+                        problem_id: newProblemId,
+                    },
+                    { status: 201 }
+                );
+            } catch (e: any) {
+                if (e?.code === "ER_DUP_ENTRY") {
+                    return NextResponse.json(
+                        { success: false, message: "ข้อมูลซ้ำ (เช่น defect ซ้ำ)" },
+                        { status: 409 }
+                    );
+                }
+                throw e;
+            }
+        }
+
         // entity ไม่ตรง
         return NextResponse.json(
             { success: false, message: "entity ไม่ถูกต้อง" },
