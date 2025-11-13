@@ -93,7 +93,6 @@ export default function EquipmentPage() {
 
     const [formData, setFormData] = React.useState<EquipmentRow>({
         equipment_id: "",
-        equipment_code: "",
         equipment_name: "",
         description: "",
         service_id: "",
@@ -532,7 +531,6 @@ export default function EquipmentPage() {
     const handleOpenAdd = () => {
         setFormData({
             equipment_id: "",
-            equipment_code: "",
             equipment_name: "",
             description: "",
             service_id: "",
@@ -563,20 +561,20 @@ export default function EquipmentPage() {
             equipment_type_id: "",
 
             // เจ้าของ/ผู้ครอบครอง
-            owner_name: "",
-            owner_address_no: "",
-            owner_moo: "",
-            owner_alley: "",
-            owner_road: "",
-            owner_province_id: "",
-            owner_district_id: "",
-            owner_sub_district_id: "",
-            owner_zipcode: "",
+            owner_name: "บริษัท ซีพี แอ็กซ์ตร้า จำกัด (มหาชน)",
+            owner_address_no: "1468",
+            owner_moo: "-",
+            owner_alley: "-",
+            owner_road: "พัฒนาการ",
+            owner_province_id: "PROV-01",
+            owner_district_id: "DIS-34",
+            owner_sub_district_id: "SDIS-132",
+            owner_zipcode: "10250",
 
             // ข้อมูลติดต่อเจ้าของ
-            owner_phone: "",
-            owner_fax: "",
-            owner_email: "",
+            owner_phone: "-",
+            owner_fax: "-",
+            owner_email: "-",
 
             // ผู้ออกแบบโครงสร้าง
             designer_name: "",
@@ -596,7 +594,7 @@ export default function EquipmentPage() {
 
     const handleSave = async () => {
         if (
-            !formData.equipment_name || !formData.equipment_code || !formData.address_no || !formData.moo ||
+            !formData.equipment_name || !formData.equipment_type_id || !formData.system_type_id || !formData.address_no || !formData.moo ||
             !formData.alley || !formData.road || !formData.sub_district_id || !formData.district_id || !formData.province_id ||
             !formData.zipcode || !formData.phone || !formData.fax || !formData.owner_name || !formData.owner_address_no || !formData.owner_moo ||
             !formData.owner_alley || !formData.owner_road || !formData.owner_province_id || !formData.owner_district_id || !formData.owner_sub_district_id ||
@@ -935,9 +933,17 @@ export default function EquipmentPage() {
                                         control: (base, state) => ({
                                             ...base,
                                             backgroundColor: "#fff",
-                                            borderColor: "#d1d5db",
+                                            borderColor:
+                                                error && !formData.system_type_id
+                                                    ? "#d32f2f" // ❌ สีแดงเมื่อ error
+                                                    : state.isFocused
+                                                        ? "#3b82f6"
+                                                        : "#d1d5db",
                                             boxShadow: "none",
-
+                                            "&:hover": {
+                                                borderColor:
+                                                    error && !formData.system_type_id ? "#d32f2f" : "#9ca3af",
+                                            },
                                         }),
                                         menu: (base) => ({
                                             ...base,
@@ -1007,9 +1013,17 @@ export default function EquipmentPage() {
                                         control: (base, state) => ({
                                             ...base,
                                             backgroundColor: "#fff",
-                                            borderColor: "#d1d5db",
+                                            borderColor:
+                                                error && !formData.equipment_type_id
+                                                    ? "#d32f2f" // ❌ สีแดงเมื่อ error
+                                                    : state.isFocused
+                                                        ? "#3b82f6"
+                                                        : "#d1d5db",
                                             boxShadow: "none",
-
+                                            "&:hover": {
+                                                borderColor:
+                                                    error && !formData.equipment_type_id ? "#d32f2f" : "#9ca3af",
+                                            },
                                         }),
                                         menu: (base) => ({
                                             ...base,
@@ -1980,11 +1994,11 @@ export default function EquipmentPage() {
                         >
                             <TextField label="ผู้ออกแบบด้านวิศวกรรมโครงสร้าง" size="small" fullWidth name="designer_name"
                                 value={formData.designer_name ?? ""} onChange={handleChange}
-                                error={error && !formData.designer_name}
+                            error={error && !formData.designer_name}
                             />
                             <TextField label="ใบอนุญาตทะเบียนเลขที่" size="small" fullWidth name="designer_license_no"
                                 value={formData.designer_license_no ?? ""} onChange={handleChange}
-                                error={error && !formData.designer_license_no}
+                            error={error && !formData.designer_license_no}
                             />
                         </Box>
                     </Box>

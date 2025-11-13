@@ -131,7 +131,6 @@ export interface TeamRow {
 };
 export interface EquipmentRow {
     equipment_id: string;
-    equipment_code: string;
     equipment_name: string;
     description: string;
     service_id: string;
