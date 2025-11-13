@@ -453,7 +453,10 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                             <img
                                 src={coverSrc}
                                 alt="cover"
-                                className="max-h-full w-auto object-contain"
+                                className="max-w-full max-h-full object-contain rounded-sm"
+                                style={{
+                                    display: "block",
+                                }}
                             />
                         ) : (
                             <div className="text-gray-600 text-sm text-center px-4">
@@ -463,7 +466,6 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                             </div>
                         )}
                     </div>
-
                     {/* input อัปโหลดรูป */}
                     <div className="mt-3">
                         <label className="inline-flex items-center gap-2 rounded-md border border-blue-500 text-blue-600 px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1">
