@@ -10,9 +10,7 @@ import {
     GridColDef,
     GridRenderCellParams
 } from "@mui/x-data-grid";
-import {
-    TextField,
-} from "@mui/material";
+import { TextField } from "@mui/material";
 import CheckLabelForm from "@/components/check-form/forms/form1-3/CheckLabelForm";
 
 // ---------- Props ----------
@@ -74,11 +72,14 @@ export default function CheckForm({ jobId, onBack }: Props) {
 
     const openDetail = React.useCallback((zone_id: string) => {
         const row = rows.find(r => r.zone_id === zone_id);
-        if (!row) {
-            return;
-        }
+        if (!row) return;
         setView({ type: "detail", id: row.zone_id, equipment_id: row.equipment_id, name: row.equipment_name });
     }, [rows]);
+
+    // เปิดฟอร์มตามที่เลือก (รองรับหลายฟอร์มในหน้าเดียว)
+    const openForm = React.useCallback((row: EquipmentRow, formId: string) => {
+        setView({ type: "detail", id: formId, equipment_id: row.equipment_id, name: row.equipment_name });
+    }, []);
 
     const columns: GridColDef<EquipmentRow>[] = [
         {
@@ -116,7 +117,47 @@ export default function CheckForm({ jobId, onBack }: Props) {
             align: "center",
             resizable: false,
         },
+        {
+            field: "actions",
+            headerName: "การตรวจ",
+            flex: 1.6,
+            minWidth: 230,
+            headerAlign: "center",
+            align: "center",
+            sortable: false,
+            filterable: false,
+            disableColumnMenu: true,
+            renderCell: (params: GridRenderCellParams<EquipmentRow>) => (
+                <div className="flex gap-2">
+                    <button
+                        type="button"
+                        onClick={() => openForm(params.row, "FORM-67554643")}
+                        className="px-2 py-1 rounded-md bg-sky-600 hover:bg-sky-700 text-white text-xs shadow cursor-pointer"
+                        title="เปิดแบบฟอร์ม 1_3"
+                    >
+                        FORM 1_3
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => openForm(params.row, "FORM-62864268")}
+                        className="px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs shadow cursor-pointer"
+                        title="เปิดแบบฟอร์ม 1_9"
+                    >
+                        FORM 1_9
+                    </button>
+                </div>
+            ),
+        },
     ];
+
+    // แก้ Encoding ของหัวคอลัมน์ให้เป็นภาษาไทยอ่านง่าย
+    const columnsTh: GridColDef<EquipmentRow>[] = columns.map((c) => {
+        if (c.field === "order") return { ...c, headerName: "ลำดับ" } as GridColDef<EquipmentRow>;
+        if (c.field === "equipment_name") return { ...c, headerName: "อุปกรณ์" } as GridColDef<EquipmentRow>;
+        if (c.field === "zone_name") return { ...c, headerName: "โซน" } as GridColDef<EquipmentRow>;
+        if (c.field === "actions") return { ...c, headerName: "การตรวจ" } as GridColDef<EquipmentRow>;
+        return c;
+    });
 
     const filteredRows = rows
         .filter((row) =>
@@ -164,7 +205,7 @@ export default function CheckForm({ jobId, onBack }: Props) {
                                 "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": { outline: "none" },
                             }}
                             rows={filteredRows}
-                            columns={columns}
+                            columns={columnsTh}
                             initialState={{ pagination: { paginationModel: { pageSize: 5, page: 0 } } }}
                             pageSizeOptions={[5, 10, 15]}
                             disableRowSelectionOnClick
@@ -176,3 +217,4 @@ export default function CheckForm({ jobId, onBack }: Props) {
         </>
     );
 }
+
