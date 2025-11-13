@@ -1,9 +1,13 @@
 import * as React from "react";
+
 import type { ReactNode } from "react";
-import Form1_3 from "./Form1_3";
-import Form1_9 from "../form1-9/Form1_9";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import IconButton from "@mui/material/IconButton";
+import Form8_1 from "../form1-8/form8-1/Form8_1";
+import Form8_2 from "../form1-8/form8-2/Form8_2";
+import Form8_3 from "../form1-8/form8-3/Form8_3";
+import Form1_3 from "./Form1_3";
+import Form1_9 from "../form1-9/Form1_9";
 
 type Props = {
   formId: string;
@@ -31,6 +35,48 @@ export default function CheckLabelForm({ formId, jobId, equipment_id, name, onBa
       onBack: () => void
     ) => (
       <Form1_3
+        jobId={jobId}
+        equipment_id={equipment_id}
+        name={name}
+        onBack={onBack}
+      />
+    ),
+
+    "FORM-71543253": (
+      jobId: string,
+      equipment_id: string,
+      name: string,
+      onBack: () => void
+    ) => (
+      <Form8_1
+        jobId={jobId}
+        equipment_id={equipment_id}
+        name={name}
+        onBack={onBack}
+      />
+    ),
+
+    "FORM-82703483": (
+      jobId: string,
+      equipment_id: string,
+      name: string,
+      onBack: () => void
+    ) => (
+      <Form8_2
+        jobId={jobId}
+        equipment_id={equipment_id}
+        name={name}
+        onBack={onBack}
+      />
+    ),
+
+    "FORM-61240890": (
+      jobId: string,
+      equipment_id: string,
+      name: string,
+      onBack: () => void
+    ) => (
+      <Form8_3
         jobId={jobId}
         equipment_id={equipment_id}
         name={name}

@@ -594,12 +594,7 @@ export default function EquipmentPage() {
 
     const handleSave = async () => {
         if (
-            !formData.equipment_name || !formData.equipment_type_id || !formData.system_type_id || !formData.address_no || !formData.moo ||
-            !formData.alley || !formData.road || !formData.sub_district_id || !formData.district_id || !formData.province_id ||
-            !formData.zipcode || !formData.phone || !formData.fax || !formData.owner_name || !formData.owner_address_no || !formData.owner_moo ||
-            !formData.owner_alley || !formData.owner_road || !formData.owner_province_id || !formData.owner_district_id || !formData.owner_sub_district_id ||
-            !formData.owner_zipcode || !formData.owner_phone || !formData.owner_fax || !formData.owner_email || !formData.designer_name ||
-            !formData.designer_license_no || !formData.service_id || !formData.zone_id
+            !formData.equipment_name || !formData.equipment_type_id || !formData.system_type_id || !formData.service_id || !formData.zone_id
         ) {
             setError(true);
             return;
@@ -1214,19 +1209,19 @@ export default function EquipmentPage() {
                         >
                             <TextField label="เลขที่" size="small" fullWidth name="address_no"
                                 value={formData.address_no ?? ""} onChange={handleChange}
-                                error={error && !formData.address_no}
+                            // error={error && !formData.address_no}
                             />
                             <TextField label="หมู่ที่" size="small" fullWidth name="moo"
                                 value={formData.moo ?? ""} onChange={handleChange}
-                                error={error && !formData.moo}
+                            // error={error && !formData.moo}
                             />
                             <TextField label="ตรอก/ซอย" size="small" fullWidth name="alley"
                                 value={formData.alley ?? ""} onChange={handleChange}
-                                error={error && !formData.alley}
+                            // error={error && !formData.alley}
                             />
                             <TextField label="ถนน" size="small" fullWidth name="road"
                                 value={formData.road ?? ""} onChange={handleChange}
-                                error={error && !formData.road}
+                            // error={error && !formData.road}
                             />
                         </Box>
 
@@ -1289,15 +1284,10 @@ export default function EquipmentPage() {
                                         control: (base, state) => ({
                                             ...base,
                                             backgroundColor: "#fff",
-                                            borderColor:
-                                                error && !formData.province_id
-                                                    ? "#d32f2f"
-                                                    : state.isFocused
-                                                        ? "#3b82f6"
-                                                        : "#d1d5db",
+                                            borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
                                             boxShadow: "none",
                                             "&:hover": {
-                                                borderColor: error && !formData.province_id ? "#d32f2f" : "#9ca3af",
+                                                borderColor: state.isFocused ? "#3b82f6" : "#9ca3af",
                                             },
                                         }),
                                         menu: (base) => ({
@@ -1378,15 +1368,10 @@ export default function EquipmentPage() {
                                         control: (base, state) => ({
                                             ...base,
                                             backgroundColor: "#fff",
-                                            borderColor:
-                                                error && !formData.district_id
-                                                    ? "#d32f2f"
-                                                    : state.isFocused
-                                                        ? "#3b82f6"
-                                                        : "#d1d5db",
+                                            borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
                                             boxShadow: "none",
                                             "&:hover": {
-                                                borderColor: error && !formData.district_id ? "#d32f2f" : "#9ca3af",
+                                                borderColor: state.isFocused ? "#3b82f6" : "#9ca3af",
                                             },
                                         }),
                                         menu: (base) => ({
@@ -1395,7 +1380,10 @@ export default function EquipmentPage() {
                                             boxShadow: "0 8px 24px rgba(0,0,0,.2)",
                                             border: "1px solid #e5e7eb",
                                         }),
-                                        menuPortal: (base) => ({ ...base, zIndex: 2100 }),
+                                        menuPortal: (base) => ({
+                                            ...base,
+                                            zIndex: 2100,
+                                        }),
                                         option: (base, state) => ({
                                             ...base,
                                             backgroundColor: state.isSelected
@@ -1405,8 +1393,16 @@ export default function EquipmentPage() {
                                                     : "#fff",
                                             color: "#111827",
                                         }),
-                                        menuList: (base) => ({ ...base, backgroundColor: "#fff", paddingTop: 0, paddingBottom: 0 }),
-                                        singleValue: (base) => ({ ...base, color: "#111827" }),
+                                        menuList: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            paddingTop: 0,
+                                            paddingBottom: 0,
+                                        }),
+                                        singleValue: (base) => ({
+                                            ...base,
+                                            color: "#111827",
+                                        }),
                                     }}
                                 />
                             </Box>
@@ -1438,15 +1434,10 @@ export default function EquipmentPage() {
                                         control: (base, state) => ({
                                             ...base,
                                             backgroundColor: "#fff",
-                                            borderColor:
-                                                error && !formData.sub_district_id
-                                                    ? "#d32f2f"
-                                                    : state.isFocused
-                                                        ? "#3b82f6"
-                                                        : "#d1d5db",
+                                            borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
                                             boxShadow: "none",
                                             "&:hover": {
-                                                borderColor: error && !formData.sub_district_id ? "#d32f2f" : "#9ca3af",
+                                                borderColor: state.isFocused ? "#3b82f6" : "#9ca3af",
                                             },
                                         }),
                                         menu: (base) => ({
@@ -1455,7 +1446,10 @@ export default function EquipmentPage() {
                                             boxShadow: "0 8px 24px rgba(0,0,0,.2)",
                                             border: "1px solid #e5e7eb",
                                         }),
-                                        menuPortal: (base) => ({ ...base, zIndex: 2100 }),
+                                        menuPortal: (base) => ({
+                                            ...base,
+                                            zIndex: 2100,
+                                        }),
                                         option: (base, state) => ({
                                             ...base,
                                             backgroundColor: state.isSelected
@@ -1465,8 +1459,16 @@ export default function EquipmentPage() {
                                                     : "#fff",
                                             color: "#111827",
                                         }),
-                                        menuList: (base) => ({ ...base, backgroundColor: "#fff", paddingTop: 0, paddingBottom: 0 }),
-                                        singleValue: (base) => ({ ...base, color: "#111827" }),
+                                        menuList: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            paddingTop: 0,
+                                            paddingBottom: 0,
+                                        }),
+                                        singleValue: (base) => ({
+                                            ...base,
+                                            color: "#111827",
+                                        }),
                                     }}
                                 />
                             </Box>
@@ -1484,7 +1486,7 @@ export default function EquipmentPage() {
                                 InputProps={{
                                     sx: { height: 38 },
                                 }}
-                                error={error && !formData.zipcode}
+                            // error={error && !formData.zipcode}
                             />
                         </Box>
 
@@ -1501,12 +1503,12 @@ export default function EquipmentPage() {
                             <TextField label="โทรศัพท์" size="small" fullWidth name="phone"
                                 inputProps={{ inputMode: "tel" }}
                                 value={formData.phone ?? ""} onChange={handleChange}
-                                error={error && !formData.phone}
+                            // error={error && !formData.phone}
                             />
                             <TextField label="โทรสาร" size="small" fullWidth name="fax"
                                 inputProps={{ inputMode: "tel" }}
                                 value={formData.fax ?? ""} onChange={handleChange}
-                                error={error && !formData.fax}
+                            // error={error && !formData.fax}
                             />
                             <Box>
                                 <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
@@ -1675,23 +1677,23 @@ export default function EquipmentPage() {
                         >
                             <TextField label="ชื่อ" size="small" fullWidth name="owner_name"
                                 value={formData.owner_name ?? ""} onChange={handleChange}
-                                error={error && !formData.owner_name}
+                                // error={error && !formData.owner_name}
                             />
                             <TextField label="เลขที่" size="small" fullWidth name="owner_address_no"
                                 value={formData.owner_address_no ?? ""} onChange={handleChange}
-                                error={error && !formData.owner_address_no}
+                                // error={error && !formData.owner_address_no}
                             />
                             <TextField label="หมู่ที่" size="small" fullWidth name="owner_moo"
                                 value={formData.owner_moo ?? ""} onChange={handleChange}
-                                error={error && !formData.owner_moo}
+                                // error={error && !formData.owner_moo}
                             />
                             <TextField label="ตรอก/ซอย" size="small" fullWidth name="owner_alley"
                                 value={formData.owner_alley ?? ""} onChange={handleChange}
-                                error={error && !formData.owner_alley}
+                                // error={error && !formData.owner_alley}
                             />
                             <TextField label="ถนน" size="small" fullWidth name="owner_road"
                                 value={formData.owner_road ?? ""} onChange={handleChange}
-                                error={error && !formData.owner_road}
+                                // error={error && !formData.owner_road}
                             />
                         </Box>
 
@@ -1754,15 +1756,10 @@ export default function EquipmentPage() {
                                         control: (base, state) => ({
                                             ...base,
                                             backgroundColor: "#fff",
-                                            borderColor:
-                                                error && !formData.owner_province_id
-                                                    ? "#d32f2f"
-                                                    : state.isFocused
-                                                        ? "#3b82f6"
-                                                        : "#d1d5db",
+                                            borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
                                             boxShadow: "none",
                                             "&:hover": {
-                                                borderColor: error && !formData.owner_province_id ? "#d32f2f" : "#9ca3af",
+                                                borderColor: state.isFocused ? "#3b82f6" : "#9ca3af",
                                             },
                                         }),
                                         menu: (base) => ({
@@ -1843,15 +1840,10 @@ export default function EquipmentPage() {
                                         control: (base, state) => ({
                                             ...base,
                                             backgroundColor: "#fff",
-                                            borderColor:
-                                                error && !formData.owner_district_id
-                                                    ? "#d32f2f"
-                                                    : state.isFocused
-                                                        ? "#3b82f6"
-                                                        : "#d1d5db",
+                                            borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
                                             boxShadow: "none",
                                             "&:hover": {
-                                                borderColor: error && !formData.owner_district_id ? "#d32f2f" : "#9ca3af",
+                                                borderColor: state.isFocused ? "#3b82f6" : "#9ca3af",
                                             },
                                         }),
                                         menu: (base) => ({
@@ -1860,7 +1852,10 @@ export default function EquipmentPage() {
                                             boxShadow: "0 8px 24px rgba(0,0,0,.2)",
                                             border: "1px solid #e5e7eb",
                                         }),
-                                        menuPortal: (base) => ({ ...base, zIndex: 2100 }),
+                                        menuPortal: (base) => ({
+                                            ...base,
+                                            zIndex: 2100,
+                                        }),
                                         option: (base, state) => ({
                                             ...base,
                                             backgroundColor: state.isSelected
@@ -1870,8 +1865,16 @@ export default function EquipmentPage() {
                                                     : "#fff",
                                             color: "#111827",
                                         }),
-                                        menuList: (base) => ({ ...base, backgroundColor: "#fff", paddingTop: 0, paddingBottom: 0 }),
-                                        singleValue: (base) => ({ ...base, color: "#111827" }),
+                                        menuList: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            paddingTop: 0,
+                                            paddingBottom: 0,
+                                        }),
+                                        singleValue: (base) => ({
+                                            ...base,
+                                            color: "#111827",
+                                        }),
                                     }}
                                 />
                             </Box>
@@ -1903,15 +1906,10 @@ export default function EquipmentPage() {
                                         control: (base, state) => ({
                                             ...base,
                                             backgroundColor: "#fff",
-                                            borderColor:
-                                                error && !formData.owner_sub_district_id
-                                                    ? "#d32f2f"
-                                                    : state.isFocused
-                                                        ? "#3b82f6"
-                                                        : "#d1d5db",
+                                            borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
                                             boxShadow: "none",
                                             "&:hover": {
-                                                borderColor: error && !formData.owner_sub_district_id ? "#d32f2f" : "#9ca3af",
+                                                borderColor: state.isFocused ? "#3b82f6" : "#9ca3af",
                                             },
                                         }),
                                         menu: (base) => ({
@@ -1920,7 +1918,10 @@ export default function EquipmentPage() {
                                             boxShadow: "0 8px 24px rgba(0,0,0,.2)",
                                             border: "1px solid #e5e7eb",
                                         }),
-                                        menuPortal: (base) => ({ ...base, zIndex: 2100 }),
+                                        menuPortal: (base) => ({
+                                            ...base,
+                                            zIndex: 2100,
+                                        }),
                                         option: (base, state) => ({
                                             ...base,
                                             backgroundColor: state.isSelected
@@ -1930,8 +1931,16 @@ export default function EquipmentPage() {
                                                     : "#fff",
                                             color: "#111827",
                                         }),
-                                        menuList: (base) => ({ ...base, backgroundColor: "#fff", paddingTop: 0, paddingBottom: 0 }),
-                                        singleValue: (base) => ({ ...base, color: "#111827" }),
+                                        menuList: (base) => ({
+                                            ...base,
+                                            backgroundColor: "#fff",
+                                            paddingTop: 0,
+                                            paddingBottom: 0,
+                                        }),
+                                        singleValue: (base) => ({
+                                            ...base,
+                                            color: "#111827",
+                                        }),
                                     }}
                                 />
                             </Box>
@@ -1949,7 +1958,7 @@ export default function EquipmentPage() {
                                 InputProps={{
                                     sx: { height: 38 },
                                 }}
-                                error={error && !formData.owner_zipcode}
+                            // error={error && !formData.owner_zipcode}
                             />
                             <Box /> {/* ช่องว่างท้ายสุด */}
                         </Box>
@@ -1970,16 +1979,16 @@ export default function EquipmentPage() {
                             <TextField label="โทรศัพท์" size="small" fullWidth name="owner_phone"
                                 inputProps={{ inputMode: "tel" }}
                                 value={formData.owner_phone ?? ""} onChange={handleChange}
-                                error={error && !formData.owner_phone}
+                            // error={error && !formData.owner_phone}
                             />
                             <TextField label="โทรสาร" size="small" fullWidth name="owner_fax"
                                 inputProps={{ inputMode: "tel" }}
                                 value={formData.owner_fax ?? ""} onChange={handleChange}
-                                error={error && !formData.owner_fax}
+                            // error={error && !formData.owner_fax}
                             />
                             <TextField label="อีเมล" size="small" fullWidth name="owner_email" type="email"
                                 value={formData.owner_email ?? ""} onChange={handleChange}
-                                error={error && !formData.owner_email}
+                            // error={error && !formData.owner_email}
                             />
                         </Box>
 
@@ -1994,11 +2003,11 @@ export default function EquipmentPage() {
                         >
                             <TextField label="ผู้ออกแบบด้านวิศวกรรมโครงสร้าง" size="small" fullWidth name="designer_name"
                                 value={formData.designer_name ?? ""} onChange={handleChange}
-                            error={error && !formData.designer_name}
+                            // error={error && !formData.designer_name}
                             />
                             <TextField label="ใบอนุญาตทะเบียนเลขที่" size="small" fullWidth name="designer_license_no"
                                 value={formData.designer_license_no ?? ""} onChange={handleChange}
-                            error={error && !formData.designer_license_no}
+                            // error={error && !formData.designer_license_no}
                             />
                         </Box>
                     </Box>

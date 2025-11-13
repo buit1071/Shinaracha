@@ -237,7 +237,7 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
       align: "center",
     },
     {
-      field: "zone_name", headerName: "ฟอร์ม", flex: 1, headerAlign: "center", align: "left",
+      field: "zone_name", headerName: "ฟอร์ม", width: 300, flex: 1, headerAlign: "center", align: "left",
       // renderCell: (params: GridRenderCellParams<DataZonesRow>) => (
       //   <button
       //     onClick={() => openDetail(params.row.zone_id)}
