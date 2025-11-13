@@ -17,7 +17,7 @@ export async function GET() {
 
         return NextResponse.json({ success: true, data: rows });
     } catch (err: any) {
-        
+
         return NextResponse.json(
             { success: false, message: "Database error", error: err.message },
             { status: 500 }
@@ -30,10 +30,8 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        // ---------- รับค่าเดิม ----------
         const {
             equipment_id,
-            equipment_code,
             equipment_name,
             description = "",
             service_id = "",
@@ -77,9 +75,6 @@ export async function POST(req: Request) {
             equipment_type_id = "",
         } = body;
 
-        const code = String(equipment_code ?? "").trim();
-        const codeOrNull: any = code ? code : null;
-
         if (!equipment_name?.trim()) {
             return NextResponse.json(
                 { success: false, message: "กรุณาระบุชื่ออุปกรณ์" },
@@ -89,24 +84,10 @@ export async function POST(req: Request) {
 
         // ============ UPDATE ============
         if (equipment_id) {
-            if (code) {
-                const dup: any = await query(
-                    `SELECT 1 FROM master_equipments WHERE equipment_code = ? AND equipment_id <> ? LIMIT 1`,
-                    [code, equipment_id]
-                );
-                if (dup.length > 0) {
-                    return NextResponse.json(
-                        { success: false, message: `equipment_code นี้ถูกใช้งานแล้ว (${code})` },
-                        { status: 409 }
-                    );
-                }
-            }
-
             await query(
                 `
         UPDATE master_equipments
         SET
-          equipment_code = ?,
           equipment_name = ?,
           description    = ?,
           service_id     = ?,
@@ -133,7 +114,7 @@ export async function POST(req: Request) {
           owner_road             = ?,
           owner_province_id      = ?,
           owner_district_id      = ?,
-          owner_sub_district_id   = ?,   -- รองรับคีย์นี้ในตาราง
+          owner_sub_district_id  = ?,
           owner_zipcode          = ?,
           owner_phone            = ?,
           owner_fax              = ?,
@@ -152,7 +133,6 @@ export async function POST(req: Request) {
         WHERE equipment_id = ?
         `,
                 [
-                    codeOrNull,
                     equipment_name,
                     description,
                     service_id,
@@ -202,26 +182,13 @@ export async function POST(req: Request) {
         }
 
         // ============ INSERT ============
-        if (code) {
-            const dup: any = await query(
-                `SELECT 1 FROM master_equipments WHERE equipment_code = ? LIMIT 1`,
-                [code]
-            );
-            if (dup.length > 0) {
-                return NextResponse.json(
-                    { success: false, message: `equipment_code นี้ถูกใช้งานแล้ว (${code})` },
-                    { status: 409 }
-                );
-            }
-        }
-
         const newEquipmentId = generateId("EQM");
 
         await query(
             `
       INSERT INTO master_equipments
         (
-          equipment_id, equipment_code, equipment_name, description,
+          equipment_id, equipment_name, description,
           service_id, zone_id, is_active,
 
           -- ที่อยู่ป้าย
@@ -233,13 +200,13 @@ export async function POST(req: Request) {
           owner_phone, owner_fax, owner_email,
 
           -- ผู้ออกแบบ
-          designer_name, designer_license_no, building_id, floor_id, system_type_id, equipment_type_id
+          designer_name, designer_license_no, building_id, floor_id, system_type_id, equipment_type_id,
 
           created_by, created_date, updated_by, updated_date
         )
       VALUES
         (
-          ?, ?, ?, ?,
+          ?, ?, ?,
           ?, ?, ?,
 
           ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
@@ -255,7 +222,6 @@ export async function POST(req: Request) {
       `,
             [
                 newEquipmentId,
-                codeOrNull,
                 equipment_name,
                 description,
                 service_id,
@@ -307,17 +273,10 @@ export async function POST(req: Request) {
             equipment_id: newEquipmentId,
         });
     } catch (err: any) {
-        // กัน race condition จาก UNIQUE KEY
-        if (err?.code === "ER_DUP_ENTRY") {
-            return NextResponse.json(
-                { success: false, message: "equipment_code นี้ถูกใช้งานแล้ว", error: err.sqlMessage },
-                { status: 409 }
-            );
-        }
-        
         return NextResponse.json(
             { success: false, message: "Database error", error: err?.message },
             { status: 500 }
         );
     }
 }
+
