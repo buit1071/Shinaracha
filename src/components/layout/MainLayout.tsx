@@ -281,6 +281,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             <NavLink href="/legal-regulations" currentPath={pathname} icon={ScaleIcon} collapsed={false} onClick={closeMobileMenu}>
                                 ข้อบังคับกฎหมาย
                             </NavLink>
+                            <NavLink href="/legal-regulations" currentPath={pathname} icon={ScaleIcon} collapsed={false} onClick={closeMobileMenu}>
+                                รายการปัญหา
+                            </NavLink>
                         </div>
                     )}
                 </nav>
