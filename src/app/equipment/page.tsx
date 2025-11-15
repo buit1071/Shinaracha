@@ -888,6 +888,7 @@ export default function EquipmentPage() {
                                 value: p.company_id,
                                 label: p.company_name_th,
                             }))}
+
                             value={
                                 companys
                                     .map(p => ({
