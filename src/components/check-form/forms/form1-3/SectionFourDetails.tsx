@@ -3,7 +3,6 @@ import Select from "react-select";
 import { showLoading } from "@/lib/loading";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import { PencilIcon } from "@heroicons/react/24/outline";
-import { PencilIcon } from "@heroicons/react/24/outline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import IconButton from "@mui/material/IconButton";
 import { ProblemRow, DefectRow } from "@/interfaces/master";
@@ -427,6 +426,7 @@ export default function SectionFourDetails({ value, onChange }: Props) {
         };
         reader.readAsDataURL(file);
     };
+
 
     const pad = (n: number) => String(n).padStart(2, "0");
     const makeDefectName = () => {
