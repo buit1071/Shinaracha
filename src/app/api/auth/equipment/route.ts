@@ -34,6 +34,7 @@ export async function POST(req: Request) {
             equipment_id,
             equipment_name,
             description = "",
+            company_id = "",
             service_id = "",
             zone_id = "",
             is_active = 1,
@@ -90,6 +91,7 @@ export async function POST(req: Request) {
         SET
           equipment_name = ?,
           description    = ?,
+          company_id    = ?,
           service_id     = ?,
           zone_id        = ?,
           is_active      = ?,
@@ -135,6 +137,7 @@ export async function POST(req: Request) {
                 [
                     equipment_name,
                     description,
+                    company_id,
                     service_id,
                     zone_id,
                     is_active ?? 1,
@@ -188,7 +191,7 @@ export async function POST(req: Request) {
             `
       INSERT INTO master_equipments
         (
-          equipment_id, equipment_name, description,
+          equipment_id, equipment_name, description, company_id,
           service_id, zone_id, is_active,
 
           -- ที่อยู่ป้าย
@@ -206,7 +209,7 @@ export async function POST(req: Request) {
         )
       VALUES
         (
-          ?, ?, ?,
+          ?, ?, ?, ?,
           ?, ?, ?,
 
           ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
@@ -224,6 +227,7 @@ export async function POST(req: Request) {
                 newEquipmentId,
                 equipment_name,
                 description,
+                company_id,
                 service_id,
                 zone_id,
                 is_active ?? 1,

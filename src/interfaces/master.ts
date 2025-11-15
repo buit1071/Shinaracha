@@ -133,6 +133,7 @@ export interface EquipmentRow {
     equipment_id: string;
     equipment_name: string;
     description: string;
+    company_id: string;
     service_id: string;
     service_name?: string;
     zone_id: string;
@@ -495,7 +496,7 @@ export interface DefectRow {
     id: number | null;
     defect: string;
     zone_name?: string;
-    illegal_suggestion?: string;
+    // illegal_suggestion?: string;
     zone_id: string;
     is_active: number;
     created_by: string;
@@ -507,8 +508,9 @@ export interface DefectRow {
 export interface ProblemRow {
     problem_id: string;
     problem_name: string;
-    defect: number | null;
+    defect?: number | null;
     defect_name?: string;
+    illegal_suggestion?: string;
     is_active: number;
     created_by: string;
     updated_by: string;

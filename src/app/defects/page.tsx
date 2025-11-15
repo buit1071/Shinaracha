@@ -40,6 +40,7 @@ export default function DefectsPage() {
         problem_id: "",
         problem_name: "",
         defect: null,
+        illegal_suggestion: "",
         is_active: 1,
         created_by: "",
         updated_by: "",
@@ -95,6 +96,7 @@ export default function DefectsPage() {
             problem_id: "",
             problem_name: "",
             defect: null,
+            illegal_suggestion: "",
             is_active: 1,
             created_by: "",
             updated_by: "",
@@ -128,6 +130,7 @@ export default function DefectsPage() {
                     problem_id: formData.problem_id,
                     problem_name: formData.problem_name.trim() || undefined,
                     defect: formData.defect || null,
+                    illegal_suggestion: formData.illegal_suggestion || "",
                     is_active: formData.is_active ?? 1,
                     created_by: formData.created_by || username,
                     updated_by: formData.updated_by || username,
@@ -222,6 +225,15 @@ export default function DefectsPage() {
             },
         },
         {
+            field: "illegal_suggestion",
+            headerName: "ข้อเสนอแนะ",
+            flex: 2,
+            minWidth: 400,
+            headerAlign: "center",
+            align: "left",
+            resizable: false,
+        },
+        {
             field: "actions",
             headerName: "Action",
             sortable: false,
@@ -268,7 +280,7 @@ export default function DefectsPage() {
     return (
         <div className="w-full h-full flex flex-col bg-gray-50 justify-between">
             <div className="h-[6vh] w-full bg-white shadow-md flex items-center justify-between px-4 text-black font-semibold rounded-lg">
-                ข้อบังคับกฎหมาย
+                รายการปัญหา
                 <div className="flex gap-2 items-center">
                     <TextField
                         size="small"
@@ -351,15 +363,10 @@ export default function DefectsPage() {
                                     control: (base, state) => ({
                                         ...base,
                                         backgroundColor: "#fff",
-                                        borderColor:
-                                            error && !formData.defect
-                                                ? "#d32f2f" // 🔴 สีแดงเมื่อ error
-                                                : state.isFocused
-                                                    ? "#3b82f6"
-                                                    : "#d1d5db",
+                                        borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
                                         boxShadow: "none",
                                         "&:hover": {
-                                            borderColor: error && !formData.defect ? "#d32f2f" : "#9ca3af",
+                                            borderColor: state.isFocused ? "#3b82f6" : "#9ca3af",
                                         },
                                     }),
                                     menu: (base) => ({
@@ -392,6 +399,20 @@ export default function DefectsPage() {
                                         color: "#111827",
                                     }),
                                 }}
+                            />
+                        </Box>
+                        <Box mt={1}>
+                            <TextField
+                                size="small"
+                                label="ข้อเสนอแนะเพิ่มเติม"
+                                fullWidth
+                                multiline
+                                minRows={3}
+                                value={formData.illegal_suggestion || ""}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, illegal_suggestion: e.target.value })
+                                }
+                                error={error && !!formData.defect && !formData.illegal_suggestion}
                             />
                         </Box>
                     </Box>
