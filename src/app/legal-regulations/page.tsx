@@ -42,7 +42,7 @@ export default function LegalRegulationPage() {
         defect: "",
         zone_id: "",
         zone_name: "",
-        illegal_suggestion: "",
+        // illegal_suggestion: "",
         is_active: 1,
         created_by: "",
         updated_by: "",
@@ -101,7 +101,7 @@ export default function LegalRegulationPage() {
             defect: "",
             zone_id: "",
             zone_name: "",
-            illegal_suggestion: "",
+            // illegal_suggestion: "",
             is_active: 1,
             created_by: "",
             updated_by: "",
@@ -134,7 +134,7 @@ export default function LegalRegulationPage() {
                 data: {
                     id: formData.id || null,
                     defect: formData.defect.trim() || undefined,
-                    illegal_suggestion: formData.illegal_suggestion,
+                    // illegal_suggestion: formData.illegal_suggestion,
                     zone_id: formData.zone_id,
                     is_active: formData.is_active ?? 1,
                     created_by: formData.created_by || username,
@@ -215,18 +215,19 @@ export default function LegalRegulationPage() {
             align: "left",
             resizable: false,
         },
-        {
-            field: "illegal_suggestion",
-            headerName: "ข้อเสนอแนะ",
-            flex: 2,
-            minWidth: 400,
-            headerAlign: "center",
-            align: "left",
-            resizable: false,
-        },
+        // {
+        //     field: "illegal_suggestion",
+        //     headerName: "ข้อเสนอแนะ",
+        //     flex: 2,
+        //     minWidth: 400,
+        //     headerAlign: "center",
+        //     align: "left",
+        //     resizable: false,
+        // },
         {
             field: "zone_name",
             headerName: "แบบฟอร์ม",
+            flex:2,
             width: 350,
             headerAlign: "center",
             align: "center",
@@ -413,7 +414,7 @@ export default function LegalRegulationPage() {
                         </Box>
 
                         {/* ข้อเสนอแนะผิดกฏหมาย */}
-                        <TextField
+                        {/* <TextField
                             label="ข้อเสนอแนะผิดกฏหมาย"
                             fullWidth
                             multiline
@@ -426,7 +427,7 @@ export default function LegalRegulationPage() {
                                 },
                                 "& textarea": { resize: "none" },
                             }}
-                        />
+                        /> */}
                     </Box>
                 </DialogContent>
                 <DialogActions>
