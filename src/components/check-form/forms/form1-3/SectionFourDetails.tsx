@@ -123,6 +123,7 @@ export default function SectionFourDetails({ value, onChange }: Props) {
 
     const [problems, setProblems] = React.useState<ProblemRow[]>([]);
     const [defects, setDefects] = React.useState<DefectRow[]>([]);
+    const [extraNotes, setExtraNotes] = React.useState<string>("");
     const [selectedProblems, setSelectedProblems] = React.useState<Defect[]>([]);
     const otherProblem = selectedProblems.find(p => p.isOther);
     const otherHasError = error && !!otherProblem && !otherProblem.problem_name?.trim();
@@ -427,7 +428,6 @@ export default function SectionFourDetails({ value, onChange }: Props) {
         };
         reader.readAsDataURL(file);
     };
-
 
     const pad = (n: number) => String(n).padStart(2, "0");
     const makeDefectName = () => {
