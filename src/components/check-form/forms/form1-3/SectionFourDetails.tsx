@@ -122,8 +122,9 @@ export default function SectionFourDetails({ value, onChange }: Props) {
 
     const [problems, setProblems] = React.useState<ProblemRow[]>([]);
     const [defects, setDefects] = React.useState<DefectRow[]>([]);
-    const [extraNotes, setExtraNotes] = React.useState<string>("");
     const [selectedProblems, setSelectedProblems] = React.useState<Defect[]>([]);
+    const otherProblem = selectedProblems.find(p => p.isOther);
+    const otherHasError = error && !!otherProblem && !otherProblem.problem_name?.trim();
     const [camOpen, setCamOpen] = React.useState(false);
     const [captured, setCaptured] = React.useState<string | null>(null);
     const [capturedName, setCapturedName] = React.useState<string | null>(null);
@@ -615,9 +616,13 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                     <tbody>
                         {table2Groups.map((g, gi) => (
                             <React.Fragment key={g.title}>
+
                                 {/* แถวหัวข้อย่อย */}
                                 <tr>
-                                    <td colSpan={TOTAL_COLS} className="px-3 py-2 border border-gray-300 bg-gray-200 font-semibold">
+                                    <td
+                                        colSpan={TOTAL_COLS}
+                                        className="px-3 py-2 border border-gray-300 bg-gray-200 font-semibold"
+                                    >
                                         {`${gi + 1}. ${g.title}`}
                                     </td>
                                 </tr>
@@ -627,66 +632,88 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                                     const text = typeof row === "string" ? row : row.label;
                                     const inline = typeof row !== "string" && row.inlineInput;
                                     const r = v2[id] ?? {};
+
                                     return (
                                         <tr key={id} className="odd:bg-white even:bg-gray-50">
+                                            {/* ลำดับ */}
                                             <td className={`${td} text-center`}>{i + 1}</td>
+
+                                            {/* รายการตรวจ */}
                                             <td className={td}>
                                                 <span>{text}</span>
+
                                                 {inline && (
                                                     <DottedInput
                                                         className="ml-2 min-w-[220px]"
                                                         placeholder="โปรดระบุ"
                                                         value={r.extra ?? ""}
-                                                        onChange={(e) => emit("table2", id, { extra: e.target.value })}
+                                                        onChange={(e) =>
+                                                            emit("table2", id, { extra: e.target.value })
+                                                        }
                                                     />
                                                 )}
                                             </td>
+
+                                            {/* ช่อง OK / NG */}
                                             <ResultCells group="table2" id={id} />
+
+                                            {/* ปุ่มแนบรูป / Defect Popup */}
                                             <td className={`${td} text-center`}>
                                                 <div className="flex items-center justify-center gap-2">
-                                                    {v2[id]?.defect?.map((def, defectIndex) => (
-                                                        <div key={defectIndex} className="flex items-center space-x-1">
-                                                            {(def.photos ?? []).slice(0, 2).map((p, idx) => (
-                                                                <img
-                                                                    key={idx}
-                                                                    src="/images/IconFile.png"
-                                                                    alt={`file-${idx + 1}`}
-                                                                    title={p.filename} // ⭐ ชื่อไฟล์บน tooltip
-                                                                    className="w-6 h-6 cursor-pointer"
-                                                                    onClick={() => openViewer("table2", id, idx, defectIndex)} // เพิ่ม defectIndex
-                                                                />
-                                                            ))}
 
-                                                            {(def.photos?.length ?? 0) < 2 && (
-                                                                <IconButton
-                                                                    size="small"
-                                                                    onClick={() => openCamera("table2", id, defectIndex)} // เพิ่ม defectIndex
-                                                                    title="ถ่าย/แนบรูป"
-                                                                    sx={{
-                                                                        color: "gray",
-                                                                        "&:hover": { color: "#2563eb" }, // hover:text-blue-600
+                                                    {(() => {
+                                                        const visits = value?.table2?.[id]?.visits ?? {};
+                                                        const hasNG = Object.values(visits).includes("ng");
+
+                                                        return (
+                                                            hasNG && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const defects = value?.table2?.[id]?.defect ?? [];
+                                                                        setSelectedProblems(defects.map((d) => ({ ...d })));
+                                                                        setPhotoPopup({
+                                                                            group: "table2",
+                                                                            id,
+                                                                            defectIndex: null,
+                                                                        });
                                                                     }}
+                                                                    title="แนบรูป / ออกแบบ"
+                                                                    className="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-blue-600"
                                                                 >
-                                                                    <PhotoCameraIcon fontSize="small" />
-                                                                </IconButton>
-                                                            )}
-                                                        </div>
-                                                    ))}
+                                                                    <PencilIcon className="w-5 h-5" />
+                                                                </button>
+                                                            )
+                                                        );
+                                                    })()}
                                                 </div>
                                             </td>
+
+                                            {/* หมายเหตุ */}
                                             <td className={`${td} align-middle`}>
                                                 <div className="flex items-center justify-between gap-2">
                                                     <span
                                                         title={r.note ?? ""}
                                                         className="min-w-0 block max-w-[150px] truncate text-gray-800"
                                                     >
-                                                        {r.note ? r.note : <span className="text-gray-400">หมายเหตุ (ถ้ามี)</span>}
+                                                        {r.note ? (
+                                                            r.note
+                                                        ) : (
+                                                            <span className="text-gray-400">
+                                                                หมายเหตุ (ถ้ามี)
+                                                            </span>
+                                                        )}
                                                     </span>
+
                                                     <IconButton
                                                         size="small"
-                                                        onClick={() => openNote("table2", id, r.note ?? "")}
+                                                        onClick={() =>
+                                                            openNote("table2", id, r.note ?? "")
+                                                        }
                                                         title="แก้ไขหมายเหตุ"
-                                                        sx={{ color: "#6b7280", "&:hover": { color: "#111827" } }}
+                                                        sx={{
+                                                            color: "#6b7280",
+                                                            "&:hover": { color: "#111827" },
+                                                        }}
                                                     >
                                                         <EditOutlinedIcon fontSize="small" />
                                                     </IconButton>
@@ -911,19 +938,25 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                             </label>
 
                             {selectedProblems.some((p) => p.isOther) && (
-                                <input
-                                    type="text"
-                                    className="mt-2 block w-full border rounded p-2"
-                                    placeholder="กรอกชื่อปัญหาอื่น"
-                                    value={selectedProblems.find((p) => p.isOther)?.problem_name || ""}
-                                    onChange={(e) => {
-                                        setSelectedProblems(
-                                            selectedProblems.map((p) =>
-                                                p.isOther ? { ...p, problem_name: e.target.value } : p
-                                            )
-                                        );
-                                    }}
-                                />
+                                <>
+                                    <input
+                                        type="text"
+                                        className={
+                                            "mt-2 block w-full rounded p-2 border " +
+                                            (otherHasError ? "border-red-500" : "border-gray-300")
+                                        }
+                                        placeholder="กรอกชื่อปัญหาอื่น"
+                                        value={otherProblem?.problem_name || ""}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            setSelectedProblems(
+                                                selectedProblems.map((p) =>
+                                                    p.isOther ? { ...p, problem_name: value } : p
+                                                )
+                                            );
+                                        }}
+                                    />
+                                </>
                             )}
                         </div>
 
@@ -1018,10 +1051,6 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                                                 }),
                                             }}
                                         />
-                                        {error && d.isOther && !d.defect && (
-                                            <p className="text-red-500 text-xs">
-                                            </p>
-                                        )}
                                     </div>
                                 )}
 
@@ -1101,7 +1130,7 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                                     if (other) {
                                         const isMissing =
                                             !other.problem_name?.trim() ||
-                                            !other.defect ||
+                                            // !other.defect ||
                                             !other.illegal_suggestion?.trim();
 
                                         if (isMissing) {
