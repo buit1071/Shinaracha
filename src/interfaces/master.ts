@@ -518,3 +518,12 @@ export interface ProblemRow {
     updated_date?: string;
     order?: number;
 }
+export interface ViewDefectProblem {
+    problem_id: string;
+    problem_name: string;
+    equipment_type_name: string;
+    defect_id?: number | null;
+    defect_name: string;
+    zone_id: string;
+    illegal_suggestion?: string;
+}
