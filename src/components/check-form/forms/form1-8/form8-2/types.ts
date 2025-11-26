@@ -227,7 +227,14 @@ export type DefectItem = {
   note?: string;
   photos?: { filename?: string; src?: string }[];
 };
-export type UsabilityRow = { name: string; status?: UsabilityStatus; note?: string; defects?: DefectItem[] };
+export type UsabilityRow = {
+  name: string;
+  status?: UsabilityStatus; // legacy (round 1)
+  statusRound1?: UsabilityStatus;
+  statusRound2?: UsabilityStatus;
+  note?: string;
+  defects?: DefectItem[];
+};
 export type PlanUsability = {
   structural?: UsabilityRow[];
   systems?: {
@@ -241,7 +248,11 @@ export type ResultStatus = UsabilityStatus;
 export type ResultsRow = UsabilityRow;
 export type PlanResults = PlanUsability;
 // Main section 2.7: สรุปผลการตรวจบำรุงรักษา (สรุประดับผลรวม)
-export type SummaryRow = ResultsRow & { fixed?: boolean }; // ช่อง "แก้ไขแล้ว" แบบอิสระ
+export type SummaryRow = ResultsRow & {
+  statusRound1?: UsabilityStatus;
+  statusRound2?: UsabilityStatus;
+  fixed?: boolean;
+}; // ช่อง "แก้ไขแล้ว" แบบอิสระ
 export type PlanSummary = {
   rows?: SummaryRow[];
   extraNote?: string;
@@ -345,6 +356,7 @@ export const presetMatrix9Rows: MatrixRow[] = [
   { name: "อุปกรณ์ประกอบ - ชั้นวาง/ทางเดิน/CATWALK" },
   { name: "อุปกรณ์ประกอบ - ราว กันตก" },
 ];
+
 
 
 

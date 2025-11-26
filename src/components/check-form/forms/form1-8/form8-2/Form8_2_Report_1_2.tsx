@@ -216,24 +216,15 @@ const TypeOwnerSection = React.memo(function TypeOwnerSection({
   general?: Partial<Form8_1General>;
 }) {
   const tao = typeAndOwner || { categories: [] };
-  // ใช้ local state + commit onBlur ลด re-render ทำให้ cursor ไม่หลุด
-  const [ownerLocal, setOwnerLocal] = React.useState<Partial<PartyInfo>>(tao.owner || {});
-  const [bldOwnerLocal, setBldOwnerLocal] = React.useState<Partial<PartyInfo>>(tao.buildingOwner || {});
-  const [designerLocal, setDesignerLocal] = React.useState<Partial<PartyInfo>>(tao.designer || {});
-  const [designerBldLocal, setDesignerBldLocal] = React.useState<Partial<PartyInfo>>(tao.designerBuilding || {});
-
-  React.useEffect(() => { setOwnerLocal(tao.owner || {}); }, [tao.owner]);
-  React.useEffect(() => { setBldOwnerLocal(tao.buildingOwner || {}); }, [tao.buildingOwner]);
-  React.useEffect(() => { setDesignerLocal(tao.designer || {}); }, [tao.designer]);
-  React.useEffect(() => { setDesignerBldLocal(tao.designerBuilding || {}); }, [tao.designerBuilding]);
-
   const handleInstallType = React.useCallback((v: Form8_1Report["installType"]) => {
     onChangeInstallType(installType === v ? undefined : v);
   }, [installType, onChangeInstallType]);
 
-  const commitParty = React.useCallback((party: "owner" | "buildingOwner" | "designer" | "designerBuilding", next: Partial<PartyInfo>) => {
-    onChangeTypeAndOwner({ [party]: next } as any);
-  }, [onChangeTypeAndOwner]);
+  const updateParty = React.useCallback((party: "owner" | "buildingOwner" | "designer" | "designerBuilding", field: keyof PartyInfo, value: string) => {
+    onChangeTypeAndOwner({
+      [party]: { ...(tao as any)[party], [field]: value },
+    } as any);
+  }, [onChangeTypeAndOwner, tao]);
 
   const showBuildingOwner = installType && installType !== "onGround";
 
@@ -281,73 +272,21 @@ const TypeOwnerSection = React.memo(function TypeOwnerSection({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-2">
             <div className="font-medium text-gray-800">3.2 ชื่อเจ้าของหรือผู้ครอบครองป้าย</div>
-            <input
-              className="w-full rounded-lg border border-gray-300 px-3 py-2"
-              placeholder="ชื่อ"
-              value={ownerLocal.name || ""}
-              onChange={(e) => setOwnerLocal((p) => ({ ...p, name: e.target.value }))}
-              onBlur={(e) => commitParty("owner", { ...ownerLocal, name: e.target.value })}
-            />
-            <textarea
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 min-h-20"
-              placeholder="ที่อยู่"
-              value={ownerLocal.address || ""}
-              onChange={(e) => setOwnerLocal((p) => ({ ...p, address: e.target.value }))}
-              onBlur={(e) => commitParty("owner", { ...ownerLocal, address: e.target.value })}
-            />
+            <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="ชื่อ" value={tao.owner?.name || ""} onChange={(e) => updateParty("owner", "name", e.target.value)} />
+            <textarea className="w-full rounded-lg border border-gray-300 px-3 py-2 min-h-20" placeholder="ที่อยู่" value={tao.owner?.address || ""} onChange={(e) => updateParty("owner", "address", e.target.value)} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input
-                className="rounded-lg border border-gray-300 px-3 py-2"
-                placeholder="โทรศัพท์"
-                value={ownerLocal.phone || ""}
-                onChange={(e) => setOwnerLocal((p) => ({ ...p, phone: e.target.value }))}
-                onBlur={(e) => commitParty("owner", { ...ownerLocal, phone: e.target.value })}
-              />
-              <input
-                className="rounded-lg border border-gray-300 px-3 py-2"
-                placeholder="โทรสาร/อีเมล"
-                value={ownerLocal.email || ""}
-                onChange={(e) => setOwnerLocal((p) => ({ ...p, email: e.target.value }))}
-                onBlur={(e) => commitParty("owner", { ...ownerLocal, email: e.target.value })}
-              />
+              <input className="rounded-lg border border-gray-300 px-3 py-2" placeholder="โทรศัพท์" value={tao.owner?.phone || ""} onChange={(e) => updateParty("owner", "phone", e.target.value)} />
+              <input className="rounded-lg border border-gray-300 px-3 py-2" placeholder="โทรสาร/อีเมล" value={tao.owner?.email || ""} onChange={(e) => updateParty("owner", "email", e.target.value)} />
             </div>
           </div>
 
           <div className="space-y-2">
             <div className="font-medium text-gray-800">{showBuildingOwner ? "3.3 ชื่อเจ้าของ/ผู้ครอบครองอาคารที่ป้ายตั้งอยู่" : "3.3 ชื่อเจ้าของ/ผู้ครอบครองอาคารที่ป้ายตั้งอยู่ (ถ้ามี)"}</div>
-            <input
-              className="w-full rounded-lg border border-gray-300 px-3 py-2"
-              placeholder="ชื่อ"
-              value={bldOwnerLocal.name || ""}
-              onChange={(e) => setBldOwnerLocal((p) => ({ ...p, name: e.target.value }))}
-              onBlur={(e) => commitParty("buildingOwner", { ...bldOwnerLocal, name: e.target.value })}
-              disabled={!showBuildingOwner}
-            />
-            <textarea
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 min-h-20"
-              placeholder="ที่อยู่"
-              value={bldOwnerLocal.address || ""}
-              onChange={(e) => setBldOwnerLocal((p) => ({ ...p, address: e.target.value }))}
-              onBlur={(e) => commitParty("buildingOwner", { ...bldOwnerLocal, address: e.target.value })}
-              disabled={!showBuildingOwner}
-            />
+            <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="ชื่อ" value={(tao as any)?.buildingOwner?.name || ""} onChange={(e) => updateParty("buildingOwner", "name", e.target.value)} disabled={!showBuildingOwner} />
+            <textarea className="w-full rounded-lg border border-gray-300 px-3 py-2 min-h-20" placeholder="ที่อยู่" value={(tao as any)?.buildingOwner?.address || ""} onChange={(e) => updateParty("buildingOwner", "address", e.target.value)} disabled={!showBuildingOwner} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input
-                className="rounded-lg border border-gray-300 px-3 py-2"
-                placeholder="โทรศัพท์"
-                value={bldOwnerLocal.phone || ""}
-                onChange={(e) => setBldOwnerLocal((p) => ({ ...p, phone: e.target.value }))}
-                onBlur={(e) => commitParty("buildingOwner", { ...bldOwnerLocal, phone: e.target.value })}
-                disabled={!showBuildingOwner}
-              />
-              <input
-                className="rounded-lg border border-gray-300 px-3 py-2"
-                placeholder="โทรสาร/อีเมล"
-                value={bldOwnerLocal.email || ""}
-                onChange={(e) => setBldOwnerLocal((p) => ({ ...p, email: e.target.value }))}
-                onBlur={(e) => commitParty("buildingOwner", { ...bldOwnerLocal, email: e.target.value })}
-                disabled={!showBuildingOwner}
-              />
+              <input className="rounded-lg border border-gray-300 px-3 py-2" placeholder="โทรศัพท์" value={(tao as any)?.buildingOwner?.phone || ""} onChange={(e) => updateParty("buildingOwner", "phone", e.target.value)} disabled={!showBuildingOwner} />
+              <input className="rounded-lg border border-gray-300 px-3 py-2" placeholder="โทรสาร/อีเมล" value={(tao as any)?.buildingOwner?.email || ""} onChange={(e) => updateParty("buildingOwner", "email", e.target.value)} disabled={!showBuildingOwner} />
             </div>
           </div>
         </div>
@@ -355,70 +294,22 @@ const TypeOwnerSection = React.memo(function TypeOwnerSection({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-2">
             <div className="font-medium text-gray-800">3.4 ชื่อผู้ออกแบบด้านวิศวกรรมโครงสร้าง</div>
-            <input
-              className="w-full rounded-lg border border-gray-300 px-3 py-2"
-              placeholder="ชื่อ"
-              value={designerLocal.name || ""}
-              onChange={(e) => setDesignerLocal((p) => ({ ...p, name: e.target.value }))}
-              onBlur={(e) => commitParty("designer", { ...designerLocal, name: e.target.value })}
-            />
+            <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="ชื่อ" value={tao.designer?.name || ""} onChange={(e) => updateParty("designer", "name", e.target.value)} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input
-                className="rounded-lg border border-gray-300 px-3 py-2"
-                placeholder="โทรศัพท์"
-                value={designerLocal.phone || ""}
-                onChange={(e) => setDesignerLocal((p) => ({ ...p, phone: e.target.value }))}
-                onBlur={(e) => commitParty("designer", { ...designerLocal, phone: e.target.value })}
-              />
-              <input
-                className="rounded-lg border border-gray-300 px-3 py-2"
-                placeholder="ใบอนุญาตเลขที่"
-                value={designerLocal.licenseNo || ""}
-                onChange={(e) => setDesignerLocal((p) => ({ ...p, licenseNo: e.target.value }))}
-                onBlur={(e) => commitParty("designer", { ...designerLocal, licenseNo: e.target.value })}
-              />
+              <input className="rounded-lg border border-gray-300 px-3 py-2" placeholder="โทรศัพท์" value={tao.designer?.phone || ""} onChange={(e) => updateParty("designer", "phone", e.target.value)} />
+              <input className="rounded-lg border border-gray-300 px-3 py-2" placeholder="ใบอนุญาตเลขที่" value={tao.designer?.licenseNo || ""} onChange={(e) => updateParty("designer", "licenseNo", e.target.value)} />
             </div>
-            <textarea
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 min-h-20"
-              placeholder="ที่อยู่"
-              value={designerLocal.address || ""}
-              onChange={(e) => setDesignerLocal((p) => ({ ...p, address: e.target.value }))}
-              onBlur={(e) => commitParty("designer", { ...designerLocal, address: e.target.value })}
-            />
+            <textarea className="w-full rounded-lg border border-gray-300 px-3 py-2 min-h-20" placeholder="ที่อยู่" value={tao.designer?.address || ""} onChange={(e) => updateParty("designer", "address", e.target.value)} />
           </div>
 
           <div className="space-y-2">
             <div className="font-medium text-gray-800">3.5 ชื่อผู้ออกแบบด้านวิศวกรรมโครงสร้างของอาคารที่ป้ายตั้งอยู่ (ถ้ามี)</div>
-            <input
-              className="w-full rounded-lg border border-gray-300 px-3 py-2"
-              placeholder="ชื่อ"
-              value={designerBldLocal.name || ""}
-              onChange={(e) => setDesignerBldLocal((p) => ({ ...p, name: e.target.value }))}
-              onBlur={(e) => commitParty("designerBuilding", { ...designerBldLocal, name: e.target.value })}
-            />
+            <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="ชื่อ" value={(tao as any)?.designerBuilding?.name || ""} onChange={(e) => updateParty("designerBuilding", "name", e.target.value)} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input
-                className="rounded-lg border border-gray-300 px-3 py-2"
-                placeholder="โทรศัพท์"
-                value={designerBldLocal.phone || ""}
-                onChange={(e) => setDesignerBldLocal((p) => ({ ...p, phone: e.target.value }))}
-                onBlur={(e) => commitParty("designerBuilding", { ...designerBldLocal, phone: e.target.value })}
-              />
-              <input
-                className="rounded-lg border border-gray-300 px-3 py-2"
-                placeholder="ใบอนุญาตเลขที่"
-                value={designerBldLocal.licenseNo || ""}
-                onChange={(e) => setDesignerBldLocal((p) => ({ ...p, licenseNo: e.target.value }))}
-                onBlur={(e) => commitParty("designerBuilding", { ...designerBldLocal, licenseNo: e.target.value })}
-              />
+              <input className="rounded-lg border border-gray-300 px-3 py-2" placeholder="โทรศัพท์" value={(tao as any)?.designerBuilding?.phone || ""} onChange={(e) => updateParty("designerBuilding", "phone", e.target.value)} />
+              <input className="rounded-lg border border-gray-300 px-3 py-2" placeholder="ใบอนุญาตเลขที่" value={(tao as any)?.designerBuilding?.licenseNo || ""} onChange={(e) => updateParty("designerBuilding", "licenseNo", e.target.value)} />
             </div>
-            <textarea
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 min-h-20"
-              placeholder="ที่อยู่"
-              value={designerBldLocal.address || ""}
-              onChange={(e) => setDesignerBldLocal((p) => ({ ...p, address: e.target.value }))}
-              onBlur={(e) => commitParty("designerBuilding", { ...designerBldLocal, address: e.target.value })}
-            />
+            <textarea className="w-full rounded-lg border border-gray-300 px-3 py-2 min-h-20" placeholder="ที่อยู่" value={(tao as any)?.designerBuilding?.address || ""} onChange={(e) => updateParty("designerBuilding", "address", e.target.value)} />
           </div>
         </div>
       </SectionCard>
@@ -439,16 +330,6 @@ const MaterialsSection = React.memo(function MaterialsSection({
   onChangeGeneral: (p: Partial<Form8_1General>) => void;
 }) {
   const mats = materials || { structureKinds: [] };
-  // local states to avoid re-render while typing
-  const [openingNoteLocal, setOpeningNoteLocal] = React.useState(mats.openingNote || "");
-  const [surfaceMaterialLocal, setSurfaceMaterialLocal] = React.useState(mats.surfaceMaterial || "");
-  const [facesLocal, setFacesLocal] = React.useState<string>(general?.size?.faces != null ? String(general.size.faces) : "");
-  const [otherNoteLocal, setOtherNoteLocal] = React.useState(mats.otherNote || "");
-
-  React.useEffect(() => setOpeningNoteLocal(mats.openingNote || ""), [mats.openingNote]);
-  React.useEffect(() => setSurfaceMaterialLocal(mats.surfaceMaterial || ""), [mats.surfaceMaterial]);
-  React.useEffect(() => setFacesLocal(general?.size?.faces != null ? String(general.size.faces) : ""), [general?.size?.faces]);
-  React.useEffect(() => setOtherNoteLocal(mats.otherNote || ""), [mats.otherNote]);
 
   const toggleStructureKind = React.useCallback((kind: MaterialKind) => {
     const next = new Set(mats.structureKinds || []);
@@ -471,7 +352,7 @@ const MaterialsSection = React.memo(function MaterialsSection({
   }, [mats.flagOpening, onChangeMaterials]);
 
   return (
-    <SectionCard title="4. ประเภทวัสดุและรายละเอียดของแผ่นป้าย" className="min-h-[260px] no-anchor">
+    <SectionCard title="4. ประเภทวัสดุและรายละเอียดของแผ่นป้าย" className="min-h-[260px]">
       <div className="space-y-2">
         <div className="font-medium text-gray-800">4.1 ประเภทวัสดุของโครงสร้างที่รับน้ำหนักของตัวป้าย (เลือกได้มากกว่า 1)</div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -493,13 +374,7 @@ const MaterialsSection = React.memo(function MaterialsSection({
             </label>
           ))}
         </div>
-        <input
-          className="w-full rounded-lg border border-gray-300 px-3 py-2"
-          placeholder="อื่น ๆ (โปรดระบุ)"
-          value={openingNoteLocal}
-          onChange={(e) => setOpeningNoteLocal(e.target.value)}
-          onBlur={(e) => onChangeMaterials({ openingNote: e.target.value })}
-        />
+        <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="อื่น ๆ (โปรดระบุ)" value={mats.openingNote || ""} onChange={(e) => onChangeMaterials({ openingNote: e.target.value })} />
       </div>
 
       <div className="space-y-3">
@@ -509,13 +384,7 @@ const MaterialsSection = React.memo(function MaterialsSection({
           <CheckTick size="md" checked={!!mats.flagMaterial} onChange={() => onChangeMaterials({ flagMaterial: !mats.flagMaterial })} label="วัสดุผิวป้าย" />
           <div className="flex flex-col gap-1 w-full">
             <label className="text-sm font-medium text-gray-700">วัสดุผิวป้าย (โปรดระบุ)</label>
-            <input
-              className="w-full rounded-lg border border-gray-300 px-3 py-2"
-              disabled={!mats.flagMaterial}
-              value={surfaceMaterialLocal}
-              onChange={(e) => setSurfaceMaterialLocal(e.target.value)}
-              onBlur={(e) => onChangeMaterials({ surfaceMaterial: e.target.value })}
-            />
+            <input className="w-full rounded-lg border border-gray-300 px-3 py-2" disabled={!mats.flagMaterial} value={mats.surfaceMaterial || ""} onChange={(e) => onChangeMaterials({ surfaceMaterial: e.target.value })} />
           </div>
         </div>
 
@@ -523,14 +392,7 @@ const MaterialsSection = React.memo(function MaterialsSection({
           <CheckTick size="md" checked={!!mats.flagFaces} onChange={() => onChangeMaterials({ flagFaces: !mats.flagFaces })} label="จำนวนหน้าป้าย" />
           <div className="flex items-center gap-2 flex-wrap">
             <label className="text-sm font-medium text-gray-700 whitespace-nowrap">จำนวนหน้าที่ติดตั้งป้าย</label>
-            <input
-              type="number"
-              className="w-24 rounded-lg border border-gray-300 px-3 py-2"
-              disabled={!mats.flagFaces}
-              value={facesLocal}
-              onChange={(e) => setFacesLocal(e.target.value)}
-              onBlur={(e) => setFaces(e.target.value)}
-            />
+            <input type="number" className="w-24 rounded-lg border border-gray-300 px-3 py-2" disabled={!mats.flagFaces} value={general?.size?.faces ?? ""} onChange={(e) => setFaces(e.target.value)} />
             <span className="text-sm text-gray-700">ด้าน</span>
           </div>
         </div>
@@ -558,42 +420,15 @@ const MaterialsSection = React.memo(function MaterialsSection({
           <CheckTick size="md" checked={!!mats.flagOther} onChange={() => onChangeMaterials({ flagOther: !mats.flagOther })} label="อื่น ๆ" className="mt-1" />
           <div className="flex flex-col gap-1 w-full">
             <label className="text-sm font-medium text-gray-700">อื่น ๆ (โปรดระบุ)</label>
-            <input
-              className="w-full rounded-lg border border-gray-300 px-3 py-2"
-              disabled={!mats.flagOther}
-              value={otherNoteLocal}
-              onChange={(e) => setOtherNoteLocal(e.target.value)}
-              onBlur={(e) => onChangeMaterials({ otherNote: e.target.value })}
-            />
+            <input className="w-full rounded-lg border border-gray-300 px-3 py-2" disabled={!mats.flagOther} value={mats.otherNote || ""} onChange={(e) => onChangeMaterials({ otherNote: e.target.value })} />
           </div>
         </div>
       </div>
     </SectionCard>
   );
-}, (prev, next) => {
-  const a = prev.materials || { structureKinds: [] };
-  const b = next.materials || { structureKinds: [] };
-  const sameStruct =
-    Array.isArray(a.structureKinds) &&
-    Array.isArray(b.structureKinds) &&
-    a.structureKinds.length === b.structureKinds.length &&
-    a.structureKinds.every((v, i) => v === b.structureKinds?.[i]);
-  const sameFlags =
-    a.flagMaterial === b.flagMaterial &&
-    a.flagFaces === b.flagFaces &&
-    a.flagOpening === b.flagOpening &&
-    a.flagOther === b.flagOther &&
-    a.hasOpenings === b.hasOpenings;
-  const sameText =
-    a.openingNote === b.openingNote &&
-    a.surfaceMaterial === b.surfaceMaterial &&
-    a.otherNote === b.otherNote;
-  const facesA = prev.general?.size?.faces ?? null;
-  const facesB = next.general?.size?.faces ?? null;
-  return sameStruct && sameFlags && sameText && facesA === facesB;
 });
 
-export default function Form8_1_Report_1_2({
+export default function Form8_2_Report_1_2({
   general,
   location,
   photos,
@@ -734,9 +569,9 @@ export default function Form8_1_Report_1_2({
           height: 1rem;
         }
         .permit-section label { cursor: pointer; }
-        .no-anchor { overflow-anchor: none; }
       `}</style>
     </>
   );
 }
+
 

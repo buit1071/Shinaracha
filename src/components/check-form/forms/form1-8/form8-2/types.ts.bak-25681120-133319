@@ -9,7 +9,6 @@ export type Form8_1Cover = {
 
 export type Form8_1General = {
   signName?: string;
-  productName?: string; // ���ͼ�Ե�ѳ���ɳҷ���ҡ�������
   hasPermit?: boolean | null;
   permitNote?: string;
   hasPlan?: boolean | null;
@@ -50,18 +49,9 @@ export type Form8_1Location = {
   coordinate?: GeoPoint;
   mapImageFilename?: string; // เดิม mapImage
   layoutImageFilename?: string; // เดิม layoutImage
-  mapImageLocal?: { file?: File | Blob; preview?: string; filename?: string };
-  layoutImageLocal?: { file?: File | Blob; preview?: string; filename?: string };
 };
 
-export type PhotoItem = {
-  url?: string;
-  caption?: string;
-  // local-only helpers for pending uploads
-  localFile?: File | Blob;
-  localPreview?: string;
-  uploaded?: boolean;
-};
+export type PhotoItem = { url?: string; caption?: string };
 
 export type Form8_1Photos = {
   coverPhoto?: PhotoItem; // เดิม hero
@@ -111,10 +101,6 @@ export type Form8_1Materials = {
   hasOpenings?: boolean | null; // existence of openings
   openingNote?: string;
   otherNote?: string;
-  flagMaterial?: boolean;
-  flagFaces?: boolean;
-  flagOpening?: boolean;
-  flagOther?: boolean;
 };
 
 export type Section3Opinion = "canUse" | "cannotUse" | "";
@@ -128,7 +114,6 @@ export type Section3Item = {
   otherChecked?: boolean; // อื่น ๆ (โปรดระบุ)
   otherNote?: string;     // รายละเอียดอื่น ๆ
   // ฟิลด์สำหรับรูปแบบตารางตาม .bak (มี/ไม่มี + ใช้ได้/ใช้ไม่ได้ + หมายเหตุ + อื่น ๆ)
-  wear?: "have" | "none";    // การชำรุดสึกหรอ (มี/ไม่มี)
   erosion?: "have" | "none"; // การขูดสลักกร่อน (มี/ไม่มี)
   damage?: "have" | "none";  // ความเสียหาย (มี/ไม่มี)
   note?: string;              // เดิม remark
@@ -155,7 +140,6 @@ export type HaveNone = "have" | "none";
 export type CanCannot = "can" | "cannot";
 export type SMatrixRow = {
   active?: boolean;
-  wear?: HaveNone;    // การชำรุดสึกหรอ (มี/ไม่มี)
   erosion?: HaveNone; // มี/ไม่มี (การชำรุดสึกหรอ)
   damage?: HaveNone;  // พบ/ไม่พบ (ความเสียหาย)
   opinion?: CanCannot; // ใช้ได้/ใช้ไม่ได้
@@ -196,7 +180,6 @@ export type Form8_1Report = {
   inspectionScopeNote?: string; // เดิม scopeNote
   headerImageUrl?: string; // เดิม mainImageUrl
   headerNote?: string; // เดิม mainDetail
-  headerImageLocal?: { file?: File | Blob; preview?: string; filename?: string };
   legalBasisLine1?: string;  // เดิม headerLine2
   legalBasisLine2?: string;  // เดิม headerLine3
   installType?: InstallType; // location type of sign installation
@@ -267,7 +250,6 @@ export type Form8_1Plan = {
 };
 
 export type Form8_1Data = {
-  dbId?: number;
   form_code?: string;
   report?: Form8_1Report;
   cover?: Form8_1Cover;
@@ -345,6 +327,7 @@ export const presetMatrix9Rows: MatrixRow[] = [
   { name: "อุปกรณ์ประกอบ - ชั้นวาง/ทางเดิน/CATWALK" },
   { name: "อุปกรณ์ประกอบ - ราว กันตก" },
 ];
+
 
 
 
