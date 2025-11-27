@@ -1,5 +1,5 @@
 import JSZip from "jszip";
-import { Form8_1Data, SMatrix, SMatrixRow, FrequencyValue, PlanFrequency, FrequencyRow } from "../types";
+import { Form8_1Data } from "../types";
 
 /**
  * Escape XML special characters
@@ -12,179 +12,6 @@ function escapeXml(str: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
-}
-
-// =====================================================
-// Row IDs สำหรับ Slide 20 (ข้อ 8) และ Slide 21 (ข้อ 9)
-// =====================================================
-const S8_ROW_IDS = [
-  "8-1-0",  // Row 1: สิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย
-  "8-1-1",  // Row 2: ฐานราก
-  "8-1-2",  // Row 3: การเชื่อมยึดของสิ่งที่สร้างขึ้นฯ
-  "8-1-3",  // Row 4: ชิ้นส่วน
-  "8-1-4",  // Row 5: รอยต่อ - สลักเกลียว
-  "8-1-5",  // Row 6: รอยต่อ - การเชื่อม
-  "8-1-6",  // Row 7: รอยต่อ - อื่นๆ
-  "8-1-7",  // Row 8: สลิง หรือสายยึด
-  "8-1-8",  // Row 9: บันไดขึ้นลง
-  "8-1-9",  // Row 10: ราวจับ หรือราวกันตก
-  "8-1-10", // Row 11: CATWALK
-  "8-1-11", // Row 12: อื่นๆ (โปรดระบุ)
-  // หมวด (2) แผ่นป้าย
-  "8-2-0",  // Row 13: สภาพแผ่นป้าย
-  "8-2-1",  // Row 14: สภาพการยึดติดกับโครงสร้างรับป้าย
-  "8-2-2",  // Row 15: อื่นๆ (โปรดระบุ)
-];
-
-const S9_ROW_IDS = [
-  "9-1-0",  // Row 1: ระบบไฟฟ้าแสงสว่างและระบบไฟฟ้ากำลัง
-  "9-1-1",  // Row 2: โคมไฟฟ้า หรือหลอดไฟ
-  "9-1-2",  // Row 3: ท่อสาย
-  "9-1-3",  // Row 4: อุปกรณ์ควบคุม
-  "9-1-4",  // Row 5: การต่อลงดิน
-  "9-1-5",  // Row 6: ตรวจบันทึกการบำรุงรักษา
-  "9-1-6",  // Row 7: อื่นๆ (โปรดระบุ)
-  "9-2-0",  // Row 8: ระบบป้องกันฟ้าผ่า
-  "9-2-1",  // Row 9: ตัวนำล่อฟ้า
-  "9-2-2",  // Row 10: ตัวนำต่อลงดิน / รากสายดิน
-  "9-2-3",  // Row 11: จุดต่อประสานศักย์
-  "9-2-4",  // Row 12: ตรวจบันทึกการบำรุงรักษา / อื่นๆ
-];
-
-/**
- * Build matrix placeholders for Slide 20 (8a) และ Slide 21 (9a)
- * Columns:
- *   1-2: มี/ไม่มี (การชำรุดสึกหรอ) → wear: have/none
- *   3-4: มี/ไม่มี (ความเสียหาย) → damage: have/none
- *   5-6: ใช้ได้/ใช้ไม่ได้ (ความเห็นผู้ตรวจ) → opinion: can/cannot
- *   7-8: (สำรอง)
- *   9:   หมายเหตุ → note
- */
-function buildMatrixS8S9Placeholders(
-  formData: Form8_1Data
-): Record<string, string> {
-  const map: Record<string, string> = {};
-  const CHECK = "✓";
-  
-  // === Slide 20 (8a): ข้อ 8 - การตรวจสอบการเชื่อมยึด ===
-  const s8 = formData.s8?.rows || {};
-  S8_ROW_IDS.forEach((rowId, rowIdx) => {
-    const rowNum = rowIdx + 1; // 1-indexed for placeholder
-    const row: SMatrixRow = s8[rowId] || {};
-    
-    // Col 1-2: การชำรุดสึกหรอ (wear)
-    map[`8a_${rowNum}_1`] = row.wear === "have" ? CHECK : "";
-    map[`8a_${rowNum}_2`] = row.wear === "none" ? CHECK : "";
-    
-    // Col 3-4: ความเสียหาย (erosion mapped to damage concept in UI)
-    map[`8a_${rowNum}_3`] = row.erosion === "have" ? CHECK : "";
-    map[`8a_${rowNum}_4`] = row.erosion === "none" ? CHECK : "";
-    
-    // Col 5-6: ใช้ได้/ใช้ไม่ได้ (opinion)
-    map[`8a_${rowNum}_5`] = row.opinion === "can" ? CHECK : "";
-    map[`8a_${rowNum}_6`] = row.opinion === "cannot" ? CHECK : "";
-    
-    // Col 7-8: (สำรอง - ปล่อยว่าง)
-    map[`8a_${rowNum}_7`] = "";
-    map[`8a_${rowNum}_8`] = "";
-    
-    // Col 9: หมายเหตุ
-    map[`8a_${rowNum}_9`] = escapeXml(row.note || "");
-  });
-  
-  // === Slide 21 (9a): ข้อ 9 - การตรวจสอบอุปกรณ์ประกอบ ===
-  const s9 = formData.s9?.rows || {};
-  S9_ROW_IDS.forEach((rowId, rowIdx) => {
-    const rowNum = rowIdx + 1;
-    const row: SMatrixRow = s9[rowId] || {};
-    
-    // Col 1-2: การชำรุดสึกหรอ (wear)
-    map[`9a_${rowNum}_1`] = row.wear === "have" ? CHECK : "";
-    map[`9a_${rowNum}_2`] = row.wear === "none" ? CHECK : "";
-    
-    // Col 3-4: ความเสียหาย
-    map[`9a_${rowNum}_3`] = row.erosion === "have" ? CHECK : "";
-    map[`9a_${rowNum}_4`] = row.erosion === "none" ? CHECK : "";
-    
-    // Col 5-6: ใช้ได้/ใช้ไม่ได้
-    map[`9a_${rowNum}_5`] = row.opinion === "can" ? CHECK : "";
-    map[`9a_${rowNum}_6`] = row.opinion === "cannot" ? CHECK : "";
-    
-    // Col 7-8: (สำรอง)
-    map[`9a_${rowNum}_7`] = "";
-    map[`9a_${rowNum}_8`] = "";
-    
-    // Col 9: หมายเหตุ
-    map[`9a_${rowNum}_9`] = escapeXml(row.note || "");
-  });
-  
-  return map;
-}
-
-/**
- * Build matrix placeholders for Slide 31 (1freq) และ Slide 32 (2freq)
- * Columns:
- *   1: 1 เดือน  → "1m"
- *   2: 4 เดือน  → "4m"
- *   3: 6 เดือน  → "6m"
- *   4: 1 ปี     → "1y"
- *   5: 3 ปี    → "3y"
- *   6: หมายเหตุ → note
- */
-function buildFrequencyPlaceholders(
-  formData: Form8_1Data
-): Record<string, string> {
-  const map: Record<string, string> = {};
-  const CHECK = "✓";
-  const freqPlan = formData.plan?.frequencyPlan;
-  
-  // Map frequency value to column number
-  const freqToCol: Record<FrequencyValue, number> = {
-    "1m": 1,
-    "4m": 2,
-    "6m": 3,
-    "1y": 4,
-    "3y": 5,
-  };
-  
-  // Helper function to map frequency row
-  const mapFreqRow = (prefix: string, rowNum: number, row: FrequencyRow | undefined) => {
-    const freq = row?.frequency;
-    // Set all frequency columns (1-5)
-    for (let col = 1; col <= 5; col++) {
-      const isChecked = freq && freqToCol[freq] === col;
-      map[`${prefix}_${rowNum}_${col}`] = isChecked ? CHECK : "";
-    }
-    // Col 6: หมายเหตุ
-    map[`${prefix}_${rowNum}_6`] = escapeXml(row?.note || "");
-  };
-  
-  // === Slide 31 (1freq): โครงสร้าง (structural) - 9 rows ===
-  const structural = freqPlan?.structural || [];
-  for (let i = 0; i < 9; i++) {
-    mapFreqRow("1freq", i + 1, structural[i]);
-  }
-  
-  // === Slide 32 (2freq): ระบบต่างๆ - 13 rows ===
-  // Row 1-5: ระบบไฟฟ้า (electrical)
-  const electrical = freqPlan?.systems?.electrical || [];
-  for (let i = 0; i < 5; i++) {
-    mapFreqRow("2freq", i + 1, electrical[i]);
-  }
-  
-  // Row 6-8: ระบบป้องกันฟ้าผ่า (lightning)
-  const lightning = freqPlan?.systems?.lightning || [];
-  for (let i = 0; i < 3; i++) {
-    mapFreqRow("2freq", i + 6, lightning[i]);
-  }
-  
-  // Row 9-13: ระบบอุปกรณ์ประกอบอื่นๆ (others)
-  const others = freqPlan?.systems?.others || [];
-  for (let i = 0; i < 5; i++) {
-    mapFreqRow("2freq", i + 9, others[i]);
-  }
-  
-  return map;
 }
 
 /**
@@ -412,19 +239,6 @@ function buildPlaceholderMap(formData: Form8_1Data): Record<string, string> {
   map["27print"] = escapeXml(signoff.inspectorName || "");
   map["27date"] = escapeXml(signoff.inspectionDate || "");
 
-  // =====================================================
-  // Matrix Placeholders for TextBox injection
-  // Slide 20 (8a), Slide 21 (9a), Slide 31 (1freq), Slide 32 (2freq)
-  // =====================================================
-  
-  // Merge matrix placeholders (slide 20, 21)
-  const matrixS8S9 = buildMatrixS8S9Placeholders(formData);
-  Object.assign(map, matrixS8S9);
-  
-  // Merge frequency placeholders (slide 31, 32)
-  const freqPlaceholders = buildFrequencyPlaceholders(formData);
-  Object.assign(map, freqPlaceholders);
-
   return map;
 }
 
@@ -493,3 +307,5 @@ export async function replacePlaceholders(zip: JSZip, formData: Form8_1Data): Pr
     `[replacePlaceholders] Completed in ${(endTime - startTime).toFixed(2)}ms, processed ${slideCount} slides, total replacements: ${totalReplacements}`
   );
 }
+
+

@@ -52,43 +52,61 @@ export default function Main1_Inspect({ value, onChange }: Props) {
         <div key={g.id} className="rounded border bg-white overflow-x-auto">
           <div className="px-3 py-2 font-semibold text-gray-800">{g.title}</div>
           <table className="w-full text-sm tbl-strong vhead-compact table-fixed">
+            <colgroup>
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "40%" }} />
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "15%" }} />
+            </colgroup>
             <thead>
               <tr className="bg-gray-100 text-gray-700">
-                <th className="w-12 border px-2 py-2 text-center" rowSpan={2}>ลำดับ</th>
+                <th className="border px-2 py-2 text-center" rowSpan={2}>ลำดับ</th>
                 <th className="border px-3 py-2 text-left" rowSpan={2}>รายการ</th>
                 <th className="border px-2 py-2 text-center" colSpan={2}>มี/ไม่มี</th>
                 <th className="border px-2 py-2 text-center" colSpan={2}>การชำรุดสึกหรอ</th>
                 <th className="border px-2 py-2 text-center" colSpan={2}>ความเสียหาย</th>
                 <th className="border px-2 py-2 text-center" colSpan={2}>ความเห็นผู้ตรวจสอบ</th>
-                <th className="w-56 border px-2 py-2 text-left" rowSpan={2}>หมายเหตุ</th>
+                <th className="border px-2 py-2 text-left" rowSpan={2}>หมายเหตุ</th>
               </tr>
               <tr className="bg-gray-100 text-gray-700">
-                <th className="w-16 border px-2 py-2 text-center">มี</th>
-                <th className="w-16 border px-2 py-2 text-center">ไม่มี</th>
-                <th className="w-16 border px-2 py-2 text-center">มี</th>
-                <th className="w-16 border px-2 py-2 text-center">ไม่มี</th>
-                <th className="w-16 border px-2 py-2 text-center">มี</th>
-                <th className="w-16 border px-2 py-2 text-center">ไม่มี</th>
-                <th className="w-20 border px-2 py-2 text-center">ใช้ได้</th>
-                <th className="w-20 border px-2 py-2 text-center">ใช้ไม่ได้</th>
+                <th className="border px-2 py-2 text-center">มี</th>
+                <th className="border px-2 py-2 text-center">ไม่มี</th>
+                <th className="border px-2 py-2 text-center">มี</th>
+                <th className="border px-2 py-2 text-center">ไม่มี</th>
+                <th className="border px-2 py-2 text-center">มี</th>
+                <th className="border px-2 py-2 text-center">ไม่มี</th>
+                <th className="border px-2 py-2 text-center">ใช้ได้</th>
+                <th className="border px-2 py-2 text-center">ใช้ไม่ได้</th>
               </tr>
             </thead>
             <tbody>
               {g.rows.map((name, i) => {
                 const key = `${g.id}-${i + 1}`;
                 const v = items[key];
+                const g1Numbers = ["1", "2", "3", "4", "4.1", "4.2", "4.3", "5", "6", "7", "8", "9"];
+                const displayNumber = g.id === "g1" && [4,5,6].includes(i) ? "" : g.id === "g1" ? (g1Numbers[i] ?? `${i + 1}`) : `${i + 1}`;
+                const indent = g.id === "g1" && [4, 5, 6].includes(i);
+                const isOther = String(name).includes("อื่น");
                 return (
                   <tr key={key} className="odd:bg-white even:bg-gray-50">
-                    <td className="border px-3 py-2 text-center h-10 align-middle">{i + 1}</td>
-                    <td className="border px-3 py-2 h-10 align-middle">
-                      {name}
-                      {(String(name).includes("อื่น") || String(name).includes("อื่น ๆ")) ? (
-                        <input
-                          className="w-full rounded border border-gray-300 px-2 py-1 mt-1 h-9 focus:outline-none"
-                          value={getName(key, v?.customName || "")}
-                          onChange={(e) => setNameDrafts((p) => ({ ...p, [key]: e.target.value }))}
-                          onBlur={(e) => setRow(key, name, { customName: e.target.value })}
-                        />
+                    <td className="border px-3 py-2 text-center h-10 align-middle">{displayNumber}</td>
+                    <td className={`border px-3 py-2 h-10 align-middle ${indent ? "pl-4" : ""}`}>
+                      {indent ? `${displayNumber} ${name}` : name}
+                      {isOther ? (
+                        <div className="mt-1">
+                          <RemarkCell
+                            note={v?.customName}
+                            placeholder="โปรดระบุ"
+                            onSave={(text) => setRow(key, name, { customName: text })}
+                          />
+                        </div>
                       ) : null}
                     </td>
                     <td className="border px-2 py-2 text-center h-10 align-middle">

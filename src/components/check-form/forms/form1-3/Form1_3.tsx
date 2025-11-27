@@ -268,7 +268,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
             const uploadImageIfNeeded = async (
                 previewUrl: string | null | undefined,
                 filename: string | null | undefined
-            ) => {
+            ): Promise<void> => {
                 // ✅ อัปโหลดเฉพาะกรณี preview เป็น blob:
                 if (previewUrl && previewUrl.startsWith("blob:") && filename) {
                     const response = await fetch(previewUrl);
@@ -283,6 +283,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     });
                     const result = await uploadRes.json();
                     if (!uploadRes.ok || !result.success) {
+                        // จะไม่ break flow แต่ถ้าอยากให้ error เลยก็ใส่ showAlert/throw ตรงนี้ได้
                     }
                 }
             };
@@ -298,12 +299,15 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 ]);
             }
 
+            // ---------- 3. Upload SectionFour photos (row.photos + defect.photos) ----------
+            let sectionFourClean = sectionFour;
+
             if (sectionFour) {
                 const uploadPromises: Promise<void>[] = [];
 
                 // helper สำหรับ upload src ที่เป็น base64
-                const uploadPhotoItem = async (src: string, filename: string) => {
-                    if (src.startsWith("data:image")) {
+                const uploadPhotoItem = async (src: string, filename: string): Promise<void> => {
+                    if (src && src.startsWith("data:image")) {
                         const res = await fetch(src);
                         const blob = await res.blob();
                         const fd = new FormData();
@@ -316,39 +320,86 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         });
                         const data = await uploadRes.json();
                         if (!uploadRes.ok || !data.success) {
+                            // เช่นกัน ถ้าต้องการให้หยุดทันที สามารถ throw error ได้
                         }
                     }
                 };
 
-                // ✅ loop table1 และ table2
-                const processTable = (table: Record<string, any> | undefined) => {
+                const processTable = (table: Record<string, any> | undefined): Record<string, any> => {
                     if (!table) return {};
                     const clean: Record<string, any> = {};
 
                     for (const [key, row] of Object.entries(table)) {
-                        const { photos, ...restRow } = row || {};
-                        const cleanedPhotos =
-                            Array.isArray(photos) && photos.length > 0
-                                ? photos.map((p) => {
-                                    if (p?.src && p?.filename) {
-                                        uploadPromises.push(uploadPhotoItem(p.src, p.filename));
-                                    }
-                                    return { filename: p?.filename }; // ❌ ตัด src ออก
-                                })
+                        if (!row) continue;
+
+                        // ----- 3.1 จัดการ photos ของ row -----
+                        const cleanedRowPhotos =
+                            Array.isArray(row.photos)
+                                ? row.photos
+                                    .map((p: any) => {
+                                        if (p?.src && p?.filename && p.src.startsWith("data:image")) {
+                                            uploadPromises.push(uploadPhotoItem(p.src, p.filename));
+                                        }
+                                        if (!p?.filename) return null;
+                                        return { filename: p.filename };
+                                    })
+                                    .filter(Boolean)
                                 : [];
 
-                        clean[key] = { ...restRow, photos: cleanedPhotos };
+                        // ----- 3.2 จัดการ defect[].photos -----
+                        let cleanedDefect = row.defect;
+                        if (Array.isArray(row.defect)) {
+                            cleanedDefect = row.defect.map((def: any) => {
+                                const { photos: defectPhotos, ...restDef } = def || {};
+
+                                const cleanedDefectPhotos =
+                                    Array.isArray(defectPhotos)
+                                        ? defectPhotos
+                                            .map((p: any) => {
+                                                if (
+                                                    p?.src &&
+                                                    p?.filename &&
+                                                    p.src.startsWith("data:image")
+                                                ) {
+                                                    uploadPromises.push(
+                                                        uploadPhotoItem(p.src, p.filename)
+                                                    );
+                                                }
+                                                if (!p?.filename) return null;
+                                                return { filename: p.filename };
+                                            })
+                                            .filter(Boolean)
+                                        : [];
+
+                                return {
+                                    ...restDef,
+                                    photos: cleanedDefectPhotos,
+                                };
+                            });
+                        }
+
+                        clean[key] = {
+                            ...row,
+                            photos: cleanedRowPhotos,
+                            defect: cleanedDefect,
+                        };
                     }
+
                     return clean;
                 };
 
                 const cleanTable1 = processTable(sectionFour.table1);
                 const cleanTable2 = processTable(sectionFour.table2);
 
+                // รอ upload รูป defect + รูป row ทั้งหมดให้เสร็จ
                 await Promise.all(uploadPromises);
 
-                sectionFour.table1 = cleanTable1;
-                sectionFour.table2 = cleanTable2;
+                // สร้าง sectionFour ใหม่แบบ clean
+                sectionFourClean = {
+                    ...sectionFour,
+                    table1: cleanTable1,
+                    table2: cleanTable2,
+                };
             }
 
             // ---------- 4. เตรียม payload ----------
@@ -361,12 +412,12 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 ...sectionTwoClean
             } = sectionTwo || {};
 
-            const payload = {
+            const payload: any = {
                 entity: "form1_3",
                 data: {
                     ...rest,
-                    sectionTwo: sectionTwoClean, // ✅ ส่งเฉพาะข้อมูลจริง ไม่รวม preview
-                    sectionFour: sectionFour,
+                    sectionTwo: sectionTwoClean,
+                    sectionFour: sectionFourClean,
                     job_id: jobId,
                     equipment_id: equipment_id,
                     is_active: 1,
@@ -410,14 +461,14 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
             {/* ระยะขอบกระดาษ */}
             <div className="p-2 relative">
                 <div className="absolute right-2.5">
-                    {/* <button
+                    <button
                         type="button"
                         onClick={() => exportToExcel(formData.sectionFour ?? null, formData.id ?? null, jobId ?? "")}
                         className="mr-2 w-[100px] h-10 bg-green-600 hover:bg-green-700 active:bg-green-700 text-white rounded-[5px] inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
                     >
                         <img src="/images/IconExcel.webp" alt="Excel" className="h-5 w-5 object-contain" />
                         <span className="leading-none">Defect</span>
-                    </button> */}
+                    </button>
                     <button
                         type="button"
                         onClick={() => exportToDocx(formData)}
@@ -453,7 +504,10 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                             <img
                                 src={coverSrc}
                                 alt="cover"
-                                className="max-h-full w-auto object-contain"
+                                className="max-w-full max-h-full object-contain rounded-sm"
+                                style={{
+                                    display: "block",
+                                }}
                             />
                         ) : (
                             <div className="text-gray-600 text-sm text-center px-4">
@@ -463,7 +517,6 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                             </div>
                         )}
                     </div>
-
                     {/* input อัปโหลดรูป */}
                     <div className="mt-3">
                         <label className="inline-flex items-center gap-2 rounded-md border border-blue-500 text-blue-600 px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1">

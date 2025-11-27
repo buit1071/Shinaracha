@@ -1,7 +1,11 @@
 import * as React from "react";
+import Select from "react-select";
+import { showLoading } from "@/lib/loading";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import { PencilIcon } from "@heroicons/react/24/outline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import IconButton from "@mui/material/IconButton";
+import { ProblemRow, DefectRow } from "@/interfaces/master";
 /* ========= CONFIG ========= */
 export type VisitKey = "v1";
 const VISITS: { key: VisitKey; label: string }[] = [{ key: "v1", label: "ครั้งที่ 1" }];
@@ -77,12 +81,23 @@ const table2Groups: { title: string; rows: RowItem[] }[] = [
 
 type PhotoItem = { src?: string; filename: string };
 
+export type Defect = {
+    problem_id?: string;
+    problem_name: string;
+    photos?: PhotoItem[];
+    isOther?: boolean;
+    note?: string;
+    illegal_suggestion?: string;
+    defect?: string | number | null;
+    defect_name?: string;
+};
+
 export type SectionFourRow = {
     inspection_item?: string;
     visits?: Partial<Record<VisitKey, "ok" | "ng" | undefined>>; // สถานะต่อ visit
     note?: string;
     extra?: string;
-    photos?: PhotoItem[];
+    defect?: Defect[];
 };
 
 export type SectionFourForm = {
@@ -103,11 +118,28 @@ export default function SectionFourDetails({ value, onChange }: Props) {
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
     const fileRef = React.useRef<HTMLInputElement>(null);
     const streamRef = React.useRef<MediaStream | null>(null);
+    const [error, setError] = React.useState(false);
 
+    const [problems, setProblems] = React.useState<ProblemRow[]>([]);
+    const [defects, setDefects] = React.useState<DefectRow[]>([]);
+    const [selectedProblems, setSelectedProblems] = React.useState<Defect[]>([]);
+    const otherProblem = selectedProblems.find(p => p.isOther);
+    const otherHasError = error && !!otherProblem && !otherProblem.problem_name?.trim();
     const [camOpen, setCamOpen] = React.useState(false);
     const [captured, setCaptured] = React.useState<string | null>(null);
     const [capturedName, setCapturedName] = React.useState<string | null>(null);
-    const [camTarget, setCamTarget] = React.useState<{ group: "table1" | "table2"; id: string } | null>(null);
+    const [camTarget, setCamTarget] = React.useState<{
+        group: "table1" | "table2";
+        id: string;
+        defectIndex: number;
+    } | null>(null);
+
+    const [photoPopup, setPhotoPopup] = React.useState<{
+        group: "table1" | "table2";
+        id: string;
+        defectIndex: number | null;
+    } | null>(null);
+
     const [overlayMode, setOverlayMode] = React.useState<"camera" | "view">("camera");
     const [viewIndex, setViewIndex] = React.useState<number | null>(null);
 
@@ -169,7 +201,7 @@ export default function SectionFourDetails({ value, onChange }: Props) {
             {VISITS.map((v) => (
                 <th key={v.key} colSpan={2} className={`${th} text-center w-40`}>{v.label}</th>
             ))}
-            <th rowSpan={2} className={`${th} w-25 text-center`}>รูปภาพ</th>
+            <th rowSpan={2} className={`${th} w-20 text-center`}>Defect</th>
             <th rowSpan={2} className={`${th} w-56 text-center`}>หมายเหตุ</th>
         </>
     );
@@ -225,23 +257,38 @@ export default function SectionFourDetails({ value, onChange }: Props) {
         );
     };
 
-    const getPhotos = (group: "table1" | "table2", id: string): PhotoItem[] =>
-        (group === "table1" ? v1[id]?.photos : v2[id]?.photos) ?? [];
+    const getPhotos = (group: "table1" | "table2", id: string, defectIndex: number) =>
+        ((group === "table1" ? v1[id]?.defect : v2[id]?.defect)?.[defectIndex]?.photos) ?? [];
 
-    const setPhotos = (group: "table1" | "table2", id: string, next: PhotoItem[]) =>
-        emit(group, id, { photos: next });
+    const setPhotos = (group: "table1" | "table2", id: string, defectIndex: number, next: PhotoItem[]) => {
+        const targetDefects = group === "table1" ? [...v1[id]?.defect ?? []] : [...v2[id]?.defect ?? []];
+        if (!targetDefects[defectIndex]) return;
+        targetDefects[defectIndex] = { ...targetDefects[defectIndex], photos: next };
 
-    const openViewer = (group: "table1" | "table2", id: string, index: number) => {
-        const p = getPhotos(group, id)[index];
+        emit(group, id, { defect: targetDefects });
+    };
+
+    const openViewer = (
+        group: "table1" | "table2",
+        id: string,
+        photoIndex: number,
+        defectIndex: number | null
+    ) => {
+        if (defectIndex === null) return; // ✅ ป้องกันก่อนใช้งาน
+
+        const photos = getPhotos(group, id, defectIndex);
+        const p = photos[photoIndex];
         if (!p) return;
 
-        setCamTarget({ group, id });
+        // ✅ เก็บตำแหน่ง defectIndex ด้วย เพื่อใช้ตอนบันทึก
+        setCamTarget({ group, id, defectIndex });
         setOverlayMode("view");
-        setViewIndex(index); // ⭐ จำ index
+        setViewIndex(photoIndex);
 
-        const src = p.src && p.src.startsWith("data:")
-            ? p.src
-            : buildRemoteImgUrl(p.filename);
+        const src =
+            p.src && p.src.startsWith("data:")
+                ? p.src
+                : buildRemoteImgUrl(p.filename);
 
         setCaptured(src);
         setCapturedName(p.filename);
@@ -251,14 +298,20 @@ export default function SectionFourDetails({ value, onChange }: Props) {
 
     const clearPhotos = () => {
         if (!camTarget || viewIndex == null) return;
-        const { group, id } = camTarget;
 
-        const cur = getPhotos(group, id);
-        if (!cur.length) { closeCamera(); return; }
+        const { group, id, defectIndex } = camTarget;
+        if (defectIndex === null || defectIndex === undefined) return; // ป้องกัน null
+
+        // ดึง photos ของ defect นั้น ๆ
+        const cur = getPhotos(group, id, defectIndex);
+        if (!cur.length) {
+            closeCamera();
+            return;
+        }
 
         // ลบรูปตาม index ปัจจุบัน
         const next = cur.filter((_, i) => i !== viewIndex);
-        setPhotos(group, id, next);
+        setPhotos(group, id, defectIndex, next); // ส่ง defectIndex เข้าไปด้วย
 
         closeCamera();
     };
@@ -279,15 +332,27 @@ export default function SectionFourDetails({ value, onChange }: Props) {
         streamRef.current?.getTracks().forEach(t => t.stop());
         streamRef.current = null;
     };
+    const [currentPhoto, setCurrentPhoto] = React.useState<PhotoItem | null>(null);
+    const openCamera = async (
+        group: "table1" | "table2",
+        id: string,
+        defectIndex: number | null,
+        photo?: PhotoItem
+    ) => {
+        if (defectIndex === null) return;
 
-    const openCamera = async (group: "table1" | "table2", id: string) => {
-        if (getPhotos(group, id).length >= 2) return; // จำกัด 2 ไฟล์
-        setCamTarget({ group, id });
+        // ตรวจจำนวนรูปใน defect นั้น ๆ
+        if (!photo && getPhotos(group, id, defectIndex).length >= 2) return;
+
+        setCamTarget({ group, id, defectIndex });
         setOverlayMode("camera");
-        setCaptured(null);
+        setCurrentPhoto(photo ?? null); // ถ้ามี photo ให้ preview
+        setCaptured(photo?.src ?? null); // preview ของรูปเก่า
         setCamOpen(true);
+
         try {
-            await startStream();
+            // ถ้าไม่มี photo ให้เปิดกล้อง
+            if (!photo) await startStream();
         } catch {
             fileRef.current?.click();
         }
@@ -313,12 +378,23 @@ export default function SectionFourDetails({ value, onChange }: Props) {
     };
 
     const confirmPhoto = () => {
-        if (!captured || !camTarget) return;
-        const { group, id } = camTarget;
-        const cur = getPhotos(group, id);
-        if (cur.length >= 2) return;
-        const next: PhotoItem[] = [...cur, { src: captured, filename: capturedName ?? makeDefectName() }].slice(0, 2);
-        setPhotos(group, id, next);
+        if (!captured || camTarget === null) return;
+
+        const { defectIndex } = camTarget;
+
+        setSelectedProblems(prev => {
+            return prev.map((d, idx) => {
+                if (idx !== defectIndex) return d;
+
+                const nextPhotos = [...(d.photos ?? []), {
+                    src: captured,
+                    filename: capturedName ?? makeDefectName(),
+                }].slice(0, 2); // จำกัด 2 รูป
+
+                return { ...d, photos: nextPhotos };
+            });
+        });
+
         closeCamera();
     };
 
@@ -330,14 +406,22 @@ export default function SectionFourDetails({ value, onChange }: Props) {
     const onFilePicked: React.ChangeEventHandler<HTMLInputElement> = (e) => {
         const file = e.target.files?.[0];
         if (!file || !camTarget) return;
-        const { group, id } = camTarget;
-        const cur = getPhotos(group, id);
-        if (cur.length >= 2) return;
+
+        const { group, id, defectIndex } = camTarget;
+        if (defectIndex === null || defectIndex === undefined) return; // ป้องกัน null
+
+        const cur = getPhotos(group, id, defectIndex);
+        if (cur.length >= 2) return; // จำกัด 2 รูปต่อ defect
 
         const reader = new FileReader();
         reader.onload = () => {
-            const next: PhotoItem[] = [...cur, { src: reader.result as string, filename: makeDefectName() }].slice(0, 2);
-            setPhotos(group, id, next);
+            const next: PhotoItem[] = [
+                ...cur,
+                { src: reader.result as string, filename: makeDefectName() }
+            ].slice(0, 2);
+
+            setPhotos(group, id, defectIndex, next); // ส่ง defectIndex เข้าไปด้วย
+
             if (fileRef.current) fileRef.current.value = "";
         };
         reader.readAsDataURL(file);
@@ -365,15 +449,31 @@ export default function SectionFourDetails({ value, onChange }: Props) {
 
         const normalize = (tableName: "table1" | "table2", table?: Record<string, SectionFourRow>) => {
             if (!table) return;
+
             Object.entries(table).forEach(([rid, row]) => {
-                if (!row?.photos?.length) return;
-                const updated = row.photos.map(p =>
-                    p?.src ? p : { ...p, src: buildRemoteImgUrl(p.filename) } // ⭐ เติม src ถ้ายังไม่มี
-                );
-                // ถ้ามีตัวไหนไม่มี src มาก่อน แปลว่าเราเติม → ต้อง patch
-                if (updated.some((u, i) => !row.photos![i].src)) {
-                    (patch as any)[tableName] = { ...(patch as any)[tableName], [rid]: { photos: updated } };
-                    changed = true;
+                if (!row?.defect?.length) return;
+
+                // อัปเดตรูปในแต่ละ defect
+                const updatedDefects = row.defect.map(def => {
+                    if (!def.photos?.length) return def;
+
+                    const updatedPhotos = def.photos.map(p =>
+                        p?.src ? p : { ...p, src: buildRemoteImgUrl(p.filename) } // เติม src ถ้ายังไม่มี
+                    );
+
+                    // ถ้ามีรูปไหนที่เราเติม src → patch
+                    if (updatedPhotos.some((u, i) => !def.photos![i].src)) {
+                        changed = true;
+                    }
+
+                    return { ...def, photos: updatedPhotos };
+                });
+
+                if (changed) {
+                    (patch as any)[tableName] = {
+                        ...(patch as any)[tableName],
+                        [rid]: { ...row, defect: updatedDefects }
+                    };
                 }
             });
         };
@@ -384,6 +484,47 @@ export default function SectionFourDetails({ value, onChange }: Props) {
         if (changed) onChange(patch);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [value?.table1, value?.table2]);
+
+    const fecthProblem = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/legal-regulations/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "problem" }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setProblems(data.data);
+            }
+        } catch (err) {
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    const fecthDefect = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/legal-regulations/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "defect" }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setDefects(data.data);
+            }
+        } catch (err) {
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    React.useEffect(() => {
+        fecthProblem();
+        fecthDefect();
+    }, []);
 
     return (
         <section className="space-y-8 text-gray-900 p-2">
@@ -418,33 +559,27 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                                     <ResultCells group="table1" id={id} />
                                     <td className={`${td} text-center`}>
                                         <div className="flex items-center justify-center gap-2">
-                                            {(v1[id]?.photos ?? []).slice(0, 2).map((p, idx) => (
-                                                <img
-                                                    key={idx}
-                                                    src="/images/IconFile.png"
-                                                    alt={`file-${idx + 1}`}
-                                                    title={p.filename}                  // ⭐ ชื่อไฟล์บน tooltip
-                                                    className="w-6 h-6 cursor-pointer"
-                                                    onClick={() => openViewer("table1", id, idx)}
-                                                />
-                                            ))}
 
-                                            {(v1[id]?.photos?.length ?? 0) < 2 && (
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => openCamera("table1", id)}
-                                                    title="ถ่าย/แนบรูป"
-                                                    sx={{
-                                                        color: "gray",
-                                                        "&:hover": { color: "#2563eb" }, // hover:text-blue-600
-                                                    }}
-                                                >
-                                                    <PhotoCameraIcon fontSize="small" />
-                                                </IconButton>
-                                            )}
+                                            {(() => {
+                                                const visits = value?.table1?.[id]?.visits ?? {};
+                                                const hasNG = Object.values(visits).includes("ng");
+
+                                                return hasNG && (
+                                                    <button
+                                                        onClick={() => {
+                                                            const defects = value?.table1?.[id]?.defect ?? [];
+                                                            setSelectedProblems(defects.map(d => ({ ...d })));
+                                                            setPhotoPopup({ group: "table1", id, defectIndex: null });
+                                                        }}
+                                                        title="แนบรูป / ออกแบบ"
+                                                        className="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-blue-600"
+                                                    >
+                                                        <PencilIcon className="w-5 h-5" />
+                                                    </button>
+                                                );
+                                            })()}
                                         </div>
                                     </td>
-
                                     <td className={`${td} align-middle`}>
                                         <div className="flex items-center justify-between gap-2">
                                             <span
@@ -481,9 +616,13 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                     <tbody>
                         {table2Groups.map((g, gi) => (
                             <React.Fragment key={g.title}>
+
                                 {/* แถวหัวข้อย่อย */}
                                 <tr>
-                                    <td colSpan={TOTAL_COLS} className="px-3 py-2 border border-gray-300 bg-gray-200 font-semibold">
+                                    <td
+                                        colSpan={TOTAL_COLS}
+                                        className="px-3 py-2 border border-gray-300 bg-gray-200 font-semibold"
+                                    >
                                         {`${gi + 1}. ${g.title}`}
                                     </td>
                                 </tr>
@@ -493,62 +632,88 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                                     const text = typeof row === "string" ? row : row.label;
                                     const inline = typeof row !== "string" && row.inlineInput;
                                     const r = v2[id] ?? {};
+
                                     return (
                                         <tr key={id} className="odd:bg-white even:bg-gray-50">
+                                            {/* ลำดับ */}
                                             <td className={`${td} text-center`}>{i + 1}</td>
+
+                                            {/* รายการตรวจ */}
                                             <td className={td}>
                                                 <span>{text}</span>
+
                                                 {inline && (
                                                     <DottedInput
                                                         className="ml-2 min-w-[220px]"
                                                         placeholder="โปรดระบุ"
                                                         value={r.extra ?? ""}
-                                                        onChange={(e) => emit("table2", id, { extra: e.target.value })}
+                                                        onChange={(e) =>
+                                                            emit("table2", id, { extra: e.target.value })
+                                                        }
                                                     />
                                                 )}
                                             </td>
+
+                                            {/* ช่อง OK / NG */}
                                             <ResultCells group="table2" id={id} />
+
+                                            {/* ปุ่มแนบรูป / Defect Popup */}
                                             <td className={`${td} text-center`}>
                                                 <div className="flex items-center justify-center gap-2">
-                                                    {(v2[id]?.photos ?? []).slice(0, 2).map((p, idx) => (
-                                                        <img
-                                                            key={idx}
-                                                            src="/images/IconFile.png"
-                                                            alt={`file-${idx + 1}`}
-                                                            title={p.filename}                  // ⭐ ชื่อไฟล์บน tooltip
-                                                            className="w-6 h-6 cursor-pointer"
-                                                            onClick={() => openViewer("table2", id, idx)}
-                                                        />
-                                                    ))}
 
-                                                    {(v2[id]?.photos?.length ?? 0) < 2 && (
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => openCamera("table2", id)}
-                                                            title="ถ่าย/แนบรูป"
-                                                            sx={{
-                                                                color: "gray",
-                                                                "&:hover": { color: "#2563eb" }, // hover:text-blue-600
-                                                            }}
-                                                        >
-                                                            <PhotoCameraIcon fontSize="small" />
-                                                        </IconButton>
-                                                    )}
+                                                    {(() => {
+                                                        const visits = value?.table2?.[id]?.visits ?? {};
+                                                        const hasNG = Object.values(visits).includes("ng");
+
+                                                        return (
+                                                            hasNG && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const defects = value?.table2?.[id]?.defect ?? [];
+                                                                        setSelectedProblems(defects.map((d) => ({ ...d })));
+                                                                        setPhotoPopup({
+                                                                            group: "table2",
+                                                                            id,
+                                                                            defectIndex: null,
+                                                                        });
+                                                                    }}
+                                                                    title="แนบรูป / ออกแบบ"
+                                                                    className="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-blue-600"
+                                                                >
+                                                                    <PencilIcon className="w-5 h-5" />
+                                                                </button>
+                                                            )
+                                                        );
+                                                    })()}
                                                 </div>
                                             </td>
+
+                                            {/* หมายเหตุ */}
                                             <td className={`${td} align-middle`}>
                                                 <div className="flex items-center justify-between gap-2">
                                                     <span
                                                         title={r.note ?? ""}
                                                         className="min-w-0 block max-w-[150px] truncate text-gray-800"
                                                     >
-                                                        {r.note ? r.note : <span className="text-gray-400">หมายเหตุ (ถ้ามี)</span>}
+                                                        {r.note ? (
+                                                            r.note
+                                                        ) : (
+                                                            <span className="text-gray-400">
+                                                                หมายเหตุ (ถ้ามี)
+                                                            </span>
+                                                        )}
                                                     </span>
+
                                                     <IconButton
                                                         size="small"
-                                                        onClick={() => openNote("table2", id, r.note ?? "")}
+                                                        onClick={() =>
+                                                            openNote("table2", id, r.note ?? "")
+                                                        }
                                                         title="แก้ไขหมายเหตุ"
-                                                        sx={{ color: "#6b7280", "&:hover": { color: "#111827" } }}
+                                                        sx={{
+                                                            color: "#6b7280",
+                                                            "&:hover": { color: "#111827" },
+                                                        }}
                                                     >
                                                         <EditOutlinedIcon fontSize="small" />
                                                     </IconButton>
@@ -588,7 +753,11 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                             {overlayMode === "camera" && !captured ? (
                                 <video ref={videoRef} autoPlay playsInline muted className="w-full max-h-[75vh] object-contain" />
                             ) : (
-                                <img src={captured ?? ""} alt="preview" className="w-full max-h-[75vh] object-contain bg-black" />
+                                <img
+                                    src={captured ?? currentPhoto?.src ?? ""}
+                                    alt={currentPhoto?.filename ?? "preview"}
+                                    className="w-full max-h-[75vh] object-contain bg-black"
+                                />
                             )}
                         </div>
 
@@ -632,6 +801,7 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                     <canvas ref={canvasRef} className="hidden" />
                 </div>
             )}
+
             {noteOpen && (
                 <div className="fixed inset-0 z-[9998] bg-black/50 flex items-center justify-center p-4">
                     <div className="w-full max-w-xl bg-white rounded-2xl shadow-2xl overflow-hidden">
@@ -658,6 +828,335 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                                 ยกเลิก
                             </button>
                             <button onClick={saveNote} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">
+                                บันทึก
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {photoPopup && (
+                <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg w-[1000px] shadow-lg max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-lg font-bold mb-4">Defect</h3>
+
+                        {/* ===== เลือกปัญหาแบบหลายรายการ ===== */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                เลือกปัญหา
+                            </label>
+                            <Select
+                                isMulti
+                                options={problems.map((p) => ({
+                                    value: p.problem_id,
+                                    label: p.problem_name,
+                                }))}
+                                value={selectedProblems
+                                    .filter((p) => !p.isOther)
+                                    .map((p) => ({ value: p.problem_id, label: p.problem_name }))}
+                                onChange={(selected) => {
+                                    const newDefects: Defect[] = (selected ?? []).map((s) => {
+                                        // 1) ถ้าเคยเลือกอยู่แล้ว → ใช้ของเดิม (รวม illegal_suggestion เดิมด้วย)
+                                        const existing = selectedProblems.find((p) => p.problem_id === s.value);
+                                        if (existing) return existing;
+
+                                        // 2) ถ้าเพิ่งเลือกใหม่ → ไปดึง illegal_suggestion จาก problems
+                                        const fromMaster = problems.find(p => p.problem_id === s.value);
+
+                                        return {
+                                            problem_id: s.value,
+                                            problem_name: s.label,
+                                            photos: [],
+                                            illegal_suggestion: fromMaster?.illegal_suggestion ?? "", // 👈 ดึงจาก master
+                                        };
+                                    });
+
+                                    // เก็บปัญหาอื่นไว้ด้วย
+                                    const otherDefect = selectedProblems.find((p) => p.isOther);
+                                    if (otherDefect) newDefects.push(otherDefect);
+
+                                    setSelectedProblems(newDefects);
+                                }}
+                                placeholder="-- เลือกหลายปัญหา --"
+                                menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                styles={{
+                                    control: (base, state) => ({
+                                        ...base,
+                                        backgroundColor: "#fff",
+                                        borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
+                                        boxShadow: "none",
+                                        "&:hover": {
+                                            borderColor: state.isFocused ? "#3b82f6" : "#9ca3af",
+                                        },
+                                    }),
+                                    menu: (base) => ({
+                                        ...base,
+                                        backgroundColor: "#fff",
+                                        boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                        border: "1px solid #e5e7eb",
+                                    }),
+                                    menuPortal: (base) => ({ ...base, zIndex: 2100 }),
+                                    option: (base, state) => ({
+                                        ...base,
+                                        backgroundColor: state.isSelected
+                                            ? "#e5f2ff"
+                                            : state.isFocused
+                                                ? "#f3f4f6"
+                                                : "#fff",
+                                        color: "#111827",
+                                    }),
+                                }}
+                            />
+                        </div>
+
+                        {/* ===== ปัญหาอื่น ===== */}
+                        <div className="mb-4">
+                            <label className="inline-flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedProblems.some((p) => p.isOther)}
+                                    onChange={(e) => {
+                                        if (e.target.checked) {
+                                            setSelectedProblems([
+                                                ...selectedProblems,
+                                                {
+                                                    problem_id: "other",
+                                                    problem_name: "",
+                                                    isOther: true,
+                                                    photos: [],
+                                                    defect: null,
+                                                    defect_name: undefined,
+                                                    illegal_suggestion: "",
+                                                },
+                                            ]);
+                                        } else {
+                                            setSelectedProblems(selectedProblems.filter((p) => !p.isOther));
+                                        }
+                                    }}
+                                />
+                                ปัญหาอื่น
+                            </label>
+
+                            {selectedProblems.some((p) => p.isOther) && (
+                                <>
+                                    <input
+                                        type="text"
+                                        className={
+                                            "mt-2 block w-full rounded p-2 border " +
+                                            (otherHasError ? "border-red-500" : "border-gray-300")
+                                        }
+                                        placeholder="กรอกชื่อปัญหาอื่น"
+                                        value={otherProblem?.problem_name || ""}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            setSelectedProblems(
+                                                selectedProblems.map((p) =>
+                                                    p.isOther ? { ...p, problem_name: value } : p
+                                                )
+                                            );
+                                        }}
+                                    />
+                                </>
+                            )}
+                        </div>
+
+                        {/* ===== แสดงภาพปัญหา ===== */}
+                        {selectedProblems.map((d, defectIndex) => (
+                            <div key={(d.problem_id ?? "other") + defectIndex} className="mb-4">
+                                <div className="text-sm font-medium mb-1">
+                                    {defectIndex + 1}.{" "}
+                                    {d.isOther
+                                        ? `อื่นๆ (ระบุ) ${d.problem_name || ""}`
+                                        : d.problem_name}
+                                </div>
+
+                                {/* ถ้าเป็นปัญหาอื่น → ให้เลือกข้อกฎหมายได้ */}
+                                {d.isOther && (
+                                    <div className="mb-2">
+                                        <label className="block text-xs font-medium mb-1">
+                                            ข้อกฎหมายที่เกี่ยวข้อง
+                                        </label>
+                                        <Select
+                                            menuPlacement="auto"
+                                            options={defects.map((p) => ({
+                                                value: p.id,
+                                                label: p.defect,
+                                            }))}
+                                            value={
+                                                d.defect
+                                                    ? defects
+                                                        .map((p) => ({
+                                                            value: p.id,
+                                                            label: p.defect,
+                                                        }))
+                                                        .find((opt) => opt.value === d.defect) || null
+                                                    : null
+                                            }
+                                            onChange={(selected) =>
+                                                setSelectedProblems((prev) =>
+                                                    prev.map((p, idx) =>
+                                                        idx === defectIndex
+                                                            ? {
+                                                                ...p,
+                                                                defect: selected?.value ?? null,
+                                                                defect_name: selected?.label ?? undefined,
+                                                            }
+                                                            : p
+                                                    )
+                                                )
+                                            }
+                                            placeholder="-- เลือกข้อกฎหมาย --"
+                                            isClearable
+                                            menuPortalTarget={
+                                                typeof window !== "undefined" ? document.body : null
+                                            }
+                                            styles={{
+                                                control: (base, state) => ({
+                                                    ...base,
+                                                    backgroundColor: "#fff",
+                                                    borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
+                                                    boxShadow: "none",
+                                                    "&:hover": {
+                                                        borderColor: state.isFocused ? "#3b82f6" : "#9ca3af",
+                                                    },
+                                                }),
+                                                menu: (base) => ({
+                                                    ...base,
+                                                    backgroundColor: "#fff",
+                                                    boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                                    border: "1px solid #e5e7eb",
+                                                }),
+                                                menuPortal: (base) => ({
+                                                    ...base,
+                                                    zIndex: 2100,
+                                                }),
+                                                option: (base, state) => ({
+                                                    ...base,
+                                                    backgroundColor: state.isSelected
+                                                        ? "#e5f2ff"
+                                                        : state.isFocused
+                                                            ? "#f3f4f6"
+                                                            : "#fff",
+                                                    color: "#111827",
+                                                }),
+                                                menuList: (base) => ({
+                                                    ...base,
+                                                    backgroundColor: "#fff",
+                                                    paddingTop: 0,
+                                                    paddingBottom: 0,
+                                                }),
+                                                singleValue: (base) => ({
+                                                    ...base,
+                                                    color: "#111827",
+                                                }),
+                                            }}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* textarea ของแต่ละ defect */}
+                                <textarea
+                                    className={
+                                        "w-full border rounded p-2 mb-1 " +
+                                        (error && !d.illegal_suggestion
+                                            ? "border-red-500"
+                                            : "border-gray-300")
+                                    }
+                                    rows={3}
+                                    placeholder="กรอกข้อเสนอแนะเพิ่มเติม"
+                                    value={d.illegal_suggestion || ""}
+                                    onChange={(e) =>
+                                        setSelectedProblems((prev) =>
+                                            prev.map((p, idx) =>
+                                                idx === defectIndex
+                                                    ? { ...p, illegal_suggestion: e.target.value }
+                                                    : p
+                                            )
+                                        )
+                                    }
+                                />
+
+                                {error && !d.illegal_suggestion && (
+                                    <p className="text-red-500 text-xs">
+                                    </p>
+                                )}
+
+                                {/* แสดงรูป */}
+                                <div className="flex flex-wrap gap-2">
+                                    {(d.photos ?? []).map((p, idx) => (
+                                        <img
+                                            key={idx}
+                                            src="/images/IconFile.png"
+                                            alt={p.filename}
+                                            title={p.filename}
+                                            className="w-16 h-16 object-cover border rounded cursor-pointer"
+                                            onClick={() =>
+                                                openCamera(photoPopup.group, photoPopup.id, defectIndex, p)
+                                            }
+                                        />
+                                    ))}
+
+                                    {(d.photos?.length ?? 0) < 2 && (
+                                        <button
+                                            className="w-16 h-16 flex items-center justify-center border rounded text-gray-500 hover:text-blue-600 hover:border-blue-500"
+                                            onClick={() =>
+                                                openCamera(photoPopup.group, photoPopup.id, defectIndex)
+                                            }
+                                            title="ถ่าย/แนบรูป"
+                                        >
+                                            <PhotoCameraIcon className="w-6 h-6" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* ===== ปุ่มยืนยัน / ปิด ===== */}
+                        <div className="flex justify-end gap-2">
+                            <button
+                                className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                                onClick={() => setPhotoPopup(null)}
+                            >
+                                ปิด
+                            </button>
+                            <button
+                                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                onClick={() => {
+                                    if (!photoPopup || !value) return;
+
+                                    // ===== Validate ปัญหาอื่น ๆ =====
+                                    const other = selectedProblems.find(p => p.isOther);
+
+                                    if (other) {
+                                        const isMissing =
+                                            !other.problem_name?.trim() ||
+                                            // !other.defect ||
+                                            !other.illegal_suggestion?.trim();
+
+                                        if (isMissing) {
+                                            setError(true);
+                                            return; // ❌ หยุด ไม่บันทึก
+                                        }
+                                    }
+
+                                    const { group, id } = photoPopup;
+
+                                    const updatedValue: Partial<SectionFourForm> = {
+                                        ...value,
+                                        [group]: {
+                                            ...(value[group] ?? {}),
+                                            [id]: {
+                                                ...value[group]?.[id],
+                                                defect: [...selectedProblems],
+                                            },
+                                        },
+                                    };
+
+                                    emit(group, id, { defect: selectedProblems });
+                                    onChange?.(updatedValue);
+                                    setPhotoPopup(null);
+                                }}
+                            >
                                 บันทึก
                             </button>
                         </div>

@@ -279,9 +279,25 @@ export default function Form8_1({ jobId, equipment_id, name, onBack }: Props) {
   const handleSave = async () => {
     showLoading(true);
     try {
-      // Pre-save pass: อัปโหลดรูป defect (ถ้ายังเป็น blob:/data:) และ clean ให้เหลือเฉพาะ filename
+      const dataForSave: any = {
+        ...formData,
+        report: { ...(formData.report || {}) },
+        location: { ...(formData.location || {}) },
+        photos: { ...(formData.photos || {}) },
+      };
+
+      const uploadPhotoItem = async (p?: any) => {
+        if (!p) return undefined;
+        if (p.localFile && p.url) {
+          await uploadIfNeeded(p.localPreview || "", p.url, p.localFile as Blob);
+          return { url: p.url, caption: p.caption };
+        }
+        return p.url ? { url: p.url, caption: p.caption } : undefined;
+      };
+
+      // Pre-save pass: �ѻ��Ŵ�ٻ defect (����ѧ�� blob:/data:) ��� clean ��������੾�� filename
       try {
-        const planAny: any = formData.plan || {};
+        const planAny: any = dataForSave.plan || {};
         const up = planAny.usabilityPlan || {};
         const groups = [up.structural, up.systems?.electrical, up.systems?.lightning, up.systems?.others].filter(Boolean) as any[];
         for (const arr of groups) {
@@ -302,39 +318,46 @@ export default function Form8_1({ jobId, equipment_id, name, onBack }: Props) {
             r.defects = newDefs;
           }
         }
-      } catch { /* ignore pre-upload errors here; UI จะเก็บเป็น filename หากสำเร็จ */ }
+      } catch { /* ignore pre-upload errors here; UI ������ filename �ҡ����� */ }
 
-      // Pre-save pass: อัปโหลดรูป 1.2 (แผนที่/ผัง + รูปประกอบ) หากยังเป็น blob:/data:
+      // Upload pending images (header/map/layout/photos) only for new files
       try {
-        const photosAny: any = formData.photos || {};
-        const locAny: any = formData.location || {};
-        // ไม่มี preview ใน state รวม จึงพยายามอัปโหลดจากชื่อไฟล์ที่เพิ่งเลือกใน UI (Main1_Photos/Pick จะอัปโหลดทันทีแล้ว)
-        // ส่วนนี้ทำหน้าที่ clean ให้เหลือ filename เฉย ๆ เพื่อความสม่ำเสมอ
-        if (locAny.mapImageFilename) {
-          // nothing to do: Pick ฝั่ง 1.2 จะอัปโหลดทันทีแล้ว
+        const reportAny: any = dataForSave.report || {};
+        if (reportAny.headerImageLocal?.file && reportAny.headerImageUrl) {
+          await uploadIfNeeded(reportAny.headerImageLocal.preview || "", reportAny.headerImageUrl, reportAny.headerImageLocal.file as Blob);
         }
-        if (locAny.layoutImageFilename) {
-          // nothing to do
+        if (reportAny.headerImageLocal) delete reportAny.headerImageLocal;
+        dataForSave.report = reportAny;
+
+        const locAny: any = dataForSave.location || {};
+        if (locAny.mapImageLocal?.file && locAny.mapImageFilename) {
+          await uploadIfNeeded(locAny.mapImageLocal.preview || "", locAny.mapImageFilename, locAny.mapImageLocal.file as Blob);
         }
-        const cleanPhoto = (p?: any) => (p?.url ? { url: p.url } : undefined);
-        const cover = cleanPhoto(photosAny.coverPhoto);
-        const sign = cleanPhoto(photosAny.signMainPhoto);
-        const setA = Array.isArray(photosAny.setAPhotos) ? photosAny.setAPhotos.map((x: any) => cleanPhoto(x)).filter(Boolean) : undefined;
-        const setB = Array.isArray(photosAny.setBPhotos) ? photosAny.setBPhotos.map((x: any) => cleanPhoto(x)).filter(Boolean) : undefined;
-        setFormData((p) => ({
-          ...p,
-          location: { ...(p.location || {}), mapImageFilename: locAny.mapImageFilename, layoutImageFilename: locAny.layoutImageFilename },
-          photos: { ...(p.photos || {}), coverPhoto: cover, signMainPhoto: sign, setAPhotos: setA, setBPhotos: setB },
-        }));
+        if (locAny.layoutImageLocal?.file && locAny.layoutImageFilename) {
+          await uploadIfNeeded(locAny.layoutImageLocal.preview || "", locAny.layoutImageFilename, locAny.layoutImageLocal.file as Blob);
+        }
+        delete locAny.mapImageLocal;
+        delete locAny.layoutImageLocal;
+        dataForSave.location = locAny;
+
+        const photosAny: any = dataForSave.photos || {};
+        const uploadList = async (arr?: any[]) => Array.isArray(arr) ? (await Promise.all(arr.map(uploadPhotoItem))).filter(Boolean) : undefined;
+        photosAny.coverPhoto = await uploadPhotoItem(photosAny.coverPhoto);
+        photosAny.signMainPhoto = await uploadPhotoItem(photosAny.signMainPhoto);
+        photosAny.setAPhotos = await uploadList(photosAny.setAPhotos);
+        photosAny.setBPhotos = await uploadList(photosAny.setBPhotos);
+        photosAny.gallery = await uploadList(photosAny.gallery);
+        dataForSave.photos = photosAny;
       } catch { /* ignore */ }
-      // Validate: ถ้า 2.6 มีแถวที่สถานะ 'unusable' ต้องมี defects ≥ 1
-      const up = (formData.plan as any)?.usabilityPlan as any;
+
+      // Validate: ��� 2.6 ���Ƿ��ʶҹ� 'unusable' ��ͧ�� defects ? 1
+      const up = (dataForSave.plan as any)?.usabilityPlan as any;
       const groups = [up?.structural, up?.systems?.electrical, up?.systems?.lightning, up?.systems?.others].filter(Boolean) as any[];
       for (const arr of groups) {
         for (const r of arr) {
           if (r?.status === 'unusable' && (!Array.isArray(r?.defects) || r.defects.length === 0)) {
             showLoading(false);
-            await showAlert('error', 'กรุณาระบุ Defect อย่างน้อย 1 รายการสำหรับแถวที่ "ใช้ไม่ได้" ในส่วนที่ 2.6');
+            await showAlert('error', '��س��к� Defect ���ҧ���� 1 ��¡������Ѻ�Ƿ�� "�������" ���ǹ��� 2.6');
             return;
           }
         }
@@ -342,7 +365,7 @@ export default function Form8_1({ jobId, equipment_id, name, onBack }: Props) {
       const payload: any = {
         entity: "form8_1",
         data: {
-          ...formData,
+          ...dataForSave,
           job_id: jobId,
           equipment_id,
           is_active: 1,
@@ -363,17 +386,16 @@ export default function Form8_1({ jobId, equipment_id, name, onBack }: Props) {
         if (data.form_code && !formData.form_code) {
           setFormData((prev) => ({ ...prev, form_code: data.form_code }));
         }
-        await showAlert("success", data.message || "บันทึกสำเร็จ");
+        await showAlert("success", data.message || "�ѹ�֡�����");
         onBack();
       } else {
-        await showAlert("error", data?.message || "บันทึกล้มเหลว");
+        await showAlert("error", data?.message || "�ѹ�֡�������");
       }
     } catch (e: any) {
       showLoading(false);
-      await showAlert("error", e?.message || "เกิดข้อผิดพลาดระหว่างบันทึก");
+      await showAlert("error", e?.message || "�Դ��ͼԴ��Ҵ�����ҧ�ѹ�֡");
     }
   };
-
         const Section = ({ id, title, children }: { id: string; title: string; children: React.ReactNode }) => {
     const SECTION_TITLES_TH: Record<string, string> = {
       report: `รายงานผลการตรวจสอบป้าย ปี ${formData.report?.year ?? ""}`,
@@ -426,6 +448,8 @@ export default function Form8_1({ jobId, equipment_id, name, onBack }: Props) {
         </button>
         <ExportPptxButton
           data={formData}
+          jobId={jobId ?? ""}
+          equipmentId={equipment_id ?? ""}
           className="w-[120px] h-10 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-700 text-white rounded-[5px] inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
           label={(
             <span className="inline-flex items-center gap-2">
