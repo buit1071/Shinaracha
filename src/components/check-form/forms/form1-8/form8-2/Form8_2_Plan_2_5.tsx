@@ -19,49 +19,57 @@ const FREQ_LABEL: Record<FrequencyValue, string> = {
 };
 
 const STRUCTURAL_ROWS = [
-  "โครงสร้างหลัก/ฐานราก/เสา/คาน แผ่นพื้น ความมั่นคงแข็งแรง",
-  "จุดยึดโยง/การยึดกับโครง",
-  "โครงคร่าว/วัสดุรองรับแผ่นป้าย",
-  "การยึดกับอาคาร/ผนัง/หลังคา ความแข็งแรง",
-  "การกัดกร่อน/สนิมของชิ้นส่วนโลหะ",
-  "การเสื่อมสภาพของวัสดุหลัก",
-  "ทางเดิน/จุดบริการสำหรับซ่อมบำรุง (ถ้ามี)",
-  "บันได/นั่งร้าน/ราวกันตก (ถ้ามี) ความปลอดภัย",
-  "ความปลอดภัยโดยรวมของโครงสร้างตามมาตรฐานที่เกี่ยวข้อง",
+  "การต่อเติม ดัดแปลง ปรับปรุงขนาดของ ป้ายหรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย",
+  "การเปลี่ยนแปลงน้ำหนักของแผ่นป้าย",
+  "การเปลี่ยนแปลงสภาพการใช้งานของป้าย",
+  "การเปลี่ยนแปลงวัสดุของป้าย หรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย",
+  "การชำรุดสึกหรอของป้าย หรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย",
+  "การวิบัติของป้าย หรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย",
+  "ความมั่นคงแข็งแรงของโครงสร้างและฐานรากของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย (กรณีป้ายที่ติดตั้งบนพื้นดิน)",
+  "ความมั่นคงแข็งแรงของอาคารที่ติดตั้งป้าย (กรณีป้ายบนหลังคา หรือบนดาดฟ้าอาคาร หรือบนส่วนหนึ่งส่วนใดของอาคาร)",
+  "การเชื่อมยึดระหว่างแผ่นป้ายกับสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย การเชื่อมยึดระหว่างชิ้นส่วนต่าง ๆ ของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย และการเชื่อมยึดระหว่างสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้ายกับฐานรากหรืออาคาร",
 ];
 
 const SYS_ELECTRICAL = [
-  "ระบบไฟฟ้าแสงสว่างป้าย",
-  "สายไฟ/ท่อร้อยสาย/รางสาย/อุปกรณ์ยึด",
-  "อุปกรณ์ป้องกันไฟฟ้าเกิน/ตัดตอน",
-  "การต่อสายดิน",
-  "การเดินสาย/การป้องกันความชื้น ความเรียบร้อย",
+  "สภาพสายไฟฟ้า",
+  "สภาพท่อร้อยสาย รางเดินสายและรางเคเบิล",
+  "สภาพเครื่องป้องกันกระแสเกิน",
+  "สภาพเครื่องตัดไฟรั่ว",
+  "การต่อลงดินของบริภัณฑ์ ตัวนำต่อลงดินและความต่อเนื่องลงดินของท่อร้อยสาย รางเดินสาย รางเคเบิล",
 ];
 
 const SYS_LIGHTNING = [
-  "ระบบป้องกันฟ้าผ่าบนป้าย",
-  "การต่อเชื่อมลงดิน",
-  "ระยะห่างความปลอดภัย",
+  "ตรวจสอบระบบตัวนำล่อฟ้าตัวนำต่อลงดิน",
+  "ตรวจสอบระบบรากสายดิน",
+  "ตรวจสอบจุดต่อประสานศักย์",
 ];
 
 const SYS_OTHERS = [
-  "ป้าย/วัสดุกราฟิก",
-  "โครง/เหล็กประกอบ",
-  "ระบบกั้นเขต/ป้องกันการเข้าถึง",
-  "CATWALK/ทางเดิน",
-  "อื่น ๆ (ระบุ)",
+  "สลิง และสายยึด",
+  "สภาพบันไดขึ้นลง",
+  "สภาพราวตับ หรือราวกันตก",
+  "สภาพ CATWALK",
+  "อื่นๆโปรดระบุ",
 ];
 
 export default function Plan2_5_Frequency({ value, onChange }: Props) {
   const plan = value || {};
+  const mergeRows = React.useCallback(
+    (seeds: string[], existing?: { name?: string; frequency?: FrequencyValue; note?: string }[]) =>
+      seeds.map((name, idx) => {
+        const prev = Array.isArray(existing) ? existing[idx] || {} : {};
+        return { name, frequency: prev.frequency, note: prev.note };
+      }),
+    []
+  );
   const freq = React.useMemo<PlanFrequency>(() => ({
-    structural: plan.frequencyPlan?.structural || STRUCTURAL_ROWS.map((name) => ({ name })),
+    structural: mergeRows(STRUCTURAL_ROWS, plan.frequencyPlan?.structural),
     systems: {
-      electrical: plan.frequencyPlan?.systems?.electrical || SYS_ELECTRICAL.map((name) => ({ name })),
-      lightning: plan.frequencyPlan?.systems?.lightning || SYS_LIGHTNING.map((name) => ({ name })),
-      others: plan.frequencyPlan?.systems?.others || SYS_OTHERS.map((name) => ({ name })),
+      electrical: mergeRows(SYS_ELECTRICAL, plan.frequencyPlan?.systems?.electrical),
+      lightning: mergeRows(SYS_LIGHTNING, plan.frequencyPlan?.systems?.lightning),
+      others: mergeRows(SYS_OTHERS, plan.frequencyPlan?.systems?.others),
     },
-  }), [plan.frequencyPlan]);
+  }), [mergeRows, plan.frequencyPlan]);
 
   const groupId = React.useId();
   const [nameDrafts, setNameDrafts] = React.useState<Record<string, string>>({});
@@ -90,9 +98,9 @@ export default function Plan2_5_Frequency({ value, onChange }: Props) {
         : (next.systems!.others = [...(freq.systems?.others || [])]);
     const rows = pick(group)! as any[];
     rows[idx] = { ...rows[idx], ...(patch as any) } as any;
-    const keepY = typeof window !== 'undefined' ? window.scrollY : 0;
+    const keepY = typeof window !== "undefined" ? window.scrollY : 0;
     onChange({ frequencyPlan: next });
-    if (typeof window !== 'undefined') { requestAnimationFrame(() => window.scrollTo(0, keepY)); }
+    if (typeof window !== "undefined") { requestAnimationFrame(() => window.scrollTo(0, keepY)); }
   };
 
   const Plan25Row = React.memo(function Plan25Row({ group, r, i }: { group: "structural" | "electrical" | "lightning" | "others"; r: { name: string; frequency?: FrequencyValue; note?: string }; i: number }) {
@@ -104,13 +112,13 @@ export default function Plan2_5_Frequency({ value, onChange }: Props) {
         <td className="border px-2 py-2 align-top h-10 align-middle">
           {nameIsOther ? (
             <div className="flex items-center gap-2">
-              <span>อื่น ๆ (ระบุ)</span>
+              <span>อื่นๆโปรดระบุ</span>
               <input
                 className="flex-1 rounded border border-gray-300 px-2 py-1 h-9 focus:outline-none"
-                value={getDraftName(draftKey, (r.name === "อื่น ๆ" || r.name === "อื่น ๆ (ระบุ)") ? "" : r.name)}
+                value={getDraftName(draftKey, (r.name === "อื่นๆ" || r.name === "อื่นๆโปรดระบุ") ? "" : r.name)}
                 onChange={(e) => setNameDrafts((p) => ({ ...p, [draftKey]: e.target.value }))}
-                onBlur={(e) => setRow(group, i, { name: e.target.value || "อื่น ๆ (ระบุ)" })}
-                placeholder="กรอกคำอธิบาย"
+                onBlur={(e) => setRow(group, i, { name: e.target.value || "อื่นๆโปรดระบุ" })}
+                placeholder="ระบุรายการ"
               />
             </div>
           ) : (
@@ -167,14 +175,14 @@ export default function Plan2_5_Frequency({ value, onChange }: Props) {
             ))}
 
             <tr>
-              <td className="border px-2 py-2 bg-gray-100 font-medium" colSpan={7}>ระบบป้องกันฟ้าผ่า</td>
+              <td className="border px-2 py-2 bg-gray-100 font-medium" colSpan={7}>ระบบกันฟ้าผ่า (ถ้ามี)</td>
             </tr>
             {(freq.systems?.lightning || []).map((r, i) => (
               <Plan25Row key={`lightning-${i}`} group="lightning" r={r as any} i={i} />
             ))}
 
             <tr>
-              <td className="border px-2 py-2 bg-gray-100 font-medium" colSpan={7}>ระบบอุปกรณ์ประกอบอื่น ๆ</td>
+              <td className="border px-2 py-2 bg-gray-100 font-medium" colSpan={7}>ระบบอุปกรณ์ประกอบอื่น ๆ (ถ้ามี)</td>
             </tr>
             {(freq.systems?.others || []).map((r, i) => (
               <Plan25Row key={`others-${i}`} group="others" r={r as any} i={i} />
@@ -185,4 +193,3 @@ export default function Plan2_5_Frequency({ value, onChange }: Props) {
     </section>
   );
 }
-
