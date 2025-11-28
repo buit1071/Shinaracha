@@ -503,4 +503,17 @@ export interface DefectRow {
     created_date?: string;
     updated_date?: string;
     order?: number;
+    // extra fields used by legacy exports
+    illegal_problem?: string;
+    type?: string;
+    inspection_item?: string;
+    general_suggestion?: string;
+    defect_no?: string | number;
+}
+
+export interface ProblemRow {
+    problem_id: string | number;
+    problem_name: string;
+    illegal_suggestion?: string;
+    isOther?: boolean;
 }

@@ -3,7 +3,7 @@ import { query } from "@/lib-server/db";
 
 type GetBody =
   | { function: "form1_3"; job_id: string; equipment_id: string }
-  | { function: "form8_1"; job_id: string; equipment_id?: string };
+  | { function: "form8_1"; job_id: string; equipment_id: string };
 
 export async function POST(req: Request) {
     try {
@@ -22,29 +22,19 @@ export async function POST(req: Request) {
                 SELECT *
                 FROM formdata_sign_forms
                 WHERE job_id = ? AND equipment_id = ?
-                ORDER BY updated_date DESC, id DESC
-                LIMIT 1
             `, [body.job_id, body.equipment_id]);
 
             return NextResponse.json({ success: true, data: rows[0] || null });
         }
 
         if (fn === "form8_1") {
-            const equipmentFilter = body.equipment_id ? "AND equipment_id = ?" : "";
-            const params: any[] = [body.job_id];
-            if (body.equipment_id) params.push(body.equipment_id);
             const rows = await query(
                 `
                 SELECT *
                 FROM formdata_sign_forms
-                WHERE job_id = ?
-                  ${equipmentFilter}
-                  AND round_no = 1
-                  AND form_code LIKE 'FORM8_1%'
-                ORDER BY updated_date DESC, id DESC
-                LIMIT 1
+                WHERE job_id = ? AND equipment_id = ?
                 `,
-                params
+                [body.job_id, body.equipment_id]
             );
 
             return NextResponse.json({ success: true, data: rows[0] || null });

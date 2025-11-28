@@ -53,6 +53,38 @@ function Main1_PhotosComponent({ value, onChange }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // sync previews when filenames (remote) update after upload/save
+  React.useEffect(() => {
+    if (v.coverPhoto?.url && !v.coverPhoto?.localPreview) {
+      const remote = buildRemoteUrl(v.coverPhoto.url);
+      if (!heroUrl || heroUrl.startsWith("blob:")) setHeroUrl(remote);
+    }
+    if (v.signMainPhoto?.url && !v.signMainPhoto?.localPreview) {
+      const remote = buildRemoteUrl(v.signMainPhoto.url);
+      if (!signMainUrl || signMainUrl.startsWith("blob:")) setSignMainUrl(remote);
+    }
+    if (v.setAPhotos) {
+      const next = [...setAUrl];
+      v.setAPhotos.forEach((p, idx) => {
+        if (p?.url && !p?.localPreview) {
+          const remote = buildRemoteUrl(p.url);
+          if (!next[idx] || next[idx]?.startsWith("blob:")) next[idx] = remote;
+        }
+      });
+      setSetAUrl(next);
+    }
+    if (v.setBPhotos) {
+      const next = [...setBUrl];
+      v.setBPhotos.forEach((p, idx) => {
+        if (p?.url && !p?.localPreview) {
+          const remote = buildRemoteUrl(p.url);
+          if (!next[idx] || next[idx]?.startsWith("blob:")) next[idx] = remote;
+        }
+      });
+      setSetBUrl(next);
+    }
+  }, [v.coverPhoto, v.signMainPhoto, v.setAPhotos, v.setBPhotos]);
+
   const pickFile = (
     e: React.ChangeEvent<HTMLInputElement>,
     target: "coverPhoto" | "signMainPhoto" | { set: "A" | "B"; idx: number }

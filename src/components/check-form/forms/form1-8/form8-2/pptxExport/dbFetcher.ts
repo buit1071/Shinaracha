@@ -24,7 +24,7 @@ export async function fetchForm8_1FromDb(
       controller.abort();
     }, 10000);
 
-    const response = await fetch("/api/auth/forms/get", {
+    const response = await fetch("/api/auth/forms8/get", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -88,4 +88,5 @@ export async function fetchForm8_1FromDb(
     throw error;
   }
 }
+
 

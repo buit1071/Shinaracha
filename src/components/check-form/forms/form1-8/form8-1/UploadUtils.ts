@@ -21,13 +21,16 @@ export async function uploadBlob(blob: Blob, filename: string): Promise<boolean>
   const fd = new FormData();
   fd.append("file", blob, filename);
   fd.append("filename", filename);
+  console.log("[uploadBlob] start", filename);
   const res = await fetch("/api/auth/upload-file", { method: "POST", body: fd });
+  console.log("[uploadBlob] status", res.status, res.statusText);
   if (!res.ok) return false;
   const data = await res.json().catch(() => ({}));
   return Boolean(data?.success ?? res.ok);
 }
 
 export async function uploadIfNeeded(previewUrl?: string | null, filename?: string | null, file?: Blob): Promise<boolean> {
+  console.log("[uploadIfNeeded] previewUrl", previewUrl?.slice(0, 30), "filename", filename, "hasFile", !!file);
   if (!previewUrl || !filename) return true; // nothing to do
   try {
     // If we still have the file/blob, upload directly to avoid fetch(blob:...) errors

@@ -132,10 +132,7 @@ export type Section3Item = {
   erosion?: "have" | "none"; // การขูดสลักกร่อน (มี/ไม่มี)
   damage?: "have" | "none";  // ความเสียหาย (มี/ไม่มี)
   note?: string;              // เดิม remark
-  customName?: string;        // ชื่อสำหรับแถว "อื่น ๆ (โปรดระบุ)"
-};
-
-export type Form8_1Inspect = {
+  customName?: string;        // others\n  group?: string;\n  name?: string;\n  hasItem?: boolean;\n  hasDamage?: boolean;\n};\n\nexport type Form8_1Inspect = {
   items: Record<string, Section3Item>;
 };
 
@@ -345,6 +342,8 @@ export const presetMatrix9Rows: MatrixRow[] = [
   { name: "อุปกรณ์ประกอบ - ชั้นวาง/ทางเดิน/CATWALK" },
   { name: "อุปกรณ์ประกอบ - ราว กันตก" },
 ];
+
+
 
 
 

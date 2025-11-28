@@ -1,0 +1,55 @@
+{
+  "generated": "2568-11-27 23:25:19",
+  "version": "1.0",
+  "images": {
+    "12p11": {
+      "filename": "image4.png",
+      "description": "ชุด B รูปที่ 5 - Set B Photo 5"
+    },
+    "12p12": {
+      "filename": "image6.png",
+      "description": "ชุด B รูปที่ 6 - Set B Photo 6"
+    },
+    "12p4": {
+      "filename": "image7.png",
+      "description": "รูปป้ายหลัก 2 - Main Sign 2"
+    },
+    "12p3": {
+      "filename": "image8.png",
+      "description": "รูปป้าย/รูปหลัก 1 - Main Sign 1"
+    },
+    "12p9": {
+      "filename": "image9.png",
+      "description": "ชุด B รูปที่ 3 - Set B Photo 3"
+    },
+    "12p10": {
+      "filename": "image5.png",
+      "description": "ชุด B รูปที่ 4 - Set B Photo 4"
+    },
+    "12p5": {
+      "filename": "image10.png",
+      "description": "ชุด A รูปที่ 1 - Set A Photo 1"
+    },
+    "12p1": {
+      "filename": "image11.png",
+      "description": "ภาพหลักบน (ซ้าย) - Cover Left"
+    },
+    "12p8": {
+      "filename": "image12.png",
+      "description": "ชุด B รูปที่ 2 - Set B Photo 2"
+    },
+    "12p6": {
+      "filename": "image13.png",
+      "description": "ชุด A รูปที่ 2 - Set A Photo 2"
+    },
+    "12p2": {
+      "filename": "image14.png",
+      "description": "ภาพหลักบน (ขวา) - Cover Right"
+    },
+    "12p7": {
+      "filename": "image15.png",
+      "description": "ชุด B รูปที่ 1 - Set B Photo 1"
+    }
+  },
+  "description": "Maps placeholders to image files in PPTX media folder"
+}

@@ -1,5 +1,5 @@
 import JSZip from "jszip";
-import { Form8_1Data, SMatrix, SMatrixRow, FrequencyValue, PlanFrequency, FrequencyRow } from "../types";
+import { Form8_1Data, FrequencyValue, FrequencyRow } from "../types";
 
 /**
  * Escape XML special characters
@@ -16,49 +16,81 @@ function escapeXml(str: string): string {
 
 // =====================================================
 // Row IDs สำหรับ Slide 20 (ข้อ 8) และ Slide 21 (ข้อ 9)
+// ใช้ key ที่ตรงกับ section3Content.ts (inspectGroupTables)
+// 
+// PPTX Template Structure (จากการตรวจสอบ template จริง):
+// Slide 20 (8a): 15 data rows (ไม่มี header rows)
+//   Row 1-12: g1 items (12 rows) - สิ่งก่อสร้าง
+//   Row 13-15: g2 items (3 rows) - แผ่นป้าย
+//
+// Slide 21 (9a): 12 data rows (ไม่มี header rows)
+//   Row 1-6: g3 items (6 rows) - ระบบไฟฟ้า
+//   Row 7-12: g4 items (6 rows) - ระบบป้องกันฟ้าผ่า
+//
+// Column mapping (ตรงกับ UI):
+//   Col 1: มี (erosion: have)
+//   Col 2: ไม่มี (erosion: none)
+//   Col 3: ชำรุดสึกหรอ - มี (wear: have)
+//   Col 4: ชำรุดสึกหรอ - ไม่มี (wear: none)
+//   Col 5: เสียหาย - มี (damage: have)
+//   Col 6: เสียหาย - ไม่มี (damage: none)
+//   Col 7: ความคิดเห็น - ใช้ได้ (inspectorOpinion: canUse)
+//   Col 8: ความคิดเห็น - ใช้ไม่ได้ (inspectorOpinion: cannotUse)
 // =====================================================
-const S8_ROW_IDS = [
-  "8-1-0",  // Row 1: สิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย
-  "8-1-1",  // Row 2: ฐานราก
-  "8-1-2",  // Row 3: การเชื่อมยึดของสิ่งที่สร้างขึ้นฯ
-  "8-1-3",  // Row 4: ชิ้นส่วน
-  "8-1-4",  // Row 5: รอยต่อ - สลักเกลียว
-  "8-1-5",  // Row 6: รอยต่อ - การเชื่อม
-  "8-1-6",  // Row 7: รอยต่อ - อื่นๆ
-  "8-1-7",  // Row 8: สลิง หรือสายยึด
-  "8-1-8",  // Row 9: บันไดขึ้นลง
-  "8-1-9",  // Row 10: ราวจับ หรือราวกันตก
-  "8-1-10", // Row 11: CATWALK
-  "8-1-11", // Row 12: อื่นๆ (โปรดระบุ)
-  // หมวด (2) แผ่นป้าย
-  "8-2-0",  // Row 13: สภาพแผ่นป้าย
-  "8-2-1",  // Row 14: สภาพการยึดติดกับโครงสร้างรับป้าย
-  "8-2-2",  // Row 15: อื่นๆ (โปรดระบุ)
+
+// Slide 20: ข้อ 8 - สิ่งก่อสร้าง (12) + แผ่นป้าย (3) = 15 rows
+const SLIDE20_ROW_MAPPING = [
+  // g1: สิ่งก่อสร้างสำหรับติดตั้งป้าย (12 rows) → PPTX rows 1-12
+  { row: 1, key: "g1-1" },   // ฐานราก
+  { row: 2, key: "g1-2" },   // การเชื่อมยึดฯ
+  { row: 3, key: "g1-3" },   // ชิ้นส่วน
+  { row: 4, key: "g1-4" },   // รอยต่อ
+  { row: 5, key: "g1-5" },   // สลักเกลียว
+  { row: 6, key: "g1-6" },   // การเชื่อม
+  { row: 7, key: "g1-7" },   // อื่นๆ(โปรดระบุ)
+  { row: 8, key: "g1-8" },   // สลิง หรือสายยึด
+  { row: 9, key: "g1-9" },   // บันไดขึ้นลง
+  { row: 10, key: "g1-10" }, // ราวจับ หรือราวกันตก
+  { row: 11, key: "g1-11" }, // CATWALK
+  { row: 12, key: "g1-12" }, // อื่นๆ(โปรดระบุ)
+  // g2: แผ่นป้าย (3 rows) → PPTX rows 13-15
+  { row: 13, key: "g2-1" },  // สภาพแผ่นป้าย
+  { row: 14, key: "g2-2" },  // สภาพการยึดติดกับโครงสร้างรับป้าย
+  { row: 15, key: "g2-3" },  // อื่นๆ(โปรดระบุ)
 ];
 
-const S9_ROW_IDS = [
-  "9-1-0",  // Row 1: ระบบไฟฟ้าแสงสว่างและระบบไฟฟ้ากำลัง
-  "9-1-1",  // Row 2: โคมไฟฟ้า หรือหลอดไฟ
-  "9-1-2",  // Row 3: ท่อสาย
-  "9-1-3",  // Row 4: อุปกรณ์ควบคุม
-  "9-1-4",  // Row 5: การต่อลงดิน
-  "9-1-5",  // Row 6: ตรวจบันทึกการบำรุงรักษา
-  "9-1-6",  // Row 7: อื่นๆ (โปรดระบุ)
-  "9-2-0",  // Row 8: ระบบป้องกันฟ้าผ่า
-  "9-2-1",  // Row 9: ตัวนำล่อฟ้า
-  "9-2-2",  // Row 10: ตัวนำต่อลงดิน / รากสายดิน
-  "9-2-3",  // Row 11: จุดต่อประสานศักย์
-  "9-2-4",  // Row 12: ตรวจบันทึกการบำรุงรักษา / อื่นๆ
+// Slide 21: ข้อ 9 - ระบบไฟฟ้า (6) + ระบบป้องกันฟ้าผ่า (6) = 12 rows
+const SLIDE21_ROW_MAPPING = [
+  // g3: ระบบไฟฟ้าแสงสว่าง และระบบไฟฟ้ากำลัง (6 rows) → PPTX rows 1-6
+  { row: 1, key: "g3-1" },   // โคมไฟฟ้า หรือหลอดไฟ
+  { row: 2, key: "g3-2" },   // ท่อสาย
+  { row: 3, key: "g3-3" },   // อุปกรณ์ควบคุม
+  { row: 4, key: "g3-4" },   // การต่อลงดิน
+  { row: 5, key: "g3-5" },   // ตรวจบันทึกการบำรุงรักษา
+  { row: 6, key: "g3-6" },   // อื่นๆ(โปรดระบุ)
+  // g4: ระบบป้องกันฟ้าผ่า (ถ้ามี) (6 rows) → PPTX rows 7-12
+  { row: 7, key: "g4-1" },   // ตัวนำล่อฟ้า
+  { row: 8, key: "g4-2" },   // ตัวนำลงดิน
+  { row: 9, key: "g4-3" },   // รากสายดิน
+  { row: 10, key: "g4-4" },  // จุดต่อประสานศักย์
+  { row: 11, key: "g4-5" },  // ตรวจบันทึกการบำรุงรักษา
+  { row: 12, key: "g4-6" },  // อื่นๆ(โปรดระบุ)
 ];
 
 /**
  * Build matrix placeholders for Slide 20 (8a) และ Slide 21 (9a)
- * Columns:
- *   1-2: มี/ไม่มี (การชำรุดสึกหรอ) → wear: have/none
- *   3-4: มี/ไม่มี (ความเสียหาย) → damage: have/none
- *   5-6: ใช้ได้/ใช้ไม่ได้ (ความเห็นผู้ตรวจ) → opinion: can/cannot
- *   7-8: (สำรอง)
- *   9:   หมายเหตุ → note
+ * ใช้ข้อมูลจาก formData.inspect.items
+ * 
+ * Columns (ตรงกับ UI):
+ *   1: มี (erosion: have)
+ *   2: ไม่มี (erosion: none)
+ *   3: ชำรุดสึกหรอ - มี (wear: have)
+ *   4: ชำรุดสึกหรอ - ไม่มี (wear: none)
+ *   5: เสียหาย - มี (damage: have)
+ *   6: เสียหาย - ไม่มี (damage: none)
+ *   7: ความคิดเห็น - ใช้ได้ (inspectorOpinion: canUse)
+ *   8: ความคิดเห็น - ใช้ไม่ได้ (inspectorOpinion: cannotUse)
+ *   9: หมายเหตุ (note) - template ไม่มี col 9
  */
 function buildMatrixS8S9Placeholders(
   formData: Form8_1Data
@@ -66,56 +98,64 @@ function buildMatrixS8S9Placeholders(
   const map: Record<string, string> = {};
   const CHECK = "✓";
   
-  // === Slide 20 (8a): ข้อ 8 - การตรวจสอบการเชื่อมยึด ===
-  const s8 = formData.s8?.rows || {};
-  S8_ROW_IDS.forEach((rowId, rowIdx) => {
-    const rowNum = rowIdx + 1; // 1-indexed for placeholder
-    const row: SMatrixRow = s8[rowId] || {};
+  // ดึงข้อมูลจาก inspect.items
+  const items = formData.inspect?.items || {};
+  
+  // Debug: แสดง keys ที่มีใน items
+  console.log("[buildMatrixS8S9] inspect.items keys:", Object.keys(items));
+  console.log("[buildMatrixS8S9] Sample items:", JSON.stringify(items).substring(0, 500));
+  
+  // === Slide 20 (8a): ข้อ 8 - สิ่งก่อสร้าง + แผ่นป้าย ===
+  SLIDE20_ROW_MAPPING.forEach(({ row, key }) => {
+    const item = items[key] as any || {};
     
-    // Col 1-2: การชำรุดสึกหรอ (wear)
-    map[`8a_${rowNum}_1`] = row.wear === "have" ? CHECK : "";
-    map[`8a_${rowNum}_2`] = row.wear === "none" ? CHECK : "";
+    // Debug: แสดงข้อมูลแต่ละ row
+    if (item && Object.keys(item).length > 0) {
+      console.log(`[buildMatrixS8S9] 8a Row ${row} (${key}):`, item);
+    }
     
-    // Col 3-4: ความเสียหาย (erosion mapped to damage concept in UI)
-    map[`8a_${rowNum}_3`] = row.erosion === "have" ? CHECK : "";
-    map[`8a_${rowNum}_4`] = row.erosion === "none" ? CHECK : "";
+    // Col 1-2: มี/ไม่มี (erosion)
+    map[`8a_${row}_1`] = item.erosion === "have" ? CHECK : "";
+    map[`8a_${row}_2`] = item.erosion === "none" ? CHECK : "";
     
-    // Col 5-6: ใช้ได้/ใช้ไม่ได้ (opinion)
-    map[`8a_${rowNum}_5`] = row.opinion === "can" ? CHECK : "";
-    map[`8a_${rowNum}_6`] = row.opinion === "cannot" ? CHECK : "";
+    // Col 3-4: ชำรุดสึกหรอ (wear)
+    map[`8a_${row}_3`] = item.wear === "have" ? CHECK : "";
+    map[`8a_${row}_4`] = item.wear === "none" ? CHECK : "";
     
-    // Col 7-8: (สำรอง - ปล่อยว่าง)
-    map[`8a_${rowNum}_7`] = "";
-    map[`8a_${rowNum}_8`] = "";
+    // Col 5-6: เสียหาย (damage)
+    map[`8a_${row}_5`] = item.damage === "have" ? CHECK : "";
+    map[`8a_${row}_6`] = item.damage === "none" ? CHECK : "";
     
-    // Col 9: หมายเหตุ
-    map[`8a_${rowNum}_9`] = escapeXml(row.note || "");
+    // Col 7-8: ความคิดเห็น (inspectorOpinion)
+    map[`8a_${row}_7`] = item.inspectorOpinion === "canUse" ? CHECK : "";
+    map[`8a_${row}_8`] = item.inspectorOpinion === "cannotUse" ? CHECK : "";
+    
+    // Col 9: หมายเหตุ (note)
+    map[`8a_${row}_9`] = escapeXml(item.note || item.changeDetailNote || "");
   });
   
-  // === Slide 21 (9a): ข้อ 9 - การตรวจสอบอุปกรณ์ประกอบ ===
-  const s9 = formData.s9?.rows || {};
-  S9_ROW_IDS.forEach((rowId, rowIdx) => {
-    const rowNum = rowIdx + 1;
-    const row: SMatrixRow = s9[rowId] || {};
+  // === Slide 21 (9a): ข้อ 9 - ระบบไฟฟ้า + ระบบป้องกันฟ้าผ่า ===
+  SLIDE21_ROW_MAPPING.forEach(({ row, key }) => {
+    const item = items[key] as any || {};
     
-    // Col 1-2: การชำรุดสึกหรอ (wear)
-    map[`9a_${rowNum}_1`] = row.wear === "have" ? CHECK : "";
-    map[`9a_${rowNum}_2`] = row.wear === "none" ? CHECK : "";
+    // Col 1-2: มี/ไม่มี (erosion)
+    map[`9a_${row}_1`] = item.erosion === "have" ? CHECK : "";
+    map[`9a_${row}_2`] = item.erosion === "none" ? CHECK : "";
     
-    // Col 3-4: ความเสียหาย
-    map[`9a_${rowNum}_3`] = row.erosion === "have" ? CHECK : "";
-    map[`9a_${rowNum}_4`] = row.erosion === "none" ? CHECK : "";
+    // Col 3-4: ชำรุดสึกหรอ (wear)
+    map[`9a_${row}_3`] = item.wear === "have" ? CHECK : "";
+    map[`9a_${row}_4`] = item.wear === "none" ? CHECK : "";
     
-    // Col 5-6: ใช้ได้/ใช้ไม่ได้
-    map[`9a_${rowNum}_5`] = row.opinion === "can" ? CHECK : "";
-    map[`9a_${rowNum}_6`] = row.opinion === "cannot" ? CHECK : "";
+    // Col 5-6: เสียหาย (damage)
+    map[`9a_${row}_5`] = item.damage === "have" ? CHECK : "";
+    map[`9a_${row}_6`] = item.damage === "none" ? CHECK : "";
     
-    // Col 7-8: (สำรอง)
-    map[`9a_${rowNum}_7`] = "";
-    map[`9a_${rowNum}_8`] = "";
+    // Col 7-8: ความคิดเห็น (inspectorOpinion)
+    map[`9a_${row}_7`] = item.inspectorOpinion === "canUse" ? CHECK : "";
+    map[`9a_${row}_8`] = item.inspectorOpinion === "cannotUse" ? CHECK : "";
     
-    // Col 9: หมายเหตุ
-    map[`9a_${rowNum}_9`] = escapeXml(row.note || "");
+    // Col 9: หมายเหตุ (note)
+    map[`9a_${row}_9`] = escapeXml(item.note || item.changeDetailNote || "");
   });
   
   return map;

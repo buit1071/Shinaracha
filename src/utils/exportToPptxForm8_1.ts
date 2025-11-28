@@ -286,6 +286,317 @@ const mapUsabilityRows = (rows: AnyObj[] | undefined, prefix: string, maxRows = 
   return out;
 };
 
+// =====================================================
+// Map inspect.items ไปยัง placeholder format {{8a_row_col}} และ {{9a_row_col}}
+// สำหรับ Slide 20 (ข้อ 8) และ Slide 21 (ข้อ 9) ใน PPTX template
+// 
+// Slide 20 (8a): g1 (12 rows) + g2 (3 rows) = 15 rows
+// Slide 21 (9a): g3 (6 rows) + g4 (6 rows) = 12 rows
+//
+// Column mapping:
+//   1: มี (erosion: have)
+//   2: ไม่มี (erosion: none)
+//   3: ชำรุดสึกหรอ - มี (wear: have)
+//   4: ชำรุดสึกหรอ - ไม่มี (wear: none)
+//   5: เสียหาย - มี (damage: have)
+//   6: เสียหาย - ไม่มี (damage: none)
+//   7: ใช้ได้ (inspectorOpinion: canUse)
+//   8: ใช้ไม่ได้ (inspectorOpinion: cannotUse)
+//   9: หมายเหตุ (note)
+// =====================================================
+const mapInspectItemsToMatrixFormat = (items: Record<string, AnyObj> | undefined) => {
+  const out: AnyObj = {};
+  const CHECK = "✓";
+  
+  // Slide 20 (8a): g1 (12 rows: 1-12) + g2 (3 rows: 13-15)
+  const slide20Mapping = [
+    // g1: สิ่งก่อสร้าง (12 rows)
+    { row: 1, key: "g1-1" },
+    { row: 2, key: "g1-2" },
+    { row: 3, key: "g1-3" },
+    { row: 4, key: "g1-4" },
+    { row: 5, key: "g1-5" },
+    { row: 6, key: "g1-6" },
+    { row: 7, key: "g1-7" },
+    { row: 8, key: "g1-8" },
+    { row: 9, key: "g1-9" },
+    { row: 10, key: "g1-10" },
+    { row: 11, key: "g1-11" },
+    { row: 12, key: "g1-12" },
+    // g2: แผ่นป้าย (3 rows)
+    { row: 13, key: "g2-1" },
+    { row: 14, key: "g2-2" },
+    { row: 15, key: "g2-3" },
+  ];
+  
+  // Slide 21 (9a): g3 (6 rows: 1-6) + g4 (6 rows: 7-12)
+  const slide21Mapping = [
+    // g3: ระบบไฟฟ้า (6 rows)
+    { row: 1, key: "g3-1" },
+    { row: 2, key: "g3-2" },
+    { row: 3, key: "g3-3" },
+    { row: 4, key: "g3-4" },
+    { row: 5, key: "g3-5" },
+    { row: 6, key: "g3-6" },
+    // g4: ระบบป้องกันฟ้าผ่า (6 rows)
+    { row: 7, key: "g4-1" },
+    { row: 8, key: "g4-2" },
+    { row: 9, key: "g4-3" },
+    { row: 10, key: "g4-4" },
+    { row: 11, key: "g4-5" },
+    { row: 12, key: "g4-6" },
+  ];
+  
+  // Generate placeholders for Slide 20 (8a)
+  slide20Mapping.forEach(({ row, key }) => {
+    const item = items?.[key] || {};
+    out[`8a_${row}_1`] = item.erosion === "have" ? CHECK : "";
+    out[`8a_${row}_2`] = item.erosion === "none" ? CHECK : "";
+    out[`8a_${row}_3`] = item.wear === "have" ? CHECK : "";
+    out[`8a_${row}_4`] = item.wear === "none" ? CHECK : "";
+    out[`8a_${row}_5`] = item.damage === "have" ? CHECK : "";
+    out[`8a_${row}_6`] = item.damage === "none" ? CHECK : "";
+    out[`8a_${row}_7`] = item.inspectorOpinion === "canUse" ? CHECK : "";
+    out[`8a_${row}_8`] = item.inspectorOpinion === "cannotUse" ? CHECK : "";
+    out[`8a_${row}_9`] = item.note || item.changeDetailNote || "";
+  });
+  
+  // Generate placeholders for Slide 21 (9a)
+  slide21Mapping.forEach(({ row, key }) => {
+    const item = items?.[key] || {};
+    out[`9a_${row}_1`] = item.erosion === "have" ? CHECK : "";
+    out[`9a_${row}_2`] = item.erosion === "none" ? CHECK : "";
+    out[`9a_${row}_3`] = item.wear === "have" ? CHECK : "";
+    out[`9a_${row}_4`] = item.wear === "none" ? CHECK : "";
+    out[`9a_${row}_5`] = item.damage === "have" ? CHECK : "";
+    out[`9a_${row}_6`] = item.damage === "none" ? CHECK : "";
+    out[`9a_${row}_7`] = item.inspectorOpinion === "canUse" ? CHECK : "";
+    out[`9a_${row}_8`] = item.inspectorOpinion === "cannotUse" ? CHECK : "";
+    out[`9a_${row}_9`] = item.note || item.changeDetailNote || "";
+  });
+  
+  return out;
+};
+
+// =====================================================
+// Slide 22 (9b): g5 อุปกรณ์ประกอบอื่นๆ (6 rows)
+// Same column mapping as 8a/9a
+// =====================================================
+const mapSlide22_9b = (items: Record<string, AnyObj> | undefined) => {
+  const out: AnyObj = {};
+  const CHECK = "✓";
+  
+  // g5: อุปกรณ์ประกอบอื่นๆ (6 rows)
+  for (let i = 1; i <= 6; i++) {
+    const key = `g5-${i}`;
+    const item = items?.[key] || {};
+    out[`9b_${i}_1`] = item.erosion === "have" ? CHECK : "";
+    out[`9b_${i}_2`] = item.erosion === "none" ? CHECK : "";
+    out[`9b_${i}_3`] = item.wear === "have" ? CHECK : "";
+    out[`9b_${i}_4`] = item.wear === "none" ? CHECK : "";
+    out[`9b_${i}_5`] = item.damage === "have" ? CHECK : "";
+    out[`9b_${i}_6`] = item.damage === "none" ? CHECK : "";
+    out[`9b_${i}_7`] = item.inspectorOpinion === "canUse" ? CHECK : "";
+    out[`9b_${i}_8`] = item.inspectorOpinion === "cannotUse" ? CHECK : "";
+    out[`9b_${i}_9`] = item.note || item.changeDetailNote || "";
+  }
+  return out;
+};
+
+// =====================================================
+// Slide 31 (1freq): ความถี่การตรวจโครงสร้าง (9 rows in template)
+// Columns: 1=1เดือน, 2=4เดือน, 3=6เดือน, 4=1ปี, 5=3ปี, 6=หมายเหตุ
+// =====================================================
+const mapSlide31_1freq = (plan: AnyObj | undefined) => {
+  const out: AnyObj = {};
+  const CHECK = "✓";
+  const freqPlan = plan?.frequencyPlan;
+  
+  // Combine all structural rows
+  const structural = freqPlan?.structural || [];
+  
+  // Map frequency value to column
+  const freqToCol: Record<string, number> = {
+    "1m": 1, "4m": 2, "6m": 3, "1y": 4, "3y": 5
+  };
+  
+  for (let i = 1; i <= 22; i++) {
+    const row = structural[i - 1];
+    const freq = row?.frequency;
+    for (let col = 1; col <= 5; col++) {
+      out[`1freq_${i}_${col}`] = (freq && freqToCol[freq] === col) ? CHECK : "";
+    }
+    // Column 6: หมายเหตุ
+    out[`1freq_${i}_6`] = row?.note || "";
+  }
+  return out;
+};
+
+// =====================================================
+// Slide 32 (2freq): ความถี่การตรวจระบบ (20 rows)
+// Row 1-5: electrical, 6-8: lightning, 9-20: others
+// =====================================================
+const mapSlide32_2freq = (plan: AnyObj | undefined) => {
+  const out: AnyObj = {};
+  const CHECK = "✓";
+  const freqPlan = plan?.frequencyPlan;
+  const systems = freqPlan?.systems || {};
+  
+  const freqToCol: Record<string, number> = {
+    "1m": 1, "4m": 2, "6m": 3, "1y": 4, "3y": 5
+  };
+  
+  // Combine all system rows
+  const electrical = systems.electrical || [];
+  const lightning = systems.lightning || [];
+  const others = systems.others || [];
+  
+  // Map rows 1-5: electrical
+  for (let i = 1; i <= 5; i++) {
+    const row = electrical[i - 1];
+    const freq = row?.frequency;
+    for (let col = 1; col <= 5; col++) {
+      out[`2freq_${i}_${col}`] = (freq && freqToCol[freq] === col) ? CHECK : "";
+    }
+    out[`2freq_${i}_6`] = row?.note || "";
+  }
+  
+  // Map rows 6-8: lightning (3 rows)
+  for (let i = 6; i <= 8; i++) {
+    const row = lightning[i - 6];
+    const freq = row?.frequency;
+    for (let col = 1; col <= 5; col++) {
+      out[`2freq_${i}_${col}`] = (freq && freqToCol[freq] === col) ? CHECK : "";
+    }
+    out[`2freq_${i}_6`] = row?.note || "";
+  }
+  
+  // Map rows 9-13: others (5 rows in slide 32, template shows rows 9-13)
+  for (let i = 9; i <= 13; i++) {
+    const row = others[i - 9];
+    const freq = row?.frequency;
+    for (let col = 1; col <= 5; col++) {
+      out[`2freq_${i}_${col}`] = (freq && freqToCol[freq] === col) ? CHECK : "";
+    }
+    out[`2freq_${i}_6`] = row?.note || "";
+  }
+  
+  return out;
+};
+
+// =====================================================
+// Slide 33 (6a): ผลการตรวจโครงสร้าง (10 rows)
+// Columns: 1=ใช้ได้, 2=ใช้ไม่ได้, 3=หมายเหตุ
+// =====================================================
+const mapSlide33_6a = (plan: AnyObj | undefined) => {
+  const out: AnyObj = {};
+  const CHECK = "✓";
+  const usabilityPlan = plan?.usabilityPlan;
+  const structural = usabilityPlan?.structural || [];
+  
+  for (let i = 1; i <= 10; i++) {
+    const row = structural[i - 1];
+    const status = row?.status;
+    out[`6a_${i}_1`] = status === "usable" ? CHECK : "";
+    out[`6a_${i}_2`] = status === "unusable" ? CHECK : "";
+    out[`6a_${i}_3`] = row?.note || "";
+  }
+  return out;
+};
+
+// =====================================================
+// Slide 34 (6b): ผลการตรวจระบบ (20 rows)
+// Row 1-5: electrical, 6-8: lightning, 9-20: others
+// Columns: 1=ใช้ได้, 2=ใช้ไม่ได้
+// =====================================================
+const mapSlide34_6b = (plan: AnyObj | undefined) => {
+  const out: AnyObj = {};
+  const CHECK = "✓";
+  const usabilityPlan = plan?.usabilityPlan;
+  const systems = usabilityPlan?.systems || {};
+  
+  const electrical = systems.electrical || [];
+  const lightning = systems.lightning || [];
+  const others = systems.others || [];
+  
+  // Rows 1-5: electrical
+  for (let i = 1; i <= 5; i++) {
+    const row = electrical[i - 1];
+    const status = row?.status;
+    out[`6b_${i}_1`] = status === "usable" ? CHECK : "";
+    out[`6b_${i}_2`] = status === "unusable" ? CHECK : "";
+    out[`6b_${i}_3`] = row?.note || "";
+  }
+  
+  // Rows 6-8: lightning
+  for (let i = 6; i <= 8; i++) {
+    const row = lightning[i - 6];
+    const status = row?.status;
+    out[`6b_${i}_1`] = status === "usable" ? CHECK : "";
+    out[`6b_${i}_2`] = status === "unusable" ? CHECK : "";
+    out[`6b_${i}_3`] = row?.note || "";
+  }
+  
+  // Rows 9-20: others
+  for (let i = 9; i <= 20; i++) {
+    const row = others[i - 9];
+    const status = row?.status;
+    out[`6b_${i}_1`] = status === "usable" ? CHECK : "";
+    out[`6b_${i}_2`] = status === "unusable" ? CHECK : "";
+    out[`6b_${i}_3`] = row?.note || "";
+  }
+  
+  return out;
+};
+
+// =====================================================
+// Slide 23 (4sum): ส่วนที่ 4 สรุปผลการตรวจสอบป้าย (5 rows)
+// Columns: 1=ใช้ได้, 2=ใช้ไม่ได้, 3=มีการแก้ไขแล้ว
+// Row 1: สิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย
+// Row 2: แผ่นป้าย
+// Row 3: ระบบไฟฟ้าแสงสว่างและระบบไฟฟ้ากำลัง
+// Row 4: ระบบป้องกันฟ้าผ่า (ถ้ามี)
+// Row 5: ระบบอุปกรณ์ประกอบอื่นๆ (ถ้ามี)
+// Data from Form8_1Summary.rows - field: result = "ok" | "not_ok" | "fixed"
+// =====================================================
+const mapSlide23_4sum = (summary: AnyObj | undefined) => {
+  const out: AnyObj = {};
+  const CHECK = "✓";
+  const rows = summary?.rows || [];
+  
+  for (let i = 1; i <= 5; i++) {
+    const row = rows[i - 1];
+    const result = row?.result;
+    out[`4sum_${i}_1`] = result === "ok" ? CHECK : "";
+    out[`4sum_${i}_2`] = result === "not_ok" ? CHECK : "";
+    out[`4sum_${i}_3`] = result === "fixed" ? CHECK : "";
+    out[`4sum_${i}_4`] = row?.note || "";
+  }
+  return out;
+};
+
+// =====================================================
+// Slide 35 (7sum): สรุปผลการตรวจบำรุงรักษา (5 rows)
+// Columns: 1=ใช้ได้, 2=ใช้ไม่ได้, 3=ต้องแก้ไข, 4=หมายเหตุ
+// =====================================================
+const mapSlide35_7sum = (plan: AnyObj | undefined) => {
+  const out: AnyObj = {};
+  const CHECK = "✓";
+  const summaryPlan = plan?.summaryPlan;
+  const rows = summaryPlan?.rows || [];
+  
+  for (let i = 1; i <= 5; i++) {
+    const row = rows[i - 1];
+    const status = row?.status;
+    const fixed = row?.fixed;
+    out[`7sum_${i}_1`] = status === "usable" ? CHECK : "";
+    out[`7sum_${i}_2`] = status === "unusable" ? CHECK : "";
+    out[`7sum_${i}_3`] = fixed ? CHECK : "";
+    out[`7sum_${i}_4`] = row?.note || "";
+  }
+  return out;
+};
+
 // Map inspect.items (ตาราง ข้อ 8 ข้อ 9) - มี 5 กลุ่ม: g1-g5
 // fields: erosion (มี/ไม่มี), wear (การชำรุดสึกหรอ), damage (ความเสียหาย), inspectorOpinion (ใช้ได้/ใช้ไม่ได้), note
 const mapInspectItems = (items: Record<string, AnyObj> | undefined, groupId: string, prefix: string, maxRows = 6) => {
@@ -568,7 +879,24 @@ const buildDataContext = (form: Form8_1Data): AnyObj => {
   const tick = (v?: boolean | null, yes = true) => (v === yes ? "☑" : "☐");
   const mark = (v?: boolean | null) => (v ? "☑" : "☐");
   
+  // วันที่ปัจจุบัน (พ.ศ.)
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const yearBE = now.getFullYear() + 543;
+  const todayDMY = `${day}/${month}/${yearBE}`;  // วว/ดด/ปปปป (พ.ศ.)
+  const todayDMYAD = `${day}/${month}/${now.getFullYear()}`;  // วว/ดด/ปปปป (ค.ศ.)
+  
   return {
+    // วันที่ปัจจุบัน
+    ["today"]: todayDMY,           // {{today}} - วว/ดด/ปปปป (พ.ศ.)
+    ["todayBE"]: todayDMY,         // {{todayBE}} - วว/ดด/ปปปป (พ.ศ.)
+    ["todayAD"]: todayDMYAD,       // {{todayAD}} - วว/ดด/ปปปป (ค.ศ.)
+    ["currentDay"]: day,           // {{currentDay}} - วว
+    ["currentMonth"]: month,       // {{currentMonth}} - ดด
+    ["currentYearBE"]: String(yearBE),  // {{currentYearBE}} - ปปปป (พ.ศ.)
+    ["currentYearAD"]: String(now.getFullYear()),  // {{currentYearAD}} - ปปปป (ค.ศ.)
+    
     // Flatten everything for Docxtemplater compatibility
     ...form,
     reportYear: form.report?.year ?? "",
@@ -620,19 +948,19 @@ const buildDataContext = (form: Form8_1Data): AnyObj => {
     ["10ownr"]: form.typeAndOwner?.owner?.name ?? form.report?.companyName ?? "",
     ["10addr"]: form.report?.companyAddress ?? fullAddress ?? "",
     ["10pimg"]: photos.signMain ?? "",
-    // รูปอัปโหลด (ตามหมายเลขในแบบฟอร์ม)
-    ["12p1"]: photos.cover ?? "",      // ภาพหลักบน (ซ้าย)
-    ["12p2"]: photos.header ?? "",     // ภาพหลักบน (ขวา)
-    ["12p3"]: photos.signMain ?? "",   // รูปป้าย/รูปหลัก 1
-    ["12p4"]: photos.signMain ?? "",   // รูปป้ายหลัก 2 (ใช้รูปเดียวกัน ถ้าไม่มีรูปแยก)
-    ["12p5"]: photos.setA1 ?? "",      // ชุด A รูปที่ 1
-    ["12p6"]: photos.setA2 ?? "",      // ชุด A รูปที่ 2
-    ["12p7"]: photos.setB1 ?? "",      // ชุด B รูปที่ 1
-    ["12p8"]: photos.setB2 ?? "",      // ชุด B รูปที่ 2
-    ["12p9"]: photos.setB3 ?? "",      // ชุด B รูปที่ 3
-    ["12p10"]: photos.setB4 ?? "",     // ชุด B รูปที่ 4
-    ["12p11"]: photos.setB5 ?? "",     // ชุด B รูปที่ 5
-    ["12p12"]: photos.setB6 ?? "",     // ชุด B รูปที่ 6
+    // รูปอัปโหลด (ตามหมายเลขในแบบฟอร์ม) - ใช้ URL/filename สำหรับ image module
+    ["12p1"]: photoFilenames.coverImg ?? "",      // ภาพหลักบน (ซ้าย)
+    ["12p2"]: photoFilenames.headerImg ?? "",     // ภาพหลักบน (ขวา)
+    ["12p3"]: photoFilenames.signMainImg ?? "",   // รูปป้าย/รูปหลัก 1
+    ["12p4"]: photoFilenames.signMainImg ?? "",   // รูปป้ายหลัก 2 (ใช้รูปเดียวกัน ถ้าไม่มีรูปแยก)
+    ["12p5"]: photoFilenames.setA1Img ?? "",      // ชุด A รูปที่ 1
+    ["12p6"]: photoFilenames.setA2Img ?? "",      // ชุด A รูปที่ 2
+    ["12p7"]: photoFilenames.setB1Img ?? "",      // ชุด B รูปที่ 1
+    ["12p8"]: photoFilenames.setB2Img ?? "",      // ชุด B รูปที่ 2
+    ["12p9"]: photoFilenames.setB3Img ?? "",      // ชุด B รูปที่ 3
+    ["12p10"]: photoFilenames.setB4Img ?? "",     // ชุด B รูปที่ 4
+    ["12p11"]: photoFilenames.setB5Img ?? "",     // ชุด B รูปที่ 5
+    ["12p12"]: photoFilenames.setB6Img ?? "",     // ชุด B รูปที่ 6
     // Text placeholders for address section (Tx1..Tx10) จากตัวเลขสีแดง
     ["12tx1"]: form.general?.addressNo ?? "",
     ["12tx2"]: form.general?.moo ?? "",
@@ -731,6 +1059,33 @@ const buildDataContext = (form: Form8_1Data): AnyObj => {
     ...mapInspectItems((form.inspect?.items || {}) as Record<string, AnyObj>, "g4", "13l", 4),
     // g5 = ทางเดิน/บันได/ทางขึ้น (4 แถว) prefix 13w
     ...mapInspectItems((form.inspect?.items || {}) as Record<string, AnyObj>, "g5", "13w", 4),
+    
+    // NEW: Matrix format placeholders for {{8a_row_col}} and {{9a_row_col}}
+    // Slide 20 (8a): g1 (12 rows) + g2 (3 rows) = 15 rows
+    // Slide 21 (9a): g3 (6 rows) + g4 (6 rows) = 12 rows
+    ...mapInspectItemsToMatrixFormat((form.inspect?.items || {}) as Record<string, AnyObj>),
+    
+    // Slide 22 (9b): g5 อุปกรณ์ประกอบอื่นๆ (6 rows)
+    ...mapSlide22_9b((form.inspect?.items || {}) as Record<string, AnyObj>),
+    
+    // Slide 31 (1freq): ความถี่การตรวจโครงสร้าง
+    ...mapSlide31_1freq(form.plan as AnyObj),
+    
+    // Slide 32 (2freq): ความถี่การตรวจระบบ
+    ...mapSlide32_2freq(form.plan as AnyObj),
+    
+    // Slide 33 (6a): ผลการตรวจโครงสร้าง
+    ...mapSlide33_6a(form.plan as AnyObj),
+    
+    // Slide 34 (6b): ผลการตรวจระบบ
+    ...mapSlide34_6b(form.plan as AnyObj),
+    
+    // Slide 23 (4sum): ส่วนที่ 4 สรุปผลการตรวจสอบป้าย
+    ...mapSlide23_4sum(form.summary as AnyObj),
+    
+    // Slide 35 (7sum): สรุปผลการตรวจบำรุงรักษา
+    ...mapSlide35_7sum(form.plan as AnyObj),
+    
     // สรุปผลการตรวจ (ตารางรวม) prefix 14
     ...mapSummary((form.summary as AnyObj)?.rows, "14", 5),
     // ตารางความถี่ (2.5) prefix 25
@@ -911,75 +1266,324 @@ const buildDataContext = (form: Form8_1Data): AnyObj => {
   };
 };
 
+// Template filename - use standard version (docxtemplater has issues with image-heavy templates)
+// Images will be injected as NEW files after docxtemplater renders text placeholders
+const TEMPLATE_FILENAME = "Form1-8.1_fixed.pptx";
+// Image mapping file - not needed since we inject images dynamically
+// const IMAGE_MAPPING_FILENAME = "pptx_image_mapping.json";
+
+// Type for image mapping JSON (kept for reference)
+interface ImageMappingData {
+  version: string;
+  generated: string;
+  description: string;
+  images: Record<string, { filename: string; description: string }>;
+}
+
 const fetchTemplate = async () => {
   // พยายามโหลดจาก API ก่อน แล้ว fallback ไป path public/templates
   let buf: ArrayBuffer | null = null;
   try {
-    const res = await fetch(`/api/export/pptx/template/get?name=${encodeURIComponent("Form1-8.1.pptx")}`);
+    const res = await fetch(`/api/export/pptx/template/get?name=${encodeURIComponent(TEMPLATE_FILENAME)}`);
     if (res.ok) buf = await res.arrayBuffer();
   } catch (err) {
     console.warn("load template from api failed", err);
   }
   if (!buf) {
-    const res = await fetch("/templates/Form1-8.1.pptx");
-    if (!res.ok) throw new Error("ไม่พบไฟล์เทมเพลต Form1-8.1.pptx");
+    const res = await fetch(`/templates/${TEMPLATE_FILENAME}`);
+    if (!res.ok) throw new Error(`ไม่พบไฟล์เทมเพลต ${TEMPLATE_FILENAME}`);
     buf = await res.arrayBuffer();
   }
   return buf;
 };
 
+// Create image module for docxtemplater
+// Uses {%placeholder} syntax to embed images
 const getImageModule = async () => {
-  console.log("[getImageModule] Starting to load image module...");
+  console.log("[getImageModule] Loading image module...");
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const module = await import("docxtemplater-image-module-free");
-    console.log("[getImageModule] Module imported:", Object.keys(module));
+    console.log("[getImageModule] Module loaded:", Object.keys(module));
     const ImageModule = module.default as any;
-    console.log("[getImageModule] ImageModule constructor:", typeof ImageModule);
+    
+    if (typeof ImageModule !== "function") {
+      console.warn("[getImageModule] ImageModule is not a constructor");
+      return null;
+    }
+    
+    // Create a 1x1 transparent PNG as fallback
+    const transparentPng = new Uint8Array([
+      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
+      0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+      0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
+      0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+      0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
+      0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
+    ]);
     
     const instance = new ImageModule({
       fileType: "pptx",
+      centered: false,
       getImage: async (tagValue: string) => {
-        console.log("[ImageModule] getImage called with:", tagValue);
-        if (!tagValue || tagValue === NO_PHOTO_TEXT) return null;
+        console.log("[ImageModule] getImage called:", tagValue);
+        if (!tagValue || tagValue === NO_PHOTO_TEXT || !isRealImage(tagValue)) {
+          console.log("[ImageModule] No valid image, using transparent placeholder");
+          return transparentPng;
+        }
         try {
-          // Build full URL from filename
           const url = tagValue.startsWith("http") ? tagValue : buildRemoteUrl(tagValue);
-          console.log("[ImageModule] Fetching image from:", url);
+          console.log("[ImageModule] Fetching from:", url);
           const resp = await fetch(url);
           if (!resp.ok) {
-            console.warn("[ImageModule] Failed to fetch image:", resp.status);
-            return null;
+            console.warn("[ImageModule] Fetch failed:", resp.status, "- using placeholder");
+            return transparentPng;
           }
-          const buffer = await resp.arrayBuffer();
-          console.log("[ImageModule] Image loaded, size:", buffer.byteLength);
-          return buffer;
+          const arrayBuffer = await resp.arrayBuffer();
+          console.log("[ImageModule] Image loaded, size:", arrayBuffer.byteLength);
+          // Convert ArrayBuffer to Uint8Array for compatibility
+          return new Uint8Array(arrayBuffer);
         } catch (err) {
-          console.warn("[ImageModule] Error loading image:", err);
-          return null;
+          console.warn("[ImageModule] Error:", err, "- using placeholder");
+          return transparentPng;
         }
       },
-      getSize: (_img: unknown, tagValue: string, tagName: string) => {
-        console.log("[ImageModule] getSize for:", tagName);
+      getSize: (_buffer: unknown, tagValue: string, tagName: string) => {
+        console.log("[ImageModule] getSize for:", tagName, "value:", tagValue);
+        // Return size in pixels [width, height]
         // Different sizes based on placeholder type
-        if (tagName.includes("cover") || tagName.includes("12p1")) {
-          return [400, 300]; // Cover image - larger
+        if (tagName.includes("12p1") || tagName.includes("12p2")) {
+          return [300, 225]; // Cover photos - larger
         }
-        if (tagName.includes("signMain") || tagName.includes("12p3")) {
-          return [350, 260]; // Main sign photo
+        if (tagName.includes("12p3") || tagName.includes("12p4")) {
+          return [280, 210]; // Main sign photos
         }
-        if (tagName.includes("map") || tagName.includes("layout")) {
-          return [300, 200]; // Map/layout images
+        if (tagName.includes("12p5") || tagName.includes("12p6")) {
+          return [250, 188]; // Set A photos
         }
         return [200, 150]; // Default size for other photos
       },
     });
-    console.log("[getImageModule] Image module instance created successfully");
+    
+    console.log("[getImageModule] Image module created successfully");
     return instance;
   } catch (err) {
-    console.warn("[getImageModule] Failed to load image module:", err);
+    console.warn("[getImageModule] Failed to load:", err);
     return null;
   }
+};
+
+// Image placeholder mapping for PPTX
+// Maps placeholder name to slide and image position info
+interface ImagePlaceholderInfo {
+  placeholder: string;
+  slideNumbers: number[];  // Which slides contain this placeholder
+  width: number;  // EMU (English Metric Units) - 914400 EMU = 1 inch
+  height: number;
+}
+
+const IMAGE_PLACEHOLDERS: ImagePlaceholderInfo[] = [
+  { placeholder: "12p1", slideNumbers: [10, 11], width: 4000000, height: 3000000 },
+  { placeholder: "12p2", slideNumbers: [10, 11], width: 4000000, height: 3000000 },
+  { placeholder: "12p3", slideNumbers: [8, 20, 21, 22], width: 3500000, height: 2600000 },
+  { placeholder: "12p4", slideNumbers: [8], width: 3500000, height: 2600000 },
+  { placeholder: "12p5", slideNumbers: [12], width: 2500000, height: 1900000 },
+  { placeholder: "12p6", slideNumbers: [12], width: 2500000, height: 1900000 },
+  { placeholder: "12p7", slideNumbers: [26], width: 2500000, height: 1900000 },
+  { placeholder: "12p8", slideNumbers: [26], width: 2500000, height: 1900000 },
+  { placeholder: "12p9", slideNumbers: [26], width: 2500000, height: 1900000 },
+  { placeholder: "12p10", slideNumbers: [26], width: 2500000, height: 1900000 },
+  { placeholder: "12p11", slideNumbers: [26], width: 2500000, height: 1900000 },
+  { placeholder: "12p12", slideNumbers: [26], width: 2500000, height: 1900000 },
+];
+
+// Fetch image from URL and return as ArrayBuffer
+const fetchImageBuffer = async (imageUrl: string): Promise<ArrayBuffer | null> => {
+  try {
+    const url = imageUrl.startsWith("http") ? imageUrl : buildRemoteUrl(imageUrl);
+    console.log("[fetchImageBuffer] Fetching:", url);
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      console.warn("[fetchImageBuffer] Failed:", resp.status);
+      return null;
+    }
+    const buffer = await resp.arrayBuffer();
+    console.log("[fetchImageBuffer] Loaded, size:", buffer.byteLength);
+    return buffer;
+  } catch (err) {
+    console.warn("[fetchImageBuffer] Error:", err);
+    return null;
+  }
+};
+
+// Get image extension from URL or buffer
+const getImageExtension = (url: string): string => {
+  const lower = url.toLowerCase();
+  if (lower.includes(".png")) return "png";
+  if (lower.includes(".gif")) return "gif";
+  if (lower.includes(".webp")) return "webp";
+  return "jpeg"; // default
+};
+
+// Find image placeholders in PPTX by reading Alt Text from slide XML
+// Returns mapping: placeholder name -> { slideFile, rId, mediaFile }
+const findImagePlaceholders = (zip: any): Map<string, { slideFile: string; rId: string; mediaFile: string }> => {
+  const result = new Map<string, { slideFile: string; rId: string; mediaFile: string }>();
+  
+  // Get all slide files
+  const slideFiles = Object.keys(zip.files).filter(
+    (name) => name.match(/^ppt\/slides\/slide\d+\.xml$/)
+  );
+  
+  console.log("[findImagePlaceholders] Checking slides:", slideFiles);
+  
+  for (const slideFile of slideFiles) {
+    const slideXml = zip.file(slideFile)?.asText();
+    if (!slideXml) continue;
+    
+    // Find all p:pic elements - extract each one separately
+    const picRegex = /<p:pic\b[\s\S]*?<\/p:pic>/g;
+    const pics = slideXml.match(picRegex) || [];
+    
+    for (const picXml of pics) {
+      // Check if this pic has descr with our placeholder pattern
+      const descrMatch = picXml.match(/descr="(12(?:cover|map|layout|p\d+))"/);
+      if (!descrMatch) continue;
+      
+      const placeholder = descrMatch[1]; // e.g., "12cover", "12p1"
+      
+      // Find the rId for the image
+      const rIdMatch = picXml.match(/r:embed="(rId\d+)"/);
+      if (!rIdMatch) {
+        console.log(`[findImagePlaceholders] Found ${placeholder} but no rId`);
+        continue;
+      }
+      
+      const rId = rIdMatch[1];
+      
+      // Find the media file from relationships
+      const relsFile = slideFile.replace("ppt/slides/", "ppt/slides/_rels/") + ".rels";
+      const relsXml = zip.file(relsFile)?.asText();
+      
+      if (relsXml) {
+        // Find the target for this rId
+        const relMatch = relsXml.match(new RegExp(`Id="${rId}"[^>]*Target="([^"]+)"`));
+        if (relMatch) {
+          const target = relMatch[1]; // e.g., "../media/image5.png"
+          const mediaFile = target.replace("../", "ppt/"); // e.g., "ppt/media/image5.png"
+          
+          result.set(placeholder, { slideFile, rId, mediaFile });
+          console.log(`[findImagePlaceholders] Found ${placeholder} -> ${mediaFile} in ${slideFile}`);
+        }
+      }
+    }
+  }
+  
+  return result;
+};
+
+// Inject images into PPTX by finding placeholders via Alt Text and replacing media files
+const injectImagesIntoPptx = async (
+  zip: any,
+  imageData: Record<string, string> // placeholder -> image URL/filename
+): Promise<void> => {
+  console.log("[injectImagesIntoPptx] Starting image replacement...");
+  console.log("[injectImagesIntoPptx] Image data:", imageData);
+  
+  // Find placeholders in template by Alt Text
+  const placeholders = findImagePlaceholders(zip);
+  console.log("[injectImagesIntoPptx] Found placeholders:", Array.from(placeholders.keys()));
+  
+  if (placeholders.size === 0) {
+    console.log("[injectImagesIntoPptx] No placeholders found in template");
+    return;
+  }
+  
+  let replacedCount = 0;
+  
+  for (const [placeholder, imageUrl] of Object.entries(imageData)) {
+    if (!imageUrl || imageUrl === NO_PHOTO_TEXT || !isRealImage(imageUrl)) {
+      console.log(`[injectImagesIntoPptx] Skipping ${placeholder} - no valid image`);
+      continue;
+    }
+    
+    // Check if this placeholder exists in template
+    const placeholderInfo = placeholders.get(placeholder);
+    if (!placeholderInfo) {
+      console.log(`[injectImagesIntoPptx] Placeholder ${placeholder} not found in template`);
+      continue;
+    }
+    
+    // Fetch the actual image
+    const imageBuffer = await fetchImageBuffer(imageUrl);
+    if (!imageBuffer) {
+      console.log(`[injectImagesIntoPptx] Could not fetch image for ${placeholder}`);
+      continue;
+    }
+    
+    // Replace the media file in zip
+    zip.file(placeholderInfo.mediaFile, imageBuffer);
+    console.log(`[injectImagesIntoPptx] Replaced ${placeholderInfo.mediaFile} for ${placeholder} (${imageBuffer.byteLength} bytes)`);
+    replacedCount++;
+  }
+  
+  // Update [Content_Types].xml if needed (ensure jpg/jpeg is registered)
+  let contentTypes = zip.file("[Content_Types].xml")?.asText();
+  if (contentTypes) {
+    // Ensure jpeg extension is registered (images might be jpeg)
+    if (!contentTypes.includes('Extension="jpeg"') && !contentTypes.includes('Extension="jpg"')) {
+      contentTypes = contentTypes.replace(
+        /<Types/,
+        '<Types><Default Extension="jpeg" ContentType="image/jpeg"/><Default Extension="jpg" ContentType="image/jpeg"/>'
+      );
+      if (contentTypes.includes('Extension="jpeg"')) {
+        zip.file("[Content_Types].xml", contentTypes);
+        console.log("[injectImagesIntoPptx] Added jpeg content type");
+      }
+    }
+  }
+  
+  console.log(`[injectImagesIntoPptx] Image replacement complete: ${replacedCount} images replaced`);
+};
+
+// Replace text placeholder with an image element in PPTX slide XML
+const replaceTextWithImage = (
+  slideXml: string,
+  placeholderText: string,
+  rId: string,
+  placeholderName: string
+): string => {
+  // Find placeholder info for sizing
+  const info = IMAGE_PLACEHOLDERS.find((p) => p.placeholder === placeholderName.replace("{{", "").replace("}}", ""));
+  const width = info?.width || 3000000;
+  const height = info?.height || 2250000;
+  
+  // Create picture element XML
+  const picXml = `<p:pic xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+    <p:nvPicPr>
+      <p:cNvPr id="0" name="${placeholderName}"/>
+      <p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>
+      <p:nvPr/>
+    </p:nvPicPr>
+    <p:blipFill>
+      <a:blip r:embed="${rId}"/>
+      <a:stretch><a:fillRect/></a:stretch>
+    </p:blipFill>
+    <p:spPr>
+      <a:xfrm><a:off x="0" y="0"/><a:ext cx="${width}" cy="${height}"/></a:xfrm>
+      <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+    </p:spPr>
+  </p:pic>`;
+  
+  // For now, just replace the text with empty string
+  // The image will be added as a separate shape
+  // TODO: More sophisticated replacement that positions image where text was
+  return slideXml.replace(new RegExp(escapeRegExp(placeholderText), "g"), "");
+};
+
+// Escape special regex characters
+const escapeRegExp = (str: string): string => {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 };
 
 export async function exportToPptxForm8_1(form: Partial<Form8_1Data> | null | undefined) {
@@ -1001,26 +1605,17 @@ export async function exportToPptxForm8_1(form: Partial<Form8_1Data> | null | un
     });
     // Debug: log raw photos data from form
     console.log("[exportToPptxForm8_1] Raw form.photos:", JSON.stringify(form.photos, null, 2));
-    const templateBuf = await fetchTemplate();
-    const [{ default: PizZip }, { default: Docxtemplater }] = await Promise.all([
+    
+    // Load template and pizzip/docxtemplater in parallel
+    const [templateBuf, { default: PizZip }, { default: Docxtemplater }] = await Promise.all([
+      fetchTemplate(),
       import("pizzip"),
       import("docxtemplater"),
     ]);
-    
-    // NOTE: Image module disabled - doesn't work properly with PPTX
-    // Images will be shown as filenames in text placeholders
-    // TODO: Implement post-processing to embed actual images
-    const imageModule = null; // await getImageModule();
-    console.log("[exportToPptxForm8_1] Image module disabled (PPTX not supported)");
+    console.log("[exportToPptxForm8_1] Template loaded");
     
     const zip = new PizZip(templateBuf);
     const modules: any[] = [];
-    if (imageModule) {
-      modules.push(imageModule);
-      console.log("[exportToPptxForm8_1] Image module added to Docxtemplater");
-    } else {
-      console.log("[exportToPptxForm8_1] Using text placeholders for images (filenames will be shown)");
-    }
     
     const doc = new Docxtemplater(zip, {
       paragraphLoop: true,
@@ -1075,7 +1670,57 @@ export async function exportToPptxForm8_1(form: Partial<Form8_1Data> | null | un
     doc.render(dataCtx);
     console.log("[exportToPptxForm8_1] Template rendered successfully");
 
-    const blob = doc.getZip().generate({
+    // Inject images into PPTX after text rendering
+    const renderedZip = doc.getZip();
+    const photoFilenames = mapPhotoFilenames(form.photos);
+    
+    // Get map and layout images from location data
+    const mapFilename = (form.location as any)?.mapImageFilename || "";
+    const layoutFilename = (form.location as any)?.layoutImageFilename || "";
+    
+    const toUrl = (v?: string) => {
+      if (!v) return "";
+      return v.startsWith("http") ? v : buildRemoteUrl(v);
+    };
+    const toName = (p?: any) => toPhotoFilename(p as any);
+
+    const coverName =
+      toName(form.photos?.coverPhoto) ||
+      toName(form.photos?.signMainPhoto) || // fallback เผื่อไม่ได้กรอก cover แยก
+      toName(form.photos?.setAPhotos?.[0]); // fallback สุดท้าย
+
+    const imageDataForInjection: Record<string, string> = {
+      // Cover, Map, Layout
+      "12cover": toUrl(coverName || ""),
+      "12map": toUrl(mapFilename),
+      "12layout": toUrl(layoutFilename),
+      // Photo placeholders
+      "12p1": toUrl(photoFilenames.coverImg || ""),
+      "12p2": toUrl(photoFilenames.headerImg || ""),
+      "12p3": toUrl(photoFilenames.signMainImg || ""),
+      "12p4": toUrl(photoFilenames.signMainImg || ""),  // Use same image if no separate
+      "12p5": toUrl(photoFilenames.setA1Img || ""),
+      "12p6": toUrl(photoFilenames.setA2Img || ""),
+      "12p7": toUrl(photoFilenames.setB1Img || ""),
+      "12p8": toUrl(photoFilenames.setB2Img || ""),
+      "12p9": toUrl(photoFilenames.setB3Img || ""),
+      "12p10": toUrl(photoFilenames.setB4Img || ""),
+      "12p11": toUrl(photoFilenames.setB5Img || ""),
+      "12p12": toUrl(photoFilenames.setB6Img || ""),
+    };
+    console.log("[exportToPptxForm8_1] Image data for injection:", imageDataForInjection);
+    
+    // Inject images by finding placeholders via Alt Text and replacing media files
+    const hasImages = Object.values(imageDataForInjection).some((v) => v && isRealImage(v));
+    if (hasImages) {
+      console.log("[exportToPptxForm8_1] Injecting images into PPTX...");
+      await injectImagesIntoPptx(renderedZip, imageDataForInjection);
+      console.log("[exportToPptxForm8_1] Image injection complete");
+    } else {
+      console.log("[exportToPptxForm8_1] No images to inject");
+    }
+
+    const blob = renderedZip.generate({
       type: "blob",
       mimeType:
         "application/vnd.openxmlformats-officedocument.presentationml.presentation",
@@ -1268,25 +1913,11 @@ export async function exportWithPreprocessor(form: Partial<Form8_1Data> | null |
     const photosToInject = preparePhotosForInjection(form);
     logs.push(`Photos to inject: ${photosToInject.length}`);
     
-    // Step 3: Pre-process template (inject images)
+    // Step 3: Pre-process template (inject images) - SKIP for now, use image module instead
     let processedBuf = templateBuf;
-    if (photosToInject.length > 0) {
-      logs.push("Pre-processing template with images...");
-      const { preprocessForm8_1Photos } = await import("./pptxPreprocessor");
-      const result = await preprocessForm8_1Photos(templateBuf, photosToInject);
-      
-      logs.push(...result.log);
-      
-      if (result.success) {
-        processedBuf = result.buffer;
-        logs.push("Pre-processing successful");
-      } else {
-        logs.push(`Pre-processing failed: ${result.error}`);
-        logs.push("Continuing with original template...");
-      }
-    } else {
-      logs.push("No photos to inject, using original template");
-    }
+    // Note: Image module ({%12p1} etc) handles image injection automatically
+    // No need for manual preprocessing
+    logs.push("Using image module for image injection");
     
     // Step 4: Use Docxtemplater to replace text placeholders
     logs.push("Loading Docxtemplater...");

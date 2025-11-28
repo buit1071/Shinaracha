@@ -144,10 +144,10 @@ export default function Form8_1({ jobId, equipment_id, name, onBack }: Props) {
     const load = async () => {
       showLoading(true);
       try {
-        const res = await fetch("/api/auth/forms/get", {
+        const res = await fetch("/api/auth/forms8/get", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ function: "form8_1", job_id: jobId, equipment_id }),
+          body: JSON.stringify({ job_id: jobId, equipment_id, form_code_prefix: "FORM8_1", round_no: 1 }),
         });
         const data = await res.json();
         if (!ignore && data?.success) {
@@ -363,7 +363,10 @@ export default function Form8_1({ jobId, equipment_id, name, onBack }: Props) {
         }
       }
       const payload: any = {
-        entity: "form8_1",
+        form_code_prefix: "FORM8_1",
+        round_no: 1,
+        report_no: 8,
+        form_no: 1,
         data: {
           ...dataForSave,
           job_id: jobId,
@@ -375,7 +378,7 @@ export default function Form8_1({ jobId, equipment_id, name, onBack }: Props) {
       };
       if (formData.form_code) payload.data.form_code = formData.form_code;
 
-      const res = await fetch("/api/auth/forms/post", {
+      const res = await fetch("/api/auth/forms8/post", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

@@ -138,19 +138,31 @@ export default function Form8_3({ jobId, equipment_id, name, onBack }: Props) {
     return out;
   };
 
-  // Load existing data
+  //   // Load existing data
   React.useEffect(() => {
     let ignore = false;
     const load = async () => {
       showLoading(true);
       try {
-        // ดึงข้อมูลเดิมด้วย job_id อย่างเดียว (equipment_id ไม่ใช้)
-        const res = await fetch("/api/auth/forms/get", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ function: "form8_1", job_id: jobId }),
-        });
-        const data = await res.json();
+        const fetchLatest = async (prefix: string, round_no: number, includeEquip: boolean) => {
+          const body: any = { job_id: jobId, form_code_prefix: prefix, round_no };
+          if (includeEquip && equipment_id) body.equipment_id = equipment_id;
+          const res = await fetch("/api/auth/forms8/get", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          return res.json();
+        };
+
+        const data = await (async () => {
+          const r3 = await fetchLatest("FORM8_3", 3, true);
+          if (r3?.success && r3.data) return r3;
+          const r2 = await fetchLatest("FORM8_2", 2, true);
+          if (r2?.success && r2.data) return r2;
+          return await fetchLatest("FORM8_1", 1, false);
+        })();
+
         if (!ignore && data?.success && data.data) {
           const raw = data.data?.form_data;
           const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
@@ -169,8 +181,7 @@ export default function Form8_3({ jobId, equipment_id, name, onBack }: Props) {
       ignore = true;
     };
   }, [jobId, equipment_id, ensureSummaryRows]);
-
-  React.useEffect(() => { setFormData((p) => ensureSummaryRows(p)); }, [ensureSummaryRows]);
+React.useEffect(() => { setFormData((p) => ensureSummaryRows(p)); }, [ensureSummaryRows]);
 
   // Patch helpers
   const setReport = React.useCallback((patch: Partial<Form8_1Data["report"]>) =>
@@ -363,13 +374,15 @@ export default function Form8_3({ jobId, equipment_id, name, onBack }: Props) {
           }
         }
       }
-      const payload: any = {
-        entity: "form8_3",
+            const payload: any = {
+        form_code_prefix: "FORM8_3",
+        round_no: 3,
+        report_no: 8,
+        form_no: 3,
         data: {
           ...dataForSave,
           job_id: jobId,
           equipment_id,
-          round_no: 3,
           is_active: 1,
           created_by: username || "unknown",
           updated_by: username || "unknown",
@@ -377,12 +390,11 @@ export default function Form8_3({ jobId, equipment_id, name, onBack }: Props) {
       };
       if (formData.form_code) payload.data.form_code = formData.form_code;
 
-      const res = await fetch("/api/auth/forms/post", {
+      const res = await fetch("/api/auth/forms8/post", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      });
-      const data = await res.json();
+      });const data = await res.json();
       showLoading(false);
       if (res.ok && data?.success) {
         if (data.form_code && !formData.form_code) {
@@ -581,6 +593,10 @@ export default function Form8_3({ jobId, equipment_id, name, onBack }: Props) {
     </div>
   );
 }
+
+
+
+
 
 
 
