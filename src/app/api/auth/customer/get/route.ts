@@ -7,6 +7,7 @@ type GetBody =
     | { function: "groupByCustomerId"; }
     | { function: "customerBranchAll"; }
     | { function: "branchName"; job_id: string }
+    | { function: "StoreNo"; job_id: string }
     ;
 
 export async function POST(req: Request) {
@@ -118,6 +119,41 @@ export async function POST(req: Request) {
             if (!branchRows.length) {
                 return NextResponse.json(
                     { success: false, message: "ไม่พบ branch_name ของ customer_id นี้" },
+                    { status: 404 }
+                );
+            }
+
+            return NextResponse.json({
+                success: true,
+                data: branchRows,
+            });
+        }
+        
+        if (fn === "StoreNo") {
+            // ✅ ขั้นตอนที่ 1: เอา job_id ไปหา customer_id จาก data_jobs
+            const jobRows = await query(
+                `SELECT customer_id FROM data_jobs WHERE job_id = ? LIMIT 1`,
+                [body.job_id]
+            );
+
+            if (!jobRows.length || !jobRows[0].customer_id) {
+                return NextResponse.json(
+                    { success: false, message: "ไม่พบ customer_id จาก job_id นี้" },
+                    { status: 404 }
+                );
+            }
+
+            const customer_id = jobRows[0].customer_id;
+
+            // ✅ ขั้นตอนที่ 2: เอา customer_id ไปหา store_no จาก data_customer
+            const branchRows = await query(
+                `SELECT store_no FROM data_customer WHERE customer_id = ?`,
+                [customer_id]
+            );
+
+            if (!branchRows.length) {
+                return NextResponse.json(
+                    { success: false, message: "ไม่พบ store_no ของ customer_id นี้" },
                     { status: 404 }
                 );
             }

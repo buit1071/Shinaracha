@@ -105,7 +105,7 @@ export default function ReportPage() {
             order: index + 1,
         }));
     return (
-        <div className="min-h-[96vh] bg-gray-50 flex flex-col justify-around">
+        <div className="min-h-[94vh] bg-gray-50 flex flex-col justify-around">
             {view?.type === "detail" ? (
                 <ProjectJob projectId={view.id} onBack={backToList} />
             ) : (

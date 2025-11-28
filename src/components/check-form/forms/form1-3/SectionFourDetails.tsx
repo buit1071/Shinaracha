@@ -968,6 +968,10 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                                     {d.isOther
                                         ? `อื่นๆ (ระบุ) ${d.problem_name || ""}`
                                         : d.problem_name}
+                                    {defectIndex + 1}.{" "}
+                                    {d.isOther
+                                        ? `อื่นๆ (ระบุ) ${d.problem_name || ""}`
+                                        : d.problem_name}
                                 </div>
 
                                 {/* ถ้าเป็นปัญหาอื่น → ให้เลือกข้อกฎหมายได้ */}

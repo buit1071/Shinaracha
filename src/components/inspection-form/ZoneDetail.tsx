@@ -254,7 +254,7 @@ export default function ZoneDetail({ serviceId, zoneId, onBack }: Props) {
       order: index + 1,
     }));
   return (
-    <div className="w-full h-[96vh] flex flex-col bg-gray-50">
+    <div className="w-full h-[94vh] flex flex-col bg-gray-50">
       {view?.type === "detail" ? (
         <InspectDetail InspectId={view.id} onBack={backToList} />
       ) : (

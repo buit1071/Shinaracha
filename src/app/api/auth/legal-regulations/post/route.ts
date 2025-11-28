@@ -20,7 +20,7 @@ export async function POST(req: Request) {
             const {
                 id,
                 defect,
-                illegal_suggestion,
+                // illegal_suggestion,
                 zone_id,
                 is_active,
                 created_by,
@@ -33,7 +33,6 @@ export async function POST(req: Request) {
         UPDATE master_defect
         SET
           defect         = ?,
-          illegal_suggestion         = ?,
           zone_id         = ?,
           is_active    = ?,
           updated_by   = ?,
@@ -42,7 +41,7 @@ export async function POST(req: Request) {
       `,
                 [
                     defect.trim(),
-                    illegal_suggestion.trim(),
+                    // illegal_suggestion.trim(),
                     zone_id.trim(),
                     is_active ?? 1,
                     updated_by ?? "system",
@@ -68,14 +67,14 @@ export async function POST(req: Request) {
                 const ins: any = await query(
                     `
     INSERT INTO master_defect
-      (defect, illegal_suggestion,
+      (defect, 
      zone_id, is_active, created_by, created_date, updated_by, updated_date)
     VALUES
-      (?, ?, ?, ?, ?, NOW(), ?, NOW())
+      (?, ?, ?, ?, NOW(), ?, NOW())
     `,
                     [
                         defect.trim(),
-                        illegal_suggestion?.trim() ?? null,
+                        // illegal_suggestion?.trim() ?? null,
                         zone_id?.trim() ?? null,
                         is_active ?? 1,
                         created_by ?? "system",
@@ -100,6 +99,96 @@ export async function POST(req: Request) {
             } catch (e: any) {
                 if (e?.code === "ER_DUP_ENTRY") {
                     // ปรับข้อความให้สอดคล้องกับตารางนี้
+                    return NextResponse.json(
+                        { success: false, message: "ข้อมูลซ้ำ (เช่น defect ซ้ำ)" },
+                        { status: 409 }
+                    );
+                }
+                throw e;
+            }
+        }
+
+        if (entity === "problem") {
+            const {
+                problem_id,
+                problem_name,
+                defect,
+                illegal_suggestion,
+                is_active,
+                created_by,
+                updated_by,
+            } = data;
+
+            const defectValue = defect === null || defect === undefined ? null : Number(defect);
+
+            // 1) UPDATE ก่อน
+            const upd: any = await query(
+                `
+        UPDATE master_problem
+        SET
+          problem_name = ?,
+          defect       = ?,
+          illegal_suggestion       = ?,
+          is_active    = ?,
+          updated_by   = ?,
+          updated_date = NOW()
+        WHERE problem_id = ?
+      `,
+                [
+                    problem_name.trim(),
+                    defectValue,
+                    illegal_suggestion.trim(),
+                    is_active ?? 1,
+                    updated_by ?? "system",
+                    problem_id,
+                ]
+            );
+
+            const affected =
+                (upd && typeof upd === "object" && "affectedRows" in upd && upd.affectedRows) ||
+                (Array.isArray(upd) && upd[0]?.affectedRows) ||
+                0;
+
+            if (affected > 0) {
+                return NextResponse.json({
+                    success: true,
+                    message: "อัปเดตข้อมูลเรียบร้อย",
+                    problem_id,
+                });
+            }
+
+            try {
+                const newProblemId = generateId("PROB");
+
+                const ins: any = await query(
+                    `
+            INSERT INTO master_problem
+              (problem_id, problem_name, defect, illegal_suggestion,
+               is_active, created_by, created_date, updated_by, updated_date)
+            VALUES
+              (?, ?, ?, ?, ?, ?, NOW(), ?, NOW())
+            `,
+                    [
+                        newProblemId,
+                        problem_name.trim(),
+                        defectValue,
+                        illegal_suggestion.trim(),
+                        is_active ?? 1,
+                        created_by ?? "system",
+                        updated_by ?? "system",
+                    ]
+                );
+
+                return NextResponse.json(
+                    {
+                        success: true,
+                        message: "เพิ่มข้อมูลเรียบร้อย",
+                        problem_id: newProblemId,
+                    },
+                    { status: 201 }
+                );
+            } catch (e: any) {
+                if (e?.code === "ER_DUP_ENTRY") {
                     return NextResponse.json(
                         { success: false, message: "ข้อมูลซ้ำ (เช่น defect ซ้ำ)" },
                         { status: 409 }

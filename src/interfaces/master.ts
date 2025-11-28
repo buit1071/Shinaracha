@@ -133,6 +133,7 @@ export interface EquipmentRow {
     equipment_id: string;
     equipment_name: string;
     description: string;
+    company_id: string;
     service_id: string;
     service_name?: string;
     zone_id: string;
@@ -495,7 +496,7 @@ export interface DefectRow {
     id: number | null;
     defect: string;
     zone_name?: string;
-    illegal_suggestion?: string;
+    // illegal_suggestion?: string;
     zone_id: string;
     is_active: number;
     created_by: string;
@@ -503,17 +504,26 @@ export interface DefectRow {
     created_date?: string;
     updated_date?: string;
     order?: number;
-    // extra fields used by legacy exports
-    illegal_problem?: string;
-    type?: string;
-    inspection_item?: string;
-    general_suggestion?: string;
-    defect_no?: string | number;
 }
-
 export interface ProblemRow {
-    problem_id: string | number;
+    problem_id: string;
     problem_name: string;
+    defect?: number | null;
+    defect_name?: string;
     illegal_suggestion?: string;
-    isOther?: boolean;
+    is_active: number;
+    created_by: string;
+    updated_by: string;
+    created_date?: string;
+    updated_date?: string;
+    order?: number;
+}
+export interface ViewDefectProblem {
+    problem_id: string;
+    problem_name: string;
+    equipment_type_name: string;
+    defect_id?: number | null;
+    defect_name: string;
+    zone_id: string;
+    illegal_suggestion?: string;
 }

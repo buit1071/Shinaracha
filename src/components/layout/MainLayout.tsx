@@ -31,7 +31,8 @@ import {
     ChevronDownIcon,
     MapPinIcon,
     Squares2X2Icon,
-    ScaleIcon
+    ScaleIcon,
+    ExclamationTriangleIcon  
 } from "@heroicons/react/24/outline";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -281,9 +282,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             <NavLink href="/legal-regulations" currentPath={pathname} icon={ScaleIcon} collapsed={false} onClick={closeMobileMenu}>
                                 ข้อบังคับกฎหมาย
                             </NavLink>
-                            {/* <NavLink href="/legal-regulations" currentPath={pathname} icon={ScaleIcon} collapsed={false} onClick={closeMobileMenu}>
+                            <NavLink href="/defects" currentPath={pathname} icon={ExclamationTriangleIcon} collapsed={false} onClick={closeMobileMenu}>
                                 รายการปัญหา
-                            </NavLink> */}
+                            </NavLink>
                         </div>
                     )}
                 </nav>

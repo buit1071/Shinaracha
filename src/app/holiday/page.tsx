@@ -203,7 +203,7 @@ export default function HolidayPage() {
   };
 
   return (
-    <div className="min-h-[96vh] bg-gray-50 flex flex-col justify-between">
+    <div className="min-h-[94vh] bg-gray-50 flex flex-col justify-between">
       {/* Top Bar */}
       <div className="h-[6vh] w-full bg-white shadow-md flex items-center justify-between px-4 text-black font-semibold rounded-lg">
         Calendar

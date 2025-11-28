@@ -21,28 +21,26 @@ import {
 import Select from "react-select";
 import { showAlert, showConfirm } from "@/lib/fetcher";
 import { showLoading } from "@/lib/loading";
-import { DefectRow, DataZonesRow } from "@/interfaces/master";
+import { ProblemRow, DefectRow } from "@/interfaces/master";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
-export default function LegalRegulationPage() {
+export default function DefectsPage() {
     const user = useCurrentUser();
     const username = React.useMemo(
         () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
         [user]
     );
-    const [rows, setRows] = React.useState<DefectRow[]>([]);
+    const [rows, setRows] = React.useState<ProblemRow[]>([]);
+    const [defects, setDefects] = React.useState<DefectRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
     const [openEdit, setOpenEdit] = React.useState(false);
     const [error, setError] = React.useState(false);
 
-    const [forms, setForms] = React.useState<DataZonesRow[]>([]);
-
-    const [formData, setFormData] = React.useState<DefectRow>({
-        id: null,
-        defect: "",
-        zone_id: "",
-        zone_name: "",
-        // illegal_suggestion: "",
+    const [formData, setFormData] = React.useState<ProblemRow>({
+        problem_id: "",
+        problem_name: "",
+        defect: null,
+        illegal_suggestion: "",
         is_active: 1,
         created_by: "",
         updated_by: "",
@@ -62,6 +60,24 @@ export default function LegalRegulationPage() {
             });
             const data = await res.json();
             if (data.success) {
+                setDefects(data.data);
+            }
+        } catch (err) {
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    const fecthProblem = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/legal-regulations/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "problem" }),
+            });
+            const data = await res.json();
+            if (data.success) {
                 setRows(data.data);
             }
         } catch (err) {
@@ -70,38 +86,17 @@ export default function LegalRegulationPage() {
         }
     };
 
-    const fetchZones = async () => {
-        showLoading(true);
-        try {
-            const res = await fetch("/api/auth/inspection-form/get", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "zonesAll" }),
-            });
-
-            const data = await res.json();
-            showLoading(false);
-
-            if (data.success) {
-                setForms(data.data || []);
-            } else {
-            }
-        } catch (err) {
-        }
-    };
-
     React.useEffect(() => {
-        fetchZones();
         fecthDefect();
+        fecthProblem();
     }, []);
 
     const handleOpenAdd = () => {
         setFormData({
-            id: null,
-            defect: "",
-            zone_id: "",
-            zone_name: "",
-            // illegal_suggestion: "",
+            problem_id: "",
+            problem_name: "",
+            defect: null,
+            illegal_suggestion: "",
             is_active: 1,
             created_by: "",
             updated_by: "",
@@ -112,7 +107,7 @@ export default function LegalRegulationPage() {
         setOpenEdit(true);
     };
 
-    const handleOpenEdit = (row: DefectRow) => {
+    const handleOpenEdit = (row: ProblemRow) => {
         setFormData(row);
         setOpenEdit(true);
     };
@@ -130,12 +125,12 @@ export default function LegalRegulationPage() {
 
         try {
             const payload = {
-                entity: "defect" as const,
+                entity: "problem" as const,
                 data: {
-                    id: formData.id || null,
-                    defect: formData.defect.trim() || undefined,
-                    // illegal_suggestion: formData.illegal_suggestion,
-                    zone_id: formData.zone_id,
+                    problem_id: formData.problem_id,
+                    problem_name: formData.problem_name.trim() || undefined,
+                    defect: formData.defect || null,
+                    illegal_suggestion: formData.illegal_suggestion || "",
                     is_active: formData.is_active ?? 1,
                     created_by: formData.created_by || username,
                     updated_by: formData.updated_by || username,
@@ -156,7 +151,7 @@ export default function LegalRegulationPage() {
             if (result.success) {
                 showLoading(false);
                 await showAlert("success", result.message);
-                fecthDefect();
+                fecthProblem();
             } else {
                 showAlert("error", result.message || "บันทึกล้มเหลว");
             }
@@ -168,7 +163,7 @@ export default function LegalRegulationPage() {
         }
     };
 
-    const handleDelete = async (id: number | null) => {
+    const handleDelete = async (id: string) => {
         const confirmed = await showConfirm(
             "หากลบแล้วจะไม่สามารถนำกลับมาได้",
             "คุณต้องการลบข้อมูลนี้หรือไม่?"
@@ -180,13 +175,13 @@ export default function LegalRegulationPage() {
             const res = await fetch(`/api/auth/legal-regulations/delete`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id, function: "defect" }),
+                body: JSON.stringify({ id, function: "problem" }),
             });
             const result = await res.json();
             if (result.success) {
                 showLoading(false);
                 await showAlert("success", result.message);
-                fecthDefect();
+                fecthProblem();
             } else {
                 showLoading(false);
                 showAlert("error", result.message || "ลบข้อมูลล้มเหลว");
@@ -199,7 +194,7 @@ export default function LegalRegulationPage() {
         }
     };
 
-    const columns: GridColDef<DefectRow>[] = [
+    const columns: GridColDef<ProblemRow>[] = [
         {
             field: "order",
             headerName: "ลำดับ",
@@ -208,35 +203,35 @@ export default function LegalRegulationPage() {
             align: "center",
         },
         {
-            field: "defect",
-            headerName: "ข้อกฎหมาย",
-            width: 350,
+            field: "problem_name",
+            headerName: "รายการ",
+            flex: 2,
+            minWidth: 400,
             headerAlign: "center",
             align: "left",
             resizable: false,
         },
-        // {
-        //     field: "illegal_suggestion",
-        //     headerName: "ข้อเสนอแนะ",
-        //     flex: 2,
-        //     minWidth: 400,
-        //     headerAlign: "center",
-        //     align: "left",
-        //     resizable: false,
-        // },
         {
-            field: "zone_name",
-            headerName: "แบบฟอร์ม",
-            flex:2,
-            width: 350,
+            field: "defect_name",
+            headerName: "มาตรา",
+            flex: 2,
+            minWidth: 400,
             headerAlign: "center",
-            align: "center",
+            align: "left",
             resizable: false,
             renderCell: (params) => {
-                return params.row.zone_name
-                    ?? forms.find(f => f.zone_id === params.row.zone_id)?.zone_name
-                    ?? "";
-            }
+                const match = defects.find(d => d.id === params.row.defect);
+                return match ? match.defect : "";
+            },
+        },
+        {
+            field: "illegal_suggestion",
+            headerName: "ข้อเสนอแนะ",
+            flex: 2,
+            minWidth: 400,
+            headerAlign: "center",
+            align: "left",
+            resizable: false,
         },
         {
             field: "actions",
@@ -260,7 +255,7 @@ export default function LegalRegulationPage() {
                         color="error"
                         onClick={(e) => {
                             e.stopPropagation();
-                            if (params.row.id) handleDelete(params.row.id);
+                            if (params.row.problem_id) handleDelete(params.row.problem_id);
                         }}
                     >
                         <DeleteIcon />
@@ -285,7 +280,7 @@ export default function LegalRegulationPage() {
     return (
         <div className="w-full h-full flex flex-col bg-gray-50 justify-between">
             <div className="h-[6vh] w-full bg-white shadow-md flex items-center justify-between px-4 text-black font-semibold rounded-lg">
-                ข้อบังคับกฎหมาย
+                รายการปัญหา
                 <div className="flex gap-2 items-center">
                     <TextField
                         size="small"
@@ -314,57 +309,64 @@ export default function LegalRegulationPage() {
                     initialState={{ pagination: { paginationModel: { pageSize: 15, page: 0 } } }}
                     pageSizeOptions={[15, 20, 30]}
                     disableRowSelectionOnClick
-                    getRowId={(row) => row.id ?? row.defect}
+                    getRowId={(row) => row.problem_id ?? row.defect}
                 />
             </div>
             {/* Dialog Popup */}
             <Dialog open={openEdit} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
                 <DialogTitle>
-                    {formData.defect ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}
+                    {formData.problem_id ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}
                 </DialogTitle>
                 <DialogContent dividers>
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <Box sx={{ display: "flex", gap: 2 }}>
+                            <TextField
+                                size="small"
+                                label="ปัญหา"
+                                fullWidth
+                                required
+                                value={formData.problem_name}
+                                onChange={(e) => setFormData({ ...formData, problem_name: e.target.value })}
+                                error={error && !formData.problem_name}
+                            />
+                        </Box>
+
                         <Box mt={1}>
                             <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
-                                แบบฟอร์ม
+                                ข้อกฎหมาย
                             </label>
 
                             <Select menuPlacement="auto"
-                                options={forms.map(p => ({
-                                    value: p.zone_id,
-                                    label: p.zone_name || p.zone_id,
+                                options={defects.map(p => ({
+                                    value: p.id,
+                                    label: p.defect,
                                 }))}
                                 value={
-                                    forms
+                                    defects
                                         .map(p => ({
-                                            value: p.zone_id,
-                                            label: p.zone_name || p.zone_id,
+                                            value: p.id,
+                                            label: p.defect,
                                         }))
-                                        .find(opt => opt.value === formData.zone_id) || null
+                                        .find(opt => opt.value === formData.defect) || null
                                 }
                                 onChange={(selected) =>
                                     setFormData({
                                         ...formData,
-                                        zone_id: selected?.value || "",
-                                        zone_name: selected?.label || undefined,
+                                        defect: selected?.value || null,
+                                        defect_name: selected?.label || undefined,
                                     })
                                 }
-                                placeholder="-- เลือกแบบฟอร์ม --"
+                                placeholder="-- เลือกข้อกฎหมาย --"
                                 isClearable
                                 menuPortalTarget={typeof window !== "undefined" ? document.body : null}
                                 styles={{
                                     control: (base, state) => ({
                                         ...base,
                                         backgroundColor: "#fff",
-                                        borderColor:
-                                            error && !formData.zone_id
-                                                ? "#d32f2f" // 🔴 สีแดงเมื่อ error
-                                                : state.isFocused
-                                                    ? "#3b82f6"
-                                                    : "#d1d5db",
+                                        borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
                                         boxShadow: "none",
                                         "&:hover": {
-                                            borderColor: error && !formData.zone_id ? "#d32f2f" : "#9ca3af",
+                                            borderColor: state.isFocused ? "#3b82f6" : "#9ca3af",
                                         },
                                     }),
                                     menu: (base) => ({
@@ -399,35 +401,20 @@ export default function LegalRegulationPage() {
                                 }}
                             />
                         </Box>
-
-                        {/* ข้อที่ + ประเภท */}
-                        <Box sx={{ display: "flex", gap: 2 }}>
+                        <Box mt={1}>
                             <TextField
                                 size="small"
-                                label="ข้อกฎหมาย"
+                                label="ข้อเสนอแนะเพิ่มเติม"
                                 fullWidth
-                                required
-                                value={formData.defect}
-                                onChange={(e) => setFormData({ ...formData, defect: e.target.value })}
-                                error={error && !formData.defect}
+                                multiline
+                                minRows={3}
+                                value={formData.illegal_suggestion || ""}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, illegal_suggestion: e.target.value })
+                                }
+                                error={error && !!formData.defect && !formData.illegal_suggestion}
                             />
                         </Box>
-
-                        {/* ข้อเสนอแนะผิดกฏหมาย */}
-                        {/* <TextField
-                            label="ข้อเสนอแนะผิดกฏหมาย"
-                            fullWidth
-                            multiline
-                            value={formData.illegal_suggestion}
-                            onChange={(e) => setFormData({ ...formData, illegal_suggestion: e.target.value })}
-                            sx={{
-                                "& .MuiInputBase-inputMultiline": {
-                                    height: 100,
-                                    overflowY: "auto",
-                                },
-                                "& textarea": { resize: "none" },
-                            }}
-                        /> */}
                     </Box>
                 </DialogContent>
                 <DialogActions>

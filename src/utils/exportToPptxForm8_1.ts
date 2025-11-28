@@ -1,18 +1,28 @@
 import { showLoading } from "@/lib/loading";
 import { showAlert } from "@/lib/fetcher";
+<<<<<<< HEAD
 import { buildRemoteUrl } from "@/utils/excelShared";
 import expressionParser from "angular-expressions";
+=======
+import { buildRemoteUrl } from "@/components/check-form/forms/form1-8/form8-1/UploadUtils";
+>>>>>>> 39120d519f1c83e3d5bfdcb59f1dbc611d2d9fff
 import type {
   Form8_1Data,
   Form8_1Plan,
   Form8_1General,
+<<<<<<< HEAD
   Form8_1Photos,
   PhotoItem,
+=======
+  PhotoItem,
+  Form8_1Photos,
+>>>>>>> 39120d519f1c83e3d5bfdcb59f1dbc611d2d9fff
   Section3Item,
 } from "@/components/check-form/forms/form1-8/form8-1/types";
 
 type AnyObj = Record<string, any>;
 
+<<<<<<< HEAD
 // Custom parser for Docxtemplater that handles both:
 // - Simple tags like {{12p1}}, {{reportYear}}
 // - Nested tags like {{report.year}}, {{general.address}}
@@ -121,10 +131,16 @@ const toPhotoText = (p?: PhotoItem | string | null | unknown, fallbackText = NO_
     return extractFilename(filename);
   }
   return fallbackText;
+=======
+const toUrl = (p?: PhotoItem | null) => {
+  if (!p?.url) return "";
+  return /^https?:\/\//i.test(p.url) ? p.url : buildRemoteUrl(p.url);
+>>>>>>> 39120d519f1c83e3d5bfdcb59f1dbc611d2d9fff
 };
 
 const mapPhotos = (photos?: Form8_1Photos) => {
   const p = photos || {};
+<<<<<<< HEAD
   // Debug: log raw photos structure
   console.log("[mapPhotos] Raw photos input:", JSON.stringify(p, null, 2));
   console.log("[mapPhotos] coverPhoto:", p.coverPhoto);
@@ -164,6 +180,20 @@ const mapPhotoFilenames = (photos?: Form8_1Photos) => {
     setB4Img: toPhotoFilename(p.setBPhotos?.[3]),
     setB5Img: toPhotoFilename(p.setBPhotos?.[4]),
     setB6Img: toPhotoFilename(p.setBPhotos?.[5]),
+=======
+  return {
+    header: toUrl((p as AnyObj).headerImage),
+    cover: toUrl(p.coverPhoto),
+    signMain: toUrl(p.signMainPhoto),
+    setA1: toUrl(p.setAPhotos?.[0]),
+    setA2: toUrl(p.setAPhotos?.[1]),
+    setB1: toUrl(p.setBPhotos?.[0]),
+    setB2: toUrl(p.setBPhotos?.[1]),
+    setB3: toUrl(p.setBPhotos?.[2]),
+    setB4: toUrl(p.setBPhotos?.[3]),
+    setB5: toUrl(p.setBPhotos?.[4]),
+    setB6: toUrl(p.setBPhotos?.[5]),
+>>>>>>> 39120d519f1c83e3d5bfdcb59f1dbc611d2d9fff
   };
 };
 
@@ -194,17 +224,27 @@ const mapShortCheckboxes = (inspect: Form8_1Data["inspect"]) => {
   const out: AnyObj = {};
   rows.forEach((r, idx) => {
     const i = idx + 1;
+<<<<<<< HEAD
     out[`ch${i}`] = r?.hasChange ? "?" : " ";
     out[`nc${i}`] = r?.noChange ? "?" : " ";
     out[`note${i}`] = r?.note ?? r?.changeDetailNote ?? "";
     out[`ok${i}`] = r?.inspectorOpinion === "canUse" ? "?" : " ";
     out[`ng${i}`] = r?.inspectorOpinion === "cannotUse" ? "?" : " ";
     out[`na${i}`] = !r?.inspectorOpinion ? "?" : " ";
+=======
+    out[`ch${i}`] = r?.hasChange ? "?" : "";
+    out[`nc${i}`] = r?.noChange ? "?" : "";
+    out[`note${i}`] = r?.note ?? r?.changeDetailNote ?? "";
+    out[`ok${i}`] = r?.inspectorOpinion === "canUse" ? "?" : "";
+    out[`ng${i}`] = r?.inspectorOpinion === "cannotUse" ? "?" : "";
+    out[`na${i}`] = !r?.inspectorOpinion ? "?" : "";
+>>>>>>> 39120d519f1c83e3d5bfdcb59f1dbc611d2d9fff
     out[`other${i}`] = (r as AnyObj)?.otherNote ?? "";
   });
   return out;
 };
 
+<<<<<<< HEAD
 const mapMatrix = (rows: AnyObj[] | Record<string, AnyObj> | undefined, prefix: string, maxRows = 6) => {
   // รองรับทั้ง Array และ Record โดยแปลงเป็น Array ก่อน
   let arr: AnyObj[];
@@ -919,6 +959,19 @@ const buildDataContext = (form: Form8_1Data): AnyObj => {
     // Location image filenames for image module
     mapImg: mapFilename,
     layoutImg: layoutFilename,
+=======
+const buildDataContext = (form: Form8_1Data): AnyObj => {
+  const photos = mapPhotos(form.photos);
+  const location = {
+    map: buildRemoteUrl(form.location?.mapImageFilename || ""),
+    layout: buildRemoteUrl(form.location?.layoutImageFilename || ""),
+    coordinate: form.location?.coordinate || {},
+  };
+  const tick = (v?: boolean | null, yes = true) => (v === yes ? "?" : "");
+  return {
+    ...form,
+    photos,
+>>>>>>> 39120d519f1c83e3d5bfdcb59f1dbc611d2d9fff
     location,
     ...mapGeneralShort(form.general),
     ...mapShortCheckboxes(form.inspect),
@@ -939,6 +992,7 @@ const buildDataContext = (form: Form8_1Data): AnyObj => {
     g4: photos.setB4,
     g5: photos.setB5,
     g6: photos.setB6,
+<<<<<<< HEAD
     // PPTX template placeholders (cover page / header)
     // ใช้ prefix 10 จากไฟล์ Form8_1_Report_1_0.tsx ป้องกันชนกับส่วนอื่น
     ["10year"]: form.report?.year ?? "",
@@ -1280,23 +1334,38 @@ interface ImageMappingData {
   images: Record<string, { filename: string; description: string }>;
 }
 
+=======
+  };
+};
+
+>>>>>>> 39120d519f1c83e3d5bfdcb59f1dbc611d2d9fff
 const fetchTemplate = async () => {
   // พยายามโหลดจาก API ก่อน แล้ว fallback ไป path public/templates
   let buf: ArrayBuffer | null = null;
   try {
+<<<<<<< HEAD
     const res = await fetch(`/api/export/pptx/template/get?name=${encodeURIComponent(TEMPLATE_FILENAME)}`);
+=======
+    const res = await fetch(`/api/export/pptx/template/get?name=${encodeURIComponent("Form1-8.1.pptx")}`);
+>>>>>>> 39120d519f1c83e3d5bfdcb59f1dbc611d2d9fff
     if (res.ok) buf = await res.arrayBuffer();
   } catch (err) {
     console.warn("load template from api failed", err);
   }
   if (!buf) {
+<<<<<<< HEAD
     const res = await fetch(`/templates/${TEMPLATE_FILENAME}`);
     if (!res.ok) throw new Error(`ไม่พบไฟล์เทมเพลต ${TEMPLATE_FILENAME}`);
+=======
+    const res = await fetch("/templates/Form1-8.1.pptx");
+    if (!res.ok) throw new Error("ไม่พบไฟล์เทมเพลต Form1-8.1.pptx");
+>>>>>>> 39120d519f1c83e3d5bfdcb59f1dbc611d2d9fff
     buf = await res.arrayBuffer();
   }
   return buf;
 };
 
+<<<<<<< HEAD
 // Create image module for docxtemplater
 // Uses {%placeholder} syntax to embed images
 const getImageModule = async () => {
@@ -1584,6 +1653,32 @@ const replaceTextWithImage = (
 // Escape special regex characters
 const escapeRegExp = (str: string): string => {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+=======
+const getImageModule = async () => {
+  const ImageModule = (await import("docxtemplater-image-module-free")).default as any;
+  return new ImageModule({
+    centered: false,
+    fileType: "pptx",
+    getImage: async (tag: any) => {
+      if (!tag) return null;
+      let url = String(tag);
+      // ✅ รองรับกรณีเป็น path ภายใน
+      if (!/^https?:\/\//i.test(url)) {
+        url = buildRemoteUrl(url);
+      }
+
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`Failed to fetch image: ${url}`);
+        return await resp.arrayBuffer();
+      } catch (err) {
+        console.warn("getImage failed for", url, err);
+        return null;
+      }
+    },
+    getSize: () => [640, 360],
+  });
+>>>>>>> 39120d519f1c83e3d5bfdcb59f1dbc611d2d9fff
 };
 
 export async function exportToPptxForm8_1(form: Partial<Form8_1Data> | null | undefined) {
@@ -1593,6 +1688,7 @@ export async function exportToPptxForm8_1(form: Partial<Form8_1Data> | null | un
   }
   showLoading(true);
   try {
+<<<<<<< HEAD
     console.log("[exportToPptxForm8_1] Form data received:", {
       hasGeneral: !!form.general,
       hasReport: !!form.report,
@@ -1617,10 +1713,20 @@ export async function exportToPptxForm8_1(form: Partial<Form8_1Data> | null | un
     const zip = new PizZip(templateBuf);
     const modules: any[] = [];
     
+=======
+    const templateBuf = await fetchTemplate();
+    const [{ default: PizZip }, { default: Docxtemplater }] = await Promise.all([
+      import("pizzip"),
+      import("docxtemplater"),
+    ]);
+    const imageModule = await getImageModule();
+    const zip = new PizZip(templateBuf);
+>>>>>>> 39120d519f1c83e3d5bfdcb59f1dbc611d2d9fff
     const doc = new Docxtemplater(zip, {
       paragraphLoop: true,
       linebreaks: true,
       delimiters: { start: "{{", end: "}}" },
+<<<<<<< HEAD
       modules,
       parser: angularParser,
       // Return empty string for undefined placeholders instead of "undefined"
@@ -1721,10 +1827,20 @@ export async function exportToPptxForm8_1(form: Partial<Form8_1Data> | null | un
     }
 
     const blob = renderedZip.generate({
+=======
+      modules: [imageModule],
+    });
+
+    const dataCtx = buildDataContext(form as Form8_1Data);
+    doc.render(dataCtx);
+
+    const blob = doc.getZip().generate({
+>>>>>>> 39120d519f1c83e3d5bfdcb59f1dbc611d2d9fff
       type: "blob",
       mimeType:
         "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     });
+<<<<<<< HEAD
     console.log("[exportToPptxForm8_1] Blob generated, size:", blob.size, "bytes");
     
     if (!blob || blob.size === 0) {
@@ -1734,6 +1850,9 @@ export async function exportToPptxForm8_1(form: Partial<Form8_1Data> | null | un
     const fileName = `Form8_1_${form.report?.signTitle ?? "report"}_${Date.now()}.pptx`;
     console.log("[exportToPptxForm8_1] Downloading as:", fileName);
     
+=======
+    const fileName = `Form8_1_${form.report?.signTitle ?? "report"}_${Date.now()}.pptx`;
+>>>>>>> 39120d519f1c83e3d5bfdcb59f1dbc611d2d9fff
     // trigger download (anchor), fallback file-saver/msSaveOrOpenBlob
     let downloaded = false;
     try {
@@ -1741,6 +1860,7 @@ export async function exportToPptxForm8_1(form: Partial<Form8_1Data> | null | un
       const a = document.createElement("a");
       a.href = url;
       a.download = fileName;
+<<<<<<< HEAD
       a.style.display = "none";
       document.body.appendChild(a);
       a.click();
@@ -1749,6 +1869,14 @@ export async function exportToPptxForm8_1(form: Partial<Form8_1Data> | null | un
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       }, 100);
+=======
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 0);
+>>>>>>> 39120d519f1c83e3d5bfdcb59f1dbc611d2d9fff
       downloaded = true;
     } catch (err) {
       console.warn("anchor download failed", err);
@@ -1778,6 +1906,7 @@ export async function exportToPptxForm8_1(form: Partial<Form8_1Data> | null | un
   }
 }
 
+<<<<<<< HEAD
 /**
  * Export เฉพาะตาราง ข้อ 8 และ ข้อ 9 (ใช้ PptxGenJS)
  */
@@ -2075,3 +2204,5 @@ function extractPhotoUrl(photo: PhotoItem | string | null | undefined): string |
 
 
 
+=======
+>>>>>>> 39120d519f1c83e3d5bfdcb59f1dbc611d2d9fff
