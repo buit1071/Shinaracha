@@ -227,7 +227,7 @@ export default function LegalRegulationPage() {
         {
             field: "zone_name",
             headerName: "แบบฟอร์ม",
-            flex:2,
+            flex: 2,
             width: 350,
             headerAlign: "center",
             align: "center",
@@ -330,10 +330,11 @@ export default function LegalRegulationPage() {
                             </label>
 
                             <Select menuPlacement="auto"
-                                options={forms.map(p => ({
-                                    value: p.zone_id,
-                                    label: p.zone_name || p.zone_id,
-                                }))}
+                                options={forms.filter(p => p.is_active === 1)
+                                    .map(p => ({
+                                        value: p.zone_id,
+                                        label: p.zone_name || p.zone_id,
+                                    }))}
                                 value={
                                     forms
                                         .map(p => ({

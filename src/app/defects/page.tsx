@@ -117,7 +117,7 @@ export default function DefectsPage() {
     };
 
     const handleSave = async () => {
-        if (!formData.defect) {
+        if (!formData.problem_name) {
             setError(true);
             return;
         }
@@ -412,7 +412,7 @@ export default function DefectsPage() {
                                 onChange={(e) =>
                                     setFormData({ ...formData, illegal_suggestion: e.target.value })
                                 }
-                                error={error && !!formData.defect && !formData.illegal_suggestion}
+                                error={error && !formData.illegal_suggestion}
                             />
                         </Box>
                     </Box>

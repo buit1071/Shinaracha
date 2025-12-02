@@ -148,25 +148,25 @@ export async function POST(req: Request) {
             });
         }
 
-        if (fn === "inspectItems") {
-            if (!body.inspect_id) {
-                return NextResponse.json(
-                    { success: false, message: "กรุณาระบุ inspect_id" },
-                    { status: 400 }
-                );
-            }
-            const rows = await query(
-                `
-        SELECT inspect_item_id, inspect_id, inspect_item_name, is_active,
-               created_by, created_date, updated_by, updated_date
-        FROM data_inspect_items
-        WHERE inspect_id = ?
-        ORDER BY created_date DESC
-        `,
-                [body.inspect_id]
-            );
-            return NextResponse.json({ success: true, data: rows });
-        }
+        // if (fn === "inspectItems") {
+        //     if (!body.inspect_id) {
+        //         return NextResponse.json(
+        //             { success: false, message: "กรุณาระบุ inspect_id" },
+        //             { status: 400 }
+        //         );
+        //     }
+        //     const rows = await query(
+        //         `
+        // SELECT inspect_item_id, inspect_id, inspect_item_name, is_active,
+        //        created_by, created_date, updated_by, updated_date
+        // FROM data_inspect_items
+        // WHERE inspect_id = ?
+        // ORDER BY created_date DESC
+        // `,
+        //         [body.inspect_id]
+        //     );
+        //     return NextResponse.json({ success: true, data: rows });
+        // }
 
         // ไม่รู้จัก function
         return NextResponse.json(

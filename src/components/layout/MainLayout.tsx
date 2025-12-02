@@ -32,7 +32,7 @@ import {
     MapPinIcon,
     Squares2X2Icon,
     ScaleIcon,
-    ExclamationTriangleIcon  
+    ExclamationTriangleIcon
 } from "@heroicons/react/24/outline";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -44,6 +44,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const avatarUrl = user?.image_url ? `/images/profile/${user.image_url}` : null;
+    const isShinaracha = user?.company_id === "COM-27162740";
 
     useEffect(() => {
         showLoading(false);
@@ -100,11 +101,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
                     <div className="flex items-center gap-2">
                         <img
-                            src="/images/NewLOGOSF.webp"
+                            src={
+                                isShinaracha
+                                    ? "/images/Logo_Shinaracha.webp"
+                                    : "/images/Logo_Profire.png"
+                            }
                             alt="Logo"
                             className="w-8 h-8"
                         />
-                        <span className="font-semibold text-lg">Shinaracha</span>
+                        <span className="font-semibold text-lg">
+                            {isShinaracha ? "Shinaracha" : "Profire Inspector"}
+                        </span>
                     </div>
 
                     {avatarUrl ? (
@@ -143,11 +150,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     {!isCollapsed && (
                         <>
                             <img
-                                src="/images/NewLOGOSF.webp"
+                                src={
+                                    isShinaracha
+                                        ? "/images/Logo_Shinaracha.webp"
+                                        : "/images/Logo_Profire.png"
+                                }
                                 alt="Logo"
-                                className="w-[50px] h-[50px]"
+                                className="w-[80px] h-[70px]"
                             />
-                            <span className="text-lg font-semibold mt-2">Shinaracha</span>
+                            <span className="text-lg font-semibold mt-2">
+                                {isShinaracha ? "Shinaracha" : "Profire Inspector"}
+                            </span>
                         </>
                     )}
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">

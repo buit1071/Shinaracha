@@ -1224,7 +1224,7 @@ export default function EquipmentPage() {
                                     การตรวจ
                                 </label>
                                 <Select menuPlacement="auto"
-                                    options={zones.map(c => ({ value: c.zone_id, label: c.zone_name }))}
+                                    options={zones.filter(p => p.is_active === 1).map(c => ({ value: c.zone_id, label: c.zone_name }))}
                                     value={zones.map(c => ({ value: c.zone_id, label: c.zone_name }))
                                         .find(opt => opt.value === formData.zone_id) || null}
                                     onChange={(selected: SingleValue<Option>) =>

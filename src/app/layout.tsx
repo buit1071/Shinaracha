@@ -6,9 +6,9 @@ export const metadata: Metadata = {
   title: "Shinaracha",
   description: "",
   icons: {
-    icon: "/images/NewLOGOSF.webp",
-    shortcut: "/images/NewLOGOSF.webp",
-    apple: "/images/NewLOGOSF.webp",
+    icon: "/images/Logo_Shinaracha.webp",
+    shortcut: "/images/Logo_Shinaracha.webp",
+    apple: "/images/Logo_Shinaracha.webp",
   },
 };
 

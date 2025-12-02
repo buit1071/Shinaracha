@@ -35,7 +35,7 @@ import { SectionFiveForm } from "@/components/check-form/forms/form1-3/SectionFi
 /** โหลดรูปจาก public แล้ว "บังคับแปลง" เป็น PNG -> Uint8Array ที่ Word รองรับ */
 async function loadAsPngBytes(url: string): Promise<Uint8Array> {
     const img = new Image();
-    img.src = url; // เช่น "/images/NewLOGOSF.webp" หรือ ".png"
+    img.src = url; // เช่น "/images/Logo_Shinaracha.webp" หรือ ".png"
     img.crossOrigin = "anonymous";
     await img.decode();
 
@@ -1941,7 +1941,7 @@ export async function exportToDocx(formData: FormDataLite) {
     const header = await buildCompanyHeader({
         companyTh: "บริษัท ชินรัช โพรเทคเตอร์ จำกัด",
         companyEn: "Shinaracha Protector Co., Ltd.",
-        logoUrl: "/images/NewLOGOSF.webp",
+        logoUrl: "/images/Logo_Shinaracha.webp",
         logoSize: { width: 48, height: 48 },
     });
 
