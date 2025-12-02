@@ -23,7 +23,6 @@ import {
   Switch
 } from "@mui/material";
 import { DataZonesRow } from "@/interfaces/master";
-import ZoneDetail from "@/components/inspection-form/ZoneDetail";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 type Props = {
@@ -312,28 +311,23 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
 
   return (
     <div className="w-full h-[94vh] flex flex-col bg-gray-50">
-      {view?.type === "detail" ? (
-        <ZoneDetail serviceId={serviceId} zoneId={view.id} onBack={backToList} />
-      ) : (
-        <>
-          {/* Header */}
-          <div className="h-[6vh] flex items-center justify-between px-4 py-2 bg-white shadow-md mb-2 rounded-lg">
-            <div className="flex items-center">
-              <IconButton onClick={onBack} color="primary">
-                <ArrowBackIcon />
-              </IconButton>
-              <h2 className="text-xl font-bold text-gray-800 ml-5">
-                บริการ : <span className="text-blue-900">{serviceName}</span>
-              </h2>
-            </div>
-            <div className="flex gap-2 items-center">
-              <TextField
-                size="small"
-                placeholder="ค้นหา..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-              />
-              {/* <Button
+      <div className="h-[6vh] flex items-center justify-between px-4 py-2 bg-white shadow-md mb-2 rounded-lg">
+        <div className="flex items-center">
+          <IconButton onClick={onBack} color="primary">
+            <ArrowBackIcon />
+          </IconButton>
+          <h2 className="text-xl font-bold text-gray-800 ml-5">
+            บริการ : <span className="text-blue-900">{serviceName}</span>
+          </h2>
+        </div>
+        <div className="flex gap-2 items-center">
+          <TextField
+            size="small"
+            placeholder="ค้นหา..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+          {/* <Button
                 variant="contained"
                 color="primary"
                 startIcon={<AddIcon />}
@@ -341,68 +335,67 @@ export default function ServiceDetail({ serviceId, onBack }: Props) {
               >
                 เพิ่มข้อมูล
               </Button> */}
-            </div>
-          </div>
+        </div>
+      </div>
 
-          {/* Content */}
-          <div className="flex-1">
-            <DataGrid
-              sx={{
-                width: "100%",
-                height: "100%",
-                borderRadius: "0.5rem",
-                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": {
-                  outline: "none",
-                },
-              }}
-              rows={filteredRows}
-              columns={columns.map((col) => ({ ...col, resizable: false }))}
-              initialState={{
-                pagination: { paginationModel: { pageSize: 10, page: 0 } },
-              }}
-              pageSizeOptions={[5, 10, 25]}
-              disableRowSelectionOnClick
-              getRowId={(row) => row.zone_id}
+      {/* Content */}
+      <div className="flex-1">
+        <DataGrid
+          sx={{
+            width: "100%",
+            height: "100%",
+            borderRadius: "0.5rem",
+            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+            "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": {
+              outline: "none",
+            },
+          }}
+          rows={filteredRows}
+          columns={columns.map((col) => ({ ...col, resizable: false }))}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 10, page: 0 } },
+          }}
+          pageSizeOptions={[5, 10, 25]}
+          disableRowSelectionOnClick
+          getRowId={(row) => row.zone_id}
+        />
+      </div>
+      {/* Dialog Popup */}
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
+        <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
+        <DialogContent dividers>
+          {isEdit && (
+            <TextField
+              size="small"
+              margin="dense"
+              label="Zone ID"
+              fullWidth
+              value={formData.zone_id}
+              disabled
             />
-          </div>
-          {/* Dialog Popup */}
-          <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
-            <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
-            <DialogContent dividers>
-              {isEdit && (
-                <TextField
-                  size="small"
-                  margin="dense"
-                  label="Zone ID"
-                  fullWidth
-                  value={formData.zone_id}
-                  disabled
-                />
-              )}
+          )}
 
-              <TextField
-                size="small"
-                margin="dense"
-                label="ชื่อฟอร์ม"
-                fullWidth
-                required
-                value={formData.zone_name}
-                onChange={(e) => {
-                  setFormData({ ...formData, zone_name: e.target.value });
-                  if (error) setError(false);
-                }}
-                error={error && !formData.zone_name}
-              />
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleClose}>ยกเลิก</Button>
-              <Button variant="contained" color="primary" onClick={handleSave}>
-                บันทึก
-              </Button>
-            </DialogActions>
-          </Dialog></>
-      )}
+          <TextField
+            size="small"
+            margin="dense"
+            label="ชื่อฟอร์ม"
+            fullWidth
+            required
+            value={formData.zone_name}
+            onChange={(e) => {
+              setFormData({ ...formData, zone_name: e.target.value });
+              if (error) setError(false);
+            }}
+            error={error && !formData.zone_name}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>ยกเลิก</Button>
+          <Button variant="contained" color="primary" onClick={handleSave}>
+            บันทึก
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
