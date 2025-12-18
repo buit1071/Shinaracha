@@ -673,16 +673,16 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         <div className="overflow-hidden">
                             <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
                                 <SectionThreeDetails
-                                    value={formData.sectionThree ?? { section1: {}, section2: {} }}
-                                    onChange={(patch) =>
-                                        setFormData(prev => ({
-                                            ...prev,
-                                            sectionThree: {
-                                                section1: { ...(prev.sectionThree?.section1 ?? {}), ...(patch.section1 ?? {}) },
-                                                section2: { ...(prev.sectionThree?.section2 ?? {}), ...(patch.section2 ?? {}) },
-                                            },
-                                        }))
-                                    }
+                                    // value={formData.sectionThree ?? { section1: {}, section2: {} }}
+                                    // onChange={(patch) =>
+                                    //     setFormData(prev => ({
+                                    //         ...prev,
+                                    //         sectionThree: {
+                                    //             section1: { ...(prev.sectionThree?.section1 ?? {}), ...(patch.section1 ?? {}) },
+                                    //             section2: { ...(prev.sectionThree?.section2 ?? {}), ...(patch.section2 ?? {}) },
+                                    //         },
+                                    //     }))
+                                    // }
                                 />
                             </div>
                         </div>
