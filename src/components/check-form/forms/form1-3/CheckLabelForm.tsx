@@ -17,86 +17,26 @@ type Props = {
   onBack: () => void;
 };
 
+type FormRenderer = (
+  jobId: string,
+  equipment_id: string,
+  name: string,
+  onBack: () => void
+) => React.ReactNode;
+
 export default function CheckLabelForm({ formId, jobId, equipment_id, name, onBack }: Props) {
   // FORM_MAP เปลี่ยนจาก ReactNode เป็น function รับ props
-  const FORM_MAP: Record<
-    string,
-    (
-      jobId: string,
-      equipment_id: string,
-      name: string,
-      onBack: () => void
-    ) => ReactNode
-  > = {
-    "FORM-67554643": (
-      jobId: string,
-      equipment_id: string,
-      name: string,
-      onBack: () => void
-    ) => (
-      <Form1_3
-        jobId={jobId}
-        equipment_id={equipment_id}
-        name={name}
-        onBack={onBack}
-      />
-    ),
 
-    "FORM-71543253": (
-      jobId: string,
-      equipment_id: string,
-      name: string,
-      onBack: () => void
-    ) => (
-      <Form8_1
-        jobId={jobId}
-        equipment_id={equipment_id}
-        name={name}
-        onBack={onBack}
-      />
-    ),
+  const renderForm1_3: FormRenderer = (jobId, equipment_id, name, onBack) => (
+    <Form1_3 jobId={jobId} equipment_id={equipment_id} name={name} onBack={onBack} />
+  );
 
-    "FORM-82703483": (
-      jobId: string,
-      equipment_id: string,
-      name: string,
-      onBack: () => void
-    ) => (
-      <Form8_2
-        jobId={jobId}
-        equipment_id={equipment_id}
-        name={name}
-        onBack={onBack}
-      />
-    ),
-
-    "FORM-61240890": (
-      jobId: string,
-      equipment_id: string,
-      name: string,
-      onBack: () => void
-    ) => (
-      <Form8_3
-        jobId={jobId}
-        equipment_id={equipment_id}
-        name={name}
-        onBack={onBack}
-      />
-    ),
-
-    "FORM-62864268": (
-      jobId: string,
-      equipment_id: string,
-      name: string,
-      onBack: () => void
-    ) => (
-      <Form1_9
-        jobId={jobId}
-        equipment_id={equipment_id}
-        name={name}
-        onBack={onBack}
-      />
-    ),
+  const FORM_MAP: Record<string, FormRenderer> = {
+    //ป้าย
+    "FORM-53242768": renderForm1_3,
+    "FORM-35898338": renderForm1_3,
+    "FORM-11057862": renderForm1_3,
+    //อื่นๆ ต่อด้านล่าง
   };
 
   return (
@@ -112,7 +52,7 @@ export default function CheckLabelForm({ formId, jobId, equipment_id, name, onBa
       <div className="h-full w-full overflow-auto">
         {/* พื้นที่ A4 แนวตั้ง */}
         <div className="w-full shadow-sm border bg-white">
-          {FORM_MAP[formId]?.(jobId, equipment_id, name, onBack) ?? null}
+          {FORM_MAP[formId]?.(jobId, equipment_id, name, onBack)}
         </div>
       </div>
     </>

@@ -195,18 +195,28 @@ function getDaysInMonthThai(
 
 export type SectionTwoForm = {
     // ===== เดิม (ฟิลด์ที่ผู้ใช้กรอกเอง) =====
-    permitDay?: string; permitMonth?: string; permitYear?: string;
+    permitDay?: string; permitMonth?: string; permitYear?: string; signYear?: string;
     inspectDay2?: string; inspectMonth2?: string; inspectYear2?: string;
     inspectDay3?: string; inspectMonth3?: string; inspectYear3?: string;
-    hasOriginalPlan?: boolean; noOriginalPlan?: boolean; noPermitInfo?: boolean; noOld?: boolean;
+    hasOriginalPlan?: boolean; noOriginalPlan?: boolean; noPermitInfo?: boolean; noPermitInfo2?: boolean; hasPermitInfo?: boolean; noOld?: boolean;
     signAge?: string;
-    mapSketch?: string | null; shapeSketch?: string | null;
+    longitude?: string;
+    latitude?: string;
+    mapSketch?: string | null; mapSketch1?: string | null; shapeSketch?: string | null; shapeSketch1?: string | null;
     photosFront?: string | null; photosSide?: string | null; photosBase?: string | null;
+    photosFront1?: string | null; photosSide1?: string | null; photosBase1?: string | null;
     mapSketchPreview?: string | null;
+    mapSketchPreview1?: string | null;
     shapeSketchPreview?: string | null;
+    shapeSketchPreview1?: string | null;
     photosFrontPreview?: string | null;
     photosSidePreview?: string | null;
     photosBasePreview?: string | null;
+    signWidthM?: string | null;
+    signHeightM?: string | null;
+    signSides?: string | null;
+    signAreaMore?: string | null;
+    structureHeightMore?: string | null;
     recorder2?: string; recorder3?: string;
     // 5.2
     typeGround?: boolean; typeRooftop?: boolean; typeOnRoof?: boolean; typeOnBuilding?: boolean;
@@ -276,6 +286,10 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
     const [permitDay, setPermitDay] = React.useState(value?.permitDay ?? "");
     const [permitMonth, setPermitMonth] = React.useState(value?.permitMonth ?? "");
     const [permitYear, setPermitYear] = React.useState(value?.permitYear ?? "");
+    const [signYear, setSignYear] = React.useState<string>(value?.signYear ?? "");
+    const [hasPermitInfo, setHasPermitInfo] = React.useState<boolean>(value?.hasPermitInfo ?? false);
+    const [latitude, setLatitude] = React.useState<string>(value?.latitude ?? "");
+    const [longitude, setLongitude] = React.useState<string>(value?.longitude ?? "");
 
     const [inspectDay2, setInspectDay2] = React.useState(value?.inspectDay2 ?? "");
     const [inspectMonth2, setInspectMonth2] = React.useState(value?.inspectMonth2 ?? "");
@@ -288,14 +302,25 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
     const [hasOriginalPlan, setHasOriginalPlan] = React.useState<boolean>(value?.hasOriginalPlan ?? false);
     const [noOriginalPlan, setNoOriginalPlan] = React.useState<boolean>(value?.noOriginalPlan ?? false);
     const [noPermitInfo, setNoPermitInfo] = React.useState<boolean>(value?.noPermitInfo ?? false);
+    const [noPermitInfo2, setNoPermitInfo2] = React.useState<boolean>(value?.noPermitInfo2 ?? false);
     const [noOld, setNoOld] = React.useState<boolean>(value?.noOld ?? false);
     const [signAge, setSignAge] = React.useState<string>(value?.signAge ?? "");
 
     const [mapSketch, setMapSketch] = React.useState<string | null>(value?.mapSketch ?? null);
+    const [mapSketch1, setMapSketch1] = React.useState<string | null>(value?.mapSketch ?? null);
     const [mapSketchPreview, setMapSketchPreview] = React.useState<string | null>(null);
+    const [mapSketchPreview1, setMapSketchPreview1] = React.useState<string | null>(null);
 
     const [shapeSketch, setShapeSketch] = React.useState<string | null>(value?.shapeSketch ?? null);
+    const [shapeSketch1, setShapeSketch1] = React.useState<string | null>(value?.shapeSketch1 ?? null);
     const [shapeSketchPreview, setShapeSketchPreview] = React.useState<string | null>(null);
+    const [shapeSketchPreview1, setShapeSketchPreview1] = React.useState<string | null>(null);
+    const [signWidthM, setSignWidthM] = React.useState(value?.signWidthM ?? "");
+    const [signHeightM, setSignHeightM] = React.useState(value?.signHeightM ?? "");
+    const [signSides, setSignSides] = React.useState(value?.signSides ?? "");
+
+    const [signAreaMore, setSignAreaMore] = React.useState(value?.signAreaMore ?? ""); // เช่น "25" หรือ "50"
+    const [structureHeightMore, setStructureHeightMore] = React.useState(value?.structureHeightMore ?? ""); // เช่น "15"
 
     const [photosFront, setPhotosFront] = React.useState<string | null>(value?.photosFront ?? null);
     const [photosFrontPreview, setPhotosFrontPreview] = React.useState<string | null>(null);
@@ -303,6 +328,12 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
     const [photosSidePreview, setPhotosSidePreview] = React.useState<string | null>(null);
     const [photosBase, setPhotosBase] = React.useState<string | null>(value?.photosBase ?? null);
     const [photosBasePreview, setPhotosBasePreview] = React.useState<string | null>(null);
+    const [photosFront1, setPhotosFront1] = React.useState<string | null>(value?.photosFront1 ?? null);
+    const [photosFrontPreview1, setPhotosFrontPreview1] = React.useState<string | null>(null);
+    const [photosSide1, setPhotosSide1] = React.useState<string | null>(value?.photosSide1 ?? null);
+    const [photosSidePreview1, setPhotosSidePreview1] = React.useState<string | null>(null);
+    const [photosBase1, setPhotosBase1] = React.useState<string | null>(value?.photosBase1 ?? null);
+    const [photosBasePreview1, setPhotosBasePreview1] = React.useState<string | null>(null);
     const [recorder2, setRecorder2] = React.useState<string>(value?.recorder2 ?? "");
     const [recorder3, setRecorder3] = React.useState<string>(value?.recorder3 ?? "");
 
@@ -672,13 +703,12 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
     return (
         <div className="text-black leading-7 space-y-8 p-2">
             <p className="text-sm text-gray-700">
-                ข้อมูลทั่วไปของป้ายที่ผู้ตรวจสอบต้องลงบันทึกในหัวข้อต่าง ๆ และอาจเพิ่มเติมได้เพื่อให้ข้อมูลสมบูรณ์ยิ่งขึ้น
-                ในบางรายการจะต้องประสานงานกับเจ้าของป้ายและผู้ดูแลป้ายเพื่อให้ได้ข้อมูลเหล่านั้น
+                ส่วนที่ 2 เป็นข้อมูลทั่วไปของป้ายที่ผู้ตรวจสอบต้องลงบันทึกในหัวข้อต่าง ๆ และอาจเพิ่มเติมได้เพื่อให้ข้อมูลสมบูรณ์ยิ่งขึ้น ในบางรายการจะต้องประสานงานกับเจ้าของและผู้ดูแลป้ายเพื่อให้ได้ข้อมูลเหล่านั้น รายการใดที่ไม่สามารถหาข้อมูลได้ให้เว้นว่าง หรือแจ้งหมายเหตุไว้
             </p>
 
             {/* 5.1 ข้อมูลป้ายและสถานที่ตั้งป้าย */}
             <section className="space-y-4">
-                <h3 className="text-lg font-semibold">5.1 ข้อมูลป้ายและสถานที่ตั้งป้าย</h3>
+                <h3 className="text-lg font-semibold">1. ข้อมูลป้ายและสถานที่ตั้งป้าย</h3>
 
                 <div className="grid md:grid-cols-4 gap-3">
                     {/* แถว 1 */}
@@ -773,57 +803,97 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                 {/* === กล่องข้อมูลใบอนุญาต + เงื่อนไข === */}
                 <div className="rounded-md border border-gray-300 p-4 text-gray-800">
                     {/* บรรทัดหัวข้อความยาว */}
-                    <div className="text-sm">
-                        ได้รับใบอนุญาตก่อสร้างจากเจ้าพนักงานท้องถิ่น
-                        <span className="ml-1">เมื่อวันที่</span>
-                        <select
-                            className="mx-2 w-12 bg-transparent border-0 border-b border-dashed border-gray-400
-               focus:outline-none focus:ring-0 text-center cursor-pointer"
-                            value={permitDay || ""}
-                            onChange={(e) => setPermitDay(e.target.value)}
-                        >
-                            <option value="" disabled></option>
-                            {Array.from({ length: getDaysInMonthThai(permitYear, permitMonth) }, (_, i) => {
-                                const d = String(i + 1);
-                                return <option key={d} value={d}>{d}</option>;
-                            })}
-                        </select>
-                        <span>เดือน</span>
-                        <select
-                            className="mx-2 w-36 bg-transparent border-0 border-b border-dashed border-gray-400
-               focus:outline-none focus:ring-0 text-center cursor-pointer"
-                            value={permitMonth || ""}
+                    <label className="flex items-start gap-2 text-sm leading-relaxed">
+                        <input
+                            type="checkbox"
+                            className="h-4 w-4 mt-0.5"
+                            checked={hasPermitInfo}
                             onChange={(e) => {
-                                const newMonth = e.target.value;
-                                // ถ้าวันที่เดิมเกินจำนวนวันของเดือนใหม่ ให้ปรับลด
-                                const maxDay = getDaysInMonthThai(permitYear, newMonth);
-                                if (permitDay && Number(permitDay) > maxDay) setPermitDay(String(maxDay));
-                                setPermitMonth(newMonth);
+                                const checked = e.target.checked;
+                                setHasPermitInfo(checked);
+
+                                // กันข้อมูลชนกัน (มีข้อมูล vs ไม่มีข้อมูล)
+                                if (checked) setNoPermitInfo(false);
+
+                                // ถ้าเอาติ๊กออก ให้ล้างวันที่
+                                if (!checked) {
+                                    setPermitDay("");
+                                    setPermitMonth("");
+                                    setPermitYear("");
+                                }
                             }}
-                        >
-                            <option value=""></option>
-                            {THAI_MONTHS.map((m) => (
-                                <option key={m} value={m}>{m}</option>
-                            ))}
-                        </select>
-                        <span>พ.ศ.</span>
-                        <select
-                            className="ml-2 w-16 bg-transparent border-0 border-b border-dashed border-gray-400
-             focus:outline-none focus:ring-0 text-center cursor-pointer"
-                            value={permitYear || ""}
-                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                                const newYear = e.target.value;        // "2568"
-                                const maxDay = getDaysInMonthThai(newYear, permitMonth);
-                                if (permitDay && Number(permitDay) > maxDay) setPermitDay(String(maxDay));
-                                setPermitYear(newYear);                // เก็บเป็นสตริง "2568" ตรงๆ
-                            }}
-                        >
-                            <option value="" disabled></option>
-                            {YEARS.map((y) => (
-                                <option key={y} value={y}>{y}</option>
-                            ))}
-                        </select>
-                    </div>
+                        />
+
+                        <span>
+                            มีข้อมูลการได้รับใบอนุญาตก่อสร้างจากเจ้าพนักงานท้องถิ่น ได้รับใบอนุญาตก่อสร้างจากเจ้าพนักงานท้องถิ่น
+                            <span className="ml-1">เมื่อวันที่</span>
+
+                            <select
+                                className={`mx-2 w-12 bg-transparent border-0 border-b border-dashed text-center cursor-pointer
+        focus:outline-none focus:ring-0
+        ${hasPermitInfo ? "border-gray-400" : "border-gray-200 text-gray-400 cursor-not-allowed"}`}
+                                value={permitDay || ""}
+                                disabled={!hasPermitInfo}
+                                onChange={(e) => setPermitDay(e.target.value)}
+                            >
+                                <option value="" disabled></option>
+                                {Array.from({ length: getDaysInMonthThai(permitYear, permitMonth) }, (_, i) => {
+                                    const d = String(i + 1);
+                                    return (
+                                        <option key={d} value={d}>
+                                            {d}
+                                        </option>
+                                    );
+                                })}
+                            </select>
+
+                            <span>เดือน</span>
+
+                            <select
+                                className={`mx-2 w-36 bg-transparent border-0 border-b border-dashed text-center cursor-pointer
+        focus:outline-none focus:ring-0
+        ${hasPermitInfo ? "border-gray-400" : "border-gray-200 text-gray-400 cursor-not-allowed"}`}
+                                value={permitMonth || ""}
+                                disabled={!hasPermitInfo}
+                                onChange={(e) => {
+                                    const newMonth = e.target.value;
+                                    const maxDay = getDaysInMonthThai(permitYear, newMonth);
+                                    if (permitDay && Number(permitDay) > maxDay) setPermitDay(String(maxDay));
+                                    setPermitMonth(newMonth);
+                                }}
+                            >
+                                <option value=""></option>
+                                {THAI_MONTHS.map((m) => (
+                                    <option key={m} value={m}>
+                                        {m}
+                                    </option>
+                                ))}
+                            </select>
+
+                            <span>พ.ศ.</span>
+
+                            <select
+                                className={`ml-2 w-16 bg-transparent border-0 border-b border-dashed text-center cursor-pointer
+        focus:outline-none focus:ring-0
+        ${hasPermitInfo ? "border-gray-400" : "border-gray-200 text-gray-400 cursor-not-allowed"}`}
+                                value={permitYear || ""}
+                                disabled={!hasPermitInfo}
+                                onChange={(e) => {
+                                    const newYear = e.target.value;
+                                    const maxDay = getDaysInMonthThai(newYear, permitMonth);
+                                    if (permitDay && Number(permitDay) > maxDay) setPermitDay(String(maxDay));
+                                    setPermitYear(newYear);
+                                }}
+                            >
+                                <option value="" disabled></option>
+                                {YEARS.map((y) => (
+                                    <option key={y} value={y}>
+                                        {y}
+                                    </option>
+                                ))}
+                            </select>
+                        </span>
+                    </label>
 
                     {/* เช็กบ็อกซ์เรียงลงมา */}
                     <div className="mt-3 space-y-2 text-sm">
@@ -861,7 +931,7 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                         </label>
 
                         {/* อายุของป้าย (เส้นปะ) */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2 text-sm">
                             <input
                                 type="checkbox"
                                 className="h-4 w-4"
@@ -869,96 +939,108 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                                 onChange={(e) => {
                                     const v = e.target.checked;
                                     setNoOld(v);
-                                    if (!v) setSignAge("");
+                                    if (!v) {
+                                        setSignAge("");
+                                        setSignYear("");
+                                    }
                                 }}
                             />
-                            <span>อายุของป้าย</span>
+
+                            <span>ไม่มีข้อมูลการได้รับใบอนุญาตก่อสร้างจากเจ้าพนักงานท้องถิ่น อายุของป้าย</span>
+
                             <input
                                 type="text"
                                 inputMode="numeric"
                                 className={`w-20 bg-transparent border-0 border-b border-dashed text-center
-                    focus:outline-none focus:ring-0
-                    ${noOld ? 'border-gray-400' : 'border-gray-200 text-gray-400'}`}
+      focus:outline-none focus:ring-0
+      ${noOld ? "border-gray-400" : "border-gray-200 text-gray-400"}`}
                                 value={signAge}
                                 onChange={(e) => setSignAge(e.target.value.replace(/\D/g, ""))}
                                 disabled={!noOld}
                             />
-                            <span>ปี</span>
+
+                            <span>ปี (ก่อสร้างประมาณปี พ.ศ.</span>
+
+                            <select
+                                className={`w-16 bg-transparent border-0 border-b border-dashed text-center cursor-pointer
+      focus:outline-none focus:ring-0
+      ${noOld ? "border-gray-400" : "border-gray-200 text-gray-400 cursor-not-allowed"}`}
+                                value={signYear || ""}
+                                disabled={!noOld}
+                                onChange={(e) => setSignYear(e.target.value)}
+                            >
+                                <option value="" disabled></option>
+                                {YEARS.map((y) => (
+                                    <option key={y} value={y}>
+                                        {y}
+                                    </option>
+                                ))}
+                            </select>
+
+                            <span>)</span>
                         </div>
+
+                        <label className="flex items-start gap-2">
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4"
+                                checked={noPermitInfo2}
+                                onChange={(e) => setNoPermitInfo2(e.target.checked)}
+                            />
+                            <span>ป้ายไม่เข้าข่ายต้องขออนุญาตก่อสร้าง **</span>
+                        </label>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-sm">
-                    <span>วัน/เดือน/ปี ที่ตรวจสอบ</span>
-
-                    {/* วัน */}
-                    <select
-                        className="w-10 bg-transparent border-0 border-b border-dashed border-gray-400
-               focus:outline-none focus:ring-0 text-center cursor-pointer"
-                        value={inspectDay2 || ""}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setInspectDay2(e.target.value)}
-                    >
-                        <option value="" disabled></option>
-                        {Array.from({ length: getDaysInMonthThai(inspectYear2, inspectMonth2) }, (_, i) => {
-                            const d = String(i + 1);
-                            return <option key={d} value={d}>{d}</option>;
-                        })}
-                    </select>
-
-                    <span>เดือน</span>
-
-                    {/* เดือน */}
-                    <select
-                        className="w-28 bg-transparent border-0 border-b border-dashed border-gray-400
-               focus:outline-none focus:ring-0 text-center cursor-pointer"
-                        value={inspectMonth2 || ""}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                            const newMonth = e.target.value as typeof THAI_MONTHS[number] | "";
-                            const maxDay = getDaysInMonthThai(inspectYear2, newMonth);
-                            if (inspectDay2 && Number(inspectDay2) > maxDay) setInspectDay2(String(maxDay));
-                            setInspectMonth2(newMonth);
-                        }}
-                    >
-                        <option value="" disabled></option>
-                        {THAI_MONTHS.map((m) => (
-                            <option key={m} value={m}>{m}</option>
-                        ))}
-                    </select>
-
-                    <span>พ.ศ.</span>
-
-                    {/* ปี */}
-                    <select
-                        className="w-16 bg-transparent border-0 border-b border-dashed border-gray-400
-               focus:outline-none focus:ring-0 text-center cursor-pointer"
-                        value={inspectYear2 || ""}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                            const newYear = e.target.value;
-                            const maxDay = getDaysInMonthThai(newYear, inspectMonth2);
-                            if (inspectDay2 && Number(inspectDay2) > maxDay) setInspectDay2(String(maxDay));
-                            setInspectYear2(newYear);
-                        }}
-                    >
-                        <option value="" disabled></option>
-                        {YEARS.map((y) => (
-                            <option key={y} value={y}>{y}</option>
-                        ))}
-                    </select>
-
-                    <span>บันทึกโดย</span>
-                    <input
-                        type="text"
-                        className="flex-1 bg-transparent border-0 border-b border-dashed border-gray-400
-               focus:outline-none focus:ring-0 px-2"
-                        value={recorder2}
-                        onChange={(e) => setRecorder2(e.target.value)}
-                    />
-                </div>
                 <ImageField
                     label="แผนที่แสดงตำแหน่งที่ตั้งของป้ายโดยสังเขป"
                     value={mapSketchPreview} // ← ใช้ preview blob หรือ URL จริง
                     onChange={(f) =>
                         handlePickImage(f, "map", setMapSketchPreview, setMapSketch, "mapSketch")
+                    }
+                    hint="อัปโหลดภาพแผนที่โดยสังเขป"
+                />
+
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-800">
+                    <div className="flex items-center gap-2">
+                        <span className="min-w-[90px] font-semibold">LATITUDE</span>
+                        <input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="เช่น 13.7563"
+                            className="w-full bg-transparent border-0 border-b border-dashed border-gray-400 text-center
+                 focus:outline-none focus:ring-0"
+                            value={latitude}
+                            onChange={(e) => {
+                                // อนุญาตเฉพาะตัวเลข, จุด, ลบ
+                                const v = e.target.value.replace(/[^\d.\-]/g, "");
+                                setLatitude(v);
+                            }}
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <span className="min-w-[90px] font-semibold">LONGITUDE</span>
+                        <input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="เช่น 100.5018"
+                            className="w-full bg-transparent border-0 border-b border-dashed border-gray-400 text-center
+                 focus:outline-none focus:ring-0"
+                            value={longitude}
+                            onChange={(e) => {
+                                const v = e.target.value.replace(/[^\d.\-]/g, "");
+                                setLongitude(v);
+                            }}
+                        />
+                    </div>
+                </div>
+
+                <ImageField
+                    label="แผนผังตำแหน่งที่ตั้งของป้ายโดยสังเขป"
+                    value={mapSketchPreview1} // ← ใช้ preview blob หรือ URL จริง
+                    onChange={(f) =>
+                        handlePickImage(f, "map1", setMapSketchPreview1, setMapSketch1, "mapSketch1")
                     }
                     hint="อัปโหลดภาพแผนที่โดยสังเขป"
                 />
@@ -1034,20 +1116,108 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                     </div>
 
                     <ImageField
-                        label="รูปแบบและขนาดของแผ่นป้าย / สิ่งที่สร้างขึ้น (สเก็ตช์โดยสังเขป)"
+                        label="รูปถ่ายป้ายในวันเวลาที่ตรวจสอบ"
+                        value={shapeSketchPreview1}
+                        onChange={(f) =>
+                            handlePickImage(f, "shape1", setShapeSketchPreview1, setShapeSketch1, "shapeSketch1")
+                        }
+                        square
+                    />
+
+                    <ImageField
+                        label="รูปแบบและขนาดของแผ่นป้าย และสิ่งที่สร้างขึ้นสำหรับติดตั้งป้ายโดยสังเขป"
                         value={shapeSketchPreview}
                         onChange={(f) =>
                             handlePickImage(f, "shape", setShapeSketchPreview, setShapeSketch, "shapeSketch")
                         }
                         square
                     />
+
+                    <div className="mt-3 relative rounded-md p-4 text-gray-900">
+                        <div className="text-xl font-bold mb-2">
+                            ข้อมูลขนาดของป้าย และสิ่งที่สร้างขึ้นสำหรับติดหรือขึงป้าย
+                        </div>
+
+                        {/* เนื้อหาฝั่งซ้าย */}
+                        <div className="space-y-2 text-lg leading-relaxed">
+                            <div className="flex items-end gap-2">
+                                <span>ความกว้างของแผ่นป้าย</span>
+                                <input
+                                    className="w-24 bg-transparent border-0 border-b border-dashed border-black/70 text-center
+                   focus:outline-none focus:ring-0"
+                                    value={signWidthM}
+                                    inputMode="decimal"
+                                    onChange={(e) => setSignWidthM(e.target.value.replace(/[^\d.\-]/g, ""))}
+                                />
+                                <span>เมตร</span>
+                            </div>
+
+                            <div className="flex items-end gap-2">
+                                <span>ความสูงของแผ่นป้าย</span>
+                                <input
+                                    className="w-24 bg-transparent border-0 border-b border-dashed border-black/70 text-center
+                   focus:outline-none focus:ring-0"
+                                    value={signHeightM}
+                                    inputMode="decimal"
+                                    onChange={(e) => setSignHeightM(e.target.value.replace(/[^\d.\-]/g, ""))}
+                                />
+                                <span>เมตร</span>
+                            </div>
+
+                            <div className="flex items-end gap-2">
+                                <span>จำนวนด้านของป้าย</span>
+                                <input
+                                    className="w-20 bg-transparent border-0 border-b border-dashed border-black/70 text-center
+                   focus:outline-none focus:ring-0"
+                                    value={signSides}
+                                    inputMode="numeric"
+                                    onChange={(e) => setSignSides(e.target.value.replace(/\D/g, ""))}
+                                />
+                                <span>ด้าน</span>
+                            </div>
+
+                            {/* แถวที่มีเส้นใต้สีแดง (ตามภาพ) */}
+                            <div id="anchor-area" className="flex items-end gap-2">
+                                <span>พื้นที่ป้าย โดยประมาณ</span>
+
+                                <select
+                                    className="bg-transparent border-0 border-b-2 border-red-600 text-red-600 font-bold
+                   focus:outline-none focus:ring-0 cursor-pointer"
+                                    value={signAreaMore}
+                                    onChange={(e) => setSignAreaMore(e.target.value)}
+                                >
+                                    <option value=""></option>
+                                    <option value="25">มากกว่า 25</option>
+                                    <option value="50">มากกว่า 50</option>
+                                </select>
+
+                                <span>ตารางเมตร</span>
+                            </div>
+
+                            <div id="anchor-height" className="flex items-end gap-2">
+                                <span>ความสูงของโครงสร้างสำหรับติดตั้งแผ่นป้าย</span>
+
+                                <select
+                                    className="bg-transparent border-0 border-b-2 border-red-600 text-red-600 font-bold
+                   focus:outline-none focus:ring-0 cursor-pointer"
+                                    value={structureHeightMore}
+                                    onChange={(e) => setStructureHeightMore(e.target.value)}
+                                >
+                                    <option value=""></option>
+                                    <option value="15">มากกว่า 15</option>
+                                </select>
+
+                                <span>เมตร</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
             <section className="space-y-4">
                 <div className="grid md:grid-cols-3 gap-6">
                     <ImageGallery
-                        label="รูปถ่ายป้าย - ด้านหน้าป้าย"
+                        label="รูปที่ 1"
                         values={photosFrontPreview ? [photosFrontPreview] : []}
                         onChange={(v) =>
                             handlePickGallery(v, "front", setPhotosFrontPreview, setPhotosFront, "photosFront")
@@ -1056,7 +1226,7 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                     />
 
                     <ImageGallery
-                        label="รูปถ่ายป้าย - ด้านข้างของป้าย"
+                        label="รูปที่ 2"
                         values={photosSidePreview ? [photosSidePreview] : []}
                         onChange={(v) =>
                             handlePickGallery(v, "side", setPhotosSidePreview, setPhotosSide, "photosSide")
@@ -1065,7 +1235,7 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                     />
 
                     <ImageGallery
-                        label="รูปถ่ายป้าย - ส่วนฐานของป้าย"
+                        label="รูปที่ 3"
                         values={photosBasePreview ? [photosBasePreview] : []}
                         onChange={(v) =>
                             handlePickGallery(v, "base", setPhotosBasePreview, setPhotosBase, "photosBase")
@@ -1075,9 +1245,40 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                 </div>
             </section>
 
+            <section className="space-y-4">
+                <div className="grid md:grid-cols-3 gap-6">
+                    <ImageGallery
+                        label="รูปที่ 4"
+                        values={photosFrontPreview1 ? [photosFrontPreview1] : []}
+                        onChange={(v) =>
+                            handlePickGallery(v, "front1", setPhotosFrontPreview1, setPhotosFront1, "photosFront1")
+                        }
+                        single
+                    />
+
+                    <ImageGallery
+                        label="รูปที่ 5"
+                        values={photosSidePreview1 ? [photosSidePreview1] : []}
+                        onChange={(v) =>
+                            handlePickGallery(v, "side1", setPhotosSidePreview1, setPhotosSide1, "photosSide1")
+                        }
+                        single
+                    />
+
+                    <ImageGallery
+                        label="รูปที่ 6"
+                        values={photosBasePreview1 ? [photosBasePreview1] : []}
+                        onChange={(v) =>
+                            handlePickGallery(v, "base1", setPhotosBasePreview1, setPhotosBase1, "photosBase1")
+                        }
+                        single
+                    />
+                </div>
+            </section>
+
             {/* 5.2 ประเภทของป้าย */}
             <section className="space-y-3">
-                <h3 className="text-lg font-semibold">5.2 ประเภทของป้าย</h3>
+                <h3 className="text-lg font-semibold">2. ประเภทของป้าย</h3>
                 <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2">
                     <label className="inline-flex items-center gap-2">
                         <input type="checkbox" checked={typeGround} onChange={(e) => setTypeGround(e.target.checked)} />
@@ -1123,7 +1324,7 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
 
             {/* 5.3 เจ้าของป้าย / ผู้ออกแบบ */}
             <section className="space-y-4">
-                <h3 className="text-lg font-semibold">5.3 ชื่อเจ้าของหรือผู้ครอบครองป้าย และผู้ออกแบบด้านวิศวกรรมโครงสร้าง</h3>
+                <h3 className="text-lg font-semibold">3. ชื่อเจ้าของหรือผู้ครอบครองป้าย และผู้ออกแบบด้านวิศวกรรมโครงสร้าง</h3>
 
                 <div>
                     <label className="block text-sm text-gray-600 mb-1">5.3.1 ชื่อผลิตภัณฑ์โฆษณาหรือข้อความในป้าย</label>
@@ -1209,10 +1410,10 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
 
             {/* 5.4 ประเภทวัสดุ/รายละเอียดแผ่นป้าย */}
             <section className="space-y-4">
-                <h3 className="text-lg font-semibold">5.4 ประเภทของวัสดุและรายละเอียดของแผ่นป้าย</h3>
+                <h3 className="text-lg font-semibold">4. ประเภทของวัสดุและรายละเอียดของแผ่นป้าย (สามารถระบุมากกว่า 1 ข้อได้)</h3>
 
                 <div className="space-y-2">
-                    <div className="text-sm font-medium text-gray-800">5.4.1 ประเภทวัสดุของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย</div>
+                    <div className="text-sm font-medium text-gray-800">4.1 ประเภทวัสดุของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย</div>
                     <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2">
                         <label className="inline-flex items-center gap-2">
                             <input type="checkbox" checked={matSteel} onChange={(e) => setMatSteel(e.target.checked)} />
@@ -1259,7 +1460,7 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                 </div>
 
                 <div className="space-y-3">
-                    <div className="text-sm font-medium text-gray-800">5.4.2 รายละเอียดของแผ่นป้าย</div>
+                    <div className="text-sm font-medium text-gray-800">4.2 รายละเอียดของแผ่นป้าย</div>
                     <div className="space-y-2">
                         {/* วัสดุของป้าย */}
                         <div className="flex items-center gap-2">

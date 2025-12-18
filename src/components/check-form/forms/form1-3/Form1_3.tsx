@@ -37,6 +37,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
         () => (user ? `${user.first_name_th} ${user.last_name_th}` : ""),
         [user]
     );
+    const isShinaracha = user?.company_id === "COM-27162740";
     const buildRemoteCoverUrl = (name: string) =>
         `${process.env.NEXT_PUBLIC_N8N_UPLOAD_FILE}?name=${encodeURIComponent(name)}`;
 
@@ -486,10 +487,10 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
 
                 {/* หัวกระดาษ: โลโก้ + ชื่อบริษัท */}
                 <CompanyHeader
-                    companyTh="บริษัท ชินรัช โพรเทคเตอร์ จำกัด"
-                    companyEn="Shinaracha Protector Co., Ltd."
-                    logoUrl="/images/Logo_Shinaracha.webp"
-                />
+                    companyTh={isShinaracha ? "บริษัท ชินรัช โพรเทคเตอร์ จำกัด" : "บริษัท โปรไฟร์ อินสเปคเตอร์ จำกัด"}
+                    companyEn={isShinaracha ? "Shinaracha Protector Co., Ltd." : "Profire Inspector Co., Ltd."}
+                    logoUrl={isShinaracha ? "/images/Logo_Shinaracha.webp" : "/images/Logo_Profire.png"}
+                />;
 
                 {/* เส้นคั่น */}
                 <hr className="my-8" />
@@ -570,16 +571,12 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 </div>
 
                 {/* เส้นคั่น */}
-                <hr className="my-8" />
+                <hr className="my-2" />
 
-                <CompanyHeader
-                    companyTh="บริษัท ชินรัช โพรเทคเตอร์ จำกัด"
-                    companyEn="Shinaracha Protector Co., Ltd."
-                    logoUrl="/images/Logo_Shinaracha.webp"
-                />
+                <span className="text-[30px] font-black text-black">รายงานการตรวจสอบป้าย</span>
 
                 {/* เส้นคั่น */}
-                <hr className="my-4" />
+                <hr className="my-2" />
 
                 {/* ส่วนที่ 1 */}
                 <section className="w-full mb-3">
@@ -590,7 +587,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         className="w-full grid h-[5vh] select-none cursor-pointer"
                     >
                         <span className="flex items-center justify-between gap-2 text-black md:text-xl font-bold tracking-wide rounded-xl bg-white px-4 py-2 border shadow-md hover:shadow-lg">
-                            ส่วนที่ 1 ขอบเขตของการตรวจสอบ และรายละเอียดที่ต้องตรวจสอบ
+                            ส่วนที่ 1 ขอบเขตของการตรวจสอบป้าย
                             <svg
                                 className={`w-4 h-4 transition-transform ${openSections.includes("section1") ? "rotate-180" : ""}`}
                                 viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
@@ -622,7 +619,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         className="w-full grid h-[5vh] select-none cursor-pointer"
                     >
                         <span className="flex items-center justify-between gap-2 text-black md:text-xl font-bold tracking-wide rounded-xl bg-white px-4 py-2 border shadow-md hover:shadow-lg">
-                            ส่วนที่ 2 ข้อมูลทั่วไปของป้าย และแนวทางการตรวจสอบตามแผน
+                            ส่วนที่ 2 ข้อมูลทั่วไปของป้าย
                             <svg
                                 className={`w-4 h-4 transition-transform ${openSections.includes("section2") ? "rotate-180" : ""}`}
                                 viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
@@ -658,7 +655,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         className="w-full grid h-[5vh] select-none cursor-pointer"
                     >
                         <span className="flex items-center justify-between gap-2 text-black md:text-xl font-bold tracking-wide rounded-xl bg-white px-4 py-2 border shadow-md hover:shadow-lg">
-                            ส่วนที่ 3 ช่วงเวลา ความถี่ในการตรวจสอบประจำปีของผู้ตรวจสอบอาคาร
+                            ส่วนที่ 3 ผลการตรวจสอบสภาพป้ายและอุปกรณ์ประกอบของป้าย
                             <svg
                                 className={`w-4 h-4 transition-transform ${openSections.includes("section3") ? "rotate-180" : ""}`}
                                 viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
@@ -701,7 +698,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         className="w-full grid h-[5vh] select-none cursor-pointer"
                     >
                         <span className="flex items-center justify-between gap-2 text-black md:text-xl font-bold tracking-wide rounded-xl bg-white px-4 py-2 border shadow-md hover:shadow-lg">
-                            ส่วนที่ 4 ผลการตรวจสอบสภาพป้ายและอุปกรณ์ต่าง ๆ ของป้าย
+                            ส่วนที่ 4 สรุปผลการตรวจสอบป้าย
                             <svg
                                 className={`w-4 h-4 transition-transform ${openSections.includes("section4") ? "rotate-180" : ""}`}
                                 viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
@@ -727,7 +724,13 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     </div>
                 </section>
 
-                {/* ส่วนที่ 5 */}
+                <hr className="my-2" />
+
+                <span className="text-[30px] font-black text-black">แผนปฏิบัติการการตรวจบำรุงรักษาป้าย</span>
+
+                <hr className="my-2" />
+
+                {/* ส่วนที่ 1 */}
                 <section className="w-full mb-3">
                     <button
                         type="button"
@@ -736,7 +739,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         className="w-full grid h-[5vh] select-none cursor-pointer"
                     >
                         <span className="flex items-center justify-between gap-2 text-black md:text-xl font-bold tracking-wide rounded-xl bg-white px-4 py-2 border shadow-md hover:shadow-lg">
-                            ส่วนที่ 5 สรุปผลการตรวจสอบสภาพป้ายและอุปกรณ์ต่างๆ
+                            ส่วนที่ 1 ขอบเขตของการตรวจบำรุงรักษาป้าย และอุปกรณ์ประกอบของป้าย
                             <svg
                                 className={`w-4 h-4 transition-transform ${openSections.includes("section5") ? "rotate-180" : ""}`}
                                 viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
