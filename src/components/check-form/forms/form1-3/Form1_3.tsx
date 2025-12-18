@@ -673,16 +673,43 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         <div className="overflow-hidden">
                             <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
                                 <SectionThreeDetails
-                                    // value={formData.sectionThree ?? { section1: {}, section2: {} }}
-                                    // onChange={(patch) =>
-                                    //     setFormData(prev => ({
-                                    //         ...prev,
-                                    //         sectionThree: {
-                                    //             section1: { ...(prev.sectionThree?.section1 ?? {}), ...(patch.section1 ?? {}) },
-                                    //             section2: { ...(prev.sectionThree?.section2 ?? {}), ...(patch.section2 ?? {}) },
-                                    //         },
-                                    //     }))
-                                    // }
+                                    value={formData.sectionThree ?? { items: {}, section8: {}, section9: {} }}
+                                    onChange={(patch) =>
+                                        setFormData((prev) => {
+                                            const prevS3 = prev.sectionThree ?? { items: {}, section8: {}, section9: {} };
+
+                                            return {
+                                                ...prev,
+                                                sectionThree: {
+                                                    ...prevS3,
+
+                                                    // ✅ items (ข้อ 1-7) เป็น record แบบ patch รายตัว
+                                                    items: {
+                                                        ...(prevS3.items ?? {}),
+                                                        ...(patch.items ?? {}),
+                                                    },
+
+                                                    // ✅ ข้อ 8
+                                                    section8: {
+                                                        ...(prevS3.section8 ?? {}),
+                                                        ...(patch.section8 ?? {}),
+                                                    },
+
+                                                    // ✅ ข้อ 9
+                                                    section9: {
+                                                        ...(prevS3.section9 ?? {}),
+                                                        ...(patch.section9 ?? {}),
+                                                    },
+
+                                                    // ✅ รายละเอียดเพิ่มเติมท้ายข้อ 9 (เป็น field ตรงๆ)
+                                                    section9Extra1:
+                                                        patch.section9Extra1 !== undefined ? patch.section9Extra1 : prevS3.section9Extra1,
+                                                    section9Extra2:
+                                                        patch.section9Extra2 !== undefined ? patch.section9Extra2 : prevS3.section9Extra2,
+                                                },
+                                            };
+                                        })
+                                    }
                                 />
                             </div>
                         </div>
