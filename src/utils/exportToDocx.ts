@@ -30,7 +30,7 @@ import { showLoading } from "@/lib/loading";
 import { SectionTwoForm } from "@/components/check-form/forms/form1-3/SectionTwoDetails";
 import { SectionThreeForm, SectionThreeRow, FreqKey } from "@/components/check-form/forms/form1-3/SectionThreeDetails";
 import { SectionFourForm } from "@/components/check-form/forms/form1-3/SectionFourDetails";
-import { SectionFiveForm } from "@/components/check-form/forms/form1-3/SectionFiveDetails";
+import { SectionFiveForm } from "@/components/check-form/forms/form1-3/new_form/Section2_7Details";
 
 /** โหลดรูปจาก public แล้ว "บังคับแปลง" เป็น PNG -> Uint8Array ที่ Word รองรับ */
 async function loadAsPngBytes(url: string): Promise<Uint8Array> {

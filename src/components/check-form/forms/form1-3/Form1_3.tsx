@@ -5,7 +5,14 @@ import SectionOneDetails from "@/components/check-form/forms/form1-3/SectionOneD
 import SectionTwoDetails, { SectionTwoForm } from "@/components/check-form/forms/form1-3/SectionTwoDetails";
 import SectionThreeDetails, { SectionThreeForm } from "@/components/check-form/forms/form1-3/SectionThreeDetails";
 import SectionFourDetails, { SectionFourForm, SectionFourRow } from "@/components/check-form/forms/form1-3/SectionFourDetails";
-import SectionFiveDetails, { SectionFiveForm, SectionFiveRow } from "@/components/check-form/forms/form1-3/SectionFiveDetails";
+
+import Section2_1Details from "@/components/check-form/forms/form1-3/new_form/Section2_1Details";
+import Section2_2Details from "@/components/check-form/forms/form1-3/new_form/Section2_2Details";
+import Section2_3Details from "@/components/check-form/forms/form1-3/new_form/Section2_3Details";
+import Section2_4Details from "@/components/check-form/forms/form1-3/new_form/Section2_4Details";
+// import Section2_5Details from "@/components/check-form/forms/form1-3/new_form/Section2_5Details";
+import Section2_6Details, { SectionSixForm, SectionSixRow } from "@/components/check-form/forms/form1-3/new_form/Section2_6Details";
+import Section2_7Details, { SectionSevenForm, SectionSevenRow } from "@/components/check-form/forms/form1-3/new_form/Section2_7Details";
 import { showLoading } from "@/lib/loading";
 import { showAlert } from "@/lib/fetcher";
 import { exportToDocx } from "@/utils/exportToDocx";
@@ -28,7 +35,7 @@ type FormData = {
     sectionTwo?: Partial<SectionTwoForm>;
     sectionThree?: Partial<SectionThreeForm>
     sectionFour?: Partial<SectionFourForm>
-    sectionFive?: Partial<SectionFiveForm>
+    section2_7?: Partial<SectionSevenForm>
 };
 
 export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
@@ -89,14 +96,14 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
         });
     }, []);
 
-    const onSectionFiveChange = React.useCallback((patch: Partial<SectionFiveForm>) => {
+    const onSectionSevenChange = React.useCallback((patch: Partial<SectionSevenForm>) => {
         setFormData(prev => {
-            const cur = prev.sectionFive ?? { rows: {}, meta: {} };
+            const cur = prev.section2_7 ?? { rows: {}, meta: {} };
 
             // ---- merge rows (ทีละแถว) ----
             const curRows = cur.rows ?? {};
             const pRows = patch.rows ?? {};
-            const nextRows: Record<string, SectionFiveRow> = { ...curRows };
+            const nextRows: Record<string, SectionSevenRow> = { ...curRows };
             Object.keys(pRows).forEach((id) => {
                 const rowPatch = pRows[id] ?? {};
                 const prevRow = curRows[id] ?? {};
@@ -116,7 +123,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
 
             return {
                 ...prev,
-                sectionFive: { rows: nextRows, meta: mergedMeta },
+                sectionSeven: { rows: nextRows, meta: mergedMeta },
             };
         });
     }, []);
@@ -192,7 +199,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     sectionTwo: form.sectionTwo ?? {},
                     sectionThree: form.sectionThree ?? {},
                     sectionFour: form.sectionFour ?? {},
-                    sectionFive: form.sectionFive ?? {},
+                    sectionSeven: form.sectionSeven ?? {},
                 }));
             } else {
             }
@@ -761,14 +768,14 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 <section className="w-full mb-3">
                     <button
                         type="button"
-                        onClick={() => toggle("section5")}
-                        aria-expanded={openSections.includes("section5")}
+                        onClick={() => toggle("section2_1")}
+                        aria-expanded={openSections.includes("section2_1")}
                         className="w-full grid h-[5vh] select-none cursor-pointer"
                     >
                         <span className="flex items-center justify-between gap-2 text-black md:text-xl font-bold tracking-wide rounded-xl bg-white px-4 py-2 border shadow-md hover:shadow-lg">
                             ส่วนที่ 1 ขอบเขตของการตรวจบำรุงรักษาป้าย และอุปกรณ์ประกอบของป้าย
                             <svg
-                                className={`w-4 h-4 transition-transform ${openSections.includes("section5") ? "rotate-180" : ""}`}
+                                className={`w-4 h-4 transition-transform ${openSections.includes("section2_1") ? "rotate-180" : ""}`}
                                 viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
                             >
                                 <path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" />
@@ -779,14 +786,142 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     {/* พื้นที่เนื้อหา: พับ/กางด้วย CSS grid trick */}
                     <div
                         className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out
-          ${openSections.includes("section5") ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+          ${openSections.includes("section2_1") ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
                     >
                         <div className="overflow-hidden">
                             <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
-                                <SectionFiveDetails
+                                <Section2_1Details />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* ส่วนที่ 2 */}
+                <section className="w-full mb-3">
+                    <button
+                        type="button"
+                        onClick={() => toggle("section2_2")}
+                        aria-expanded={openSections.includes("section2_2")}
+                        className="w-full grid h-[5vh] select-none cursor-pointer"
+                    >
+                        <span className="flex items-center justify-between gap-2 text-black md:text-xl font-bold tracking-wide rounded-xl bg-white px-4 py-2 border shadow-md hover:shadow-lg">
+                            ส่วนที่ 2 แผนปฏิบัติการการตรวจบำรุงรักษาป้ายและอุปกรณ์ประกอบของป้าย
+                            <svg
+                                className={`w-4 h-4 transition-transform ${openSections.includes("section2_2") ? "rotate-180" : ""}`}
+                                viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+                            >
+                                <path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" />
+                            </svg>
+                        </span>
+                    </button>
+
+                    {/* พื้นที่เนื้อหา: พับ/กางด้วย CSS grid trick */}
+                    <div
+                        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out
+          ${openSections.includes("section2_2") ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+                    >
+                        <div className="overflow-hidden">
+                            <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
+                                <Section2_2Details />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* ส่วนที่ 3 */}
+                <section className="w-full mb-3">
+                    <button
+                        type="button"
+                        onClick={() => toggle("section2_3")}
+                        aria-expanded={openSections.includes("section2_3")}
+                        className="w-full grid h-[5vh] select-none cursor-pointer"
+                    >
+                        <span className="flex items-center justify-between gap-2 text-black md:text-xl font-bold tracking-wide rounded-xl bg-white px-4 py-2 border shadow-md hover:shadow-lg">
+                            ส่วนที่ 3 รายละเอียดที่ต้องตรวจบำรุงรักษาป้าย และอุปกรณ์ประกอบของป้าย
+                            <svg
+                                className={`w-4 h-4 transition-transform ${openSections.includes("section2_3") ? "rotate-180" : ""}`}
+                                viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+                            >
+                                <path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" />
+                            </svg>
+                        </span>
+                    </button>
+
+                    {/* พื้นที่เนื้อหา: พับ/กางด้วย CSS grid trick */}
+                    <div
+                        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out
+          ${openSections.includes("section2_3") ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+                    >
+                        <div className="overflow-hidden">
+                            <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
+                                <Section2_3Details />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* ส่วนที่ 4 */}
+                <section className="w-full mb-3">
+                    <button
+                        type="button"
+                        onClick={() => toggle("section2_4")}
+                        aria-expanded={openSections.includes("section2_4")}
+                        className="w-full grid h-[5vh] select-none cursor-pointer"
+                    >
+                        <span className="flex items-center justify-between gap-2 text-black md:text-xl font-bold tracking-wide rounded-xl bg-white px-4 py-2 border shadow-md hover:shadow-lg">
+                            ส่วนที่ 4 แนวทางการตรวจบำรุงรักษาป้าย และอุปกรณ์ประกอบของป้ายประจำปี
+                            <svg
+                                className={`w-4 h-4 transition-transform ${openSections.includes("section2_4") ? "rotate-180" : ""}`}
+                                viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+                            >
+                                <path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" />
+                            </svg>
+                        </span>
+                    </button>
+
+                    {/* พื้นที่เนื้อหา: พับ/กางด้วย CSS grid trick */}
+                    <div
+                        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out
+          ${openSections.includes("section2_4") ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+                    >
+                        <div className="overflow-hidden">
+                            <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
+                                <Section2_4Details />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* ส่วนที่ 7 */}
+                <section className="w-full mb-3">
+                    <button
+                        type="button"
+                        onClick={() => toggle("section2_7")}
+                        aria-expanded={openSections.includes("section2_7")}
+                        className="w-full grid h-[5vh] select-none cursor-pointer"
+                    >
+                        <span className="flex items-center justify-between gap-2 text-black md:text-xl font-bold tracking-wide rounded-xl bg-white px-4 py-2 border shadow-md hover:shadow-lg">
+                            ส่วนที่ 7 สรุปผลการตรวจบำรุงรักษาป้ายและอุปกรณ์ประกอบของป้าย
+                            <svg
+                                className={`w-4 h-4 transition-transform ${openSections.includes("section2_7") ? "rotate-180" : ""}`}
+                                viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+                            >
+                                <path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" />
+                            </svg>
+                        </span>
+                    </button>
+
+                    {/* พื้นที่เนื้อหา: พับ/กางด้วย CSS grid trick */}
+                    <div
+                        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out
+          ${openSections.includes("section2_7") ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+                    >
+                        <div className="overflow-hidden">
+                            <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
+                                <Section2_7Details
                                     name={name}
-                                    value={formData.sectionFive ?? { rows: {}, meta: {} }}
-                                    onChange={onSectionFiveChange}
+                                    value={formData.section2_7 ?? { rows: {}, meta: {} }}
+                                    onChange={onSectionSevenChange}
                                 />
                             </div>
                         </div>

@@ -92,7 +92,7 @@ export type Defect = {
     defect_name?: string;
 };
 
-export type SectionFourRow = {
+export type SectionSixRow = {
     inspection_item?: string;
     visits?: Partial<Record<VisitKey, "ok" | "ng" | undefined>>; // สถานะต่อ visit
     note?: string;
@@ -100,18 +100,18 @@ export type SectionFourRow = {
     defect?: Defect[];
 };
 
-export type SectionFourForm = {
-    table1: Record<string, SectionFourRow>; // key: t1-1, t1-2, ...
-    table2: Record<string, SectionFourRow>; // key: t2-<groupIndex>-<rowIndex>
+export type SectionSixForm = {
+    table1: Record<string, SectionSixRow>; // key: t1-1, t1-2, ...
+    table2: Record<string, SectionSixRow>; // key: t2-<groupIndex>-<rowIndex>
 };
 
 type Props = {
-    value?: Partial<SectionFourForm>;
-    onChange?: (patch: Partial<SectionFourForm>) => void;
+    value?: Partial<SectionSixForm>;
+    onChange?: (patch: Partial<SectionSixForm>) => void;
 };
 
 /* ========= COMPONENT ========= */
-export default function SectionFourDetails({ value, onChange }: Props) {
+export default function Section2_6Details({ value, onChange }: Props) {
     const buildRemoteImgUrl = (name: string) =>
         `${process.env.NEXT_PUBLIC_N8N_UPLOAD_FILE}?name=${encodeURIComponent(name)}`;
     const videoRef = React.useRef<HTMLVideoElement>(null);
@@ -172,7 +172,7 @@ export default function SectionFourDetails({ value, onChange }: Props) {
     };
 
     const emit = React.useCallback(
-        (group: "table1" | "table2", rowId: string, delta: Partial<SectionFourRow>) => {
+        (group: "table1" | "table2", rowId: string, delta: Partial<SectionSixRow>) => {
             if (!onChange) return;
 
             const inspection_item =
@@ -182,7 +182,7 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                 [group]: {
                     [rowId]: { ...delta, inspection_item }, // ✅ แนบรายการตรวจสอบทุกครั้ง
                 },
-            } as Partial<SectionFourForm>);
+            } as Partial<SectionSixForm>);
         },
         [onChange] // ถ้า table1Rows/table2Groups มาจาก props/state ให้ใส่ไว้ใน deps ด้วย
     );
@@ -445,9 +445,9 @@ export default function SectionFourDetails({ value, onChange }: Props) {
         if (!value || !onChange) return;
 
         let changed = false;
-        const patch: Partial<SectionFourForm> = { table1: {}, table2: {} };
+        const patch: Partial<SectionSixForm> = { table1: {}, table2: {} };
 
-        const normalize = (tableName: "table1" | "table2", table?: Record<string, SectionFourRow>) => {
+        const normalize = (tableName: "table1" | "table2", table?: Record<string, SectionSixRow>) => {
             if (!table) return;
 
             Object.entries(table).forEach(([rid, row]) => {
@@ -1145,7 +1145,7 @@ export default function SectionFourDetails({ value, onChange }: Props) {
 
                                     const { group, id } = photoPopup;
 
-                                    const updatedValue: Partial<SectionFourForm> = {
+                                    const updatedValue: Partial<SectionSixForm> = {
                                         ...value,
                                         [group]: {
                                             ...(value[group] ?? {}),

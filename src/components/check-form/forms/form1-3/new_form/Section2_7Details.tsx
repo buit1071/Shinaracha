@@ -1,14 +1,14 @@
 import * as React from "react";
 
 /* =========== TYPES =========== */
-export type SectionFiveRow = {
+export type SectionSevenRow = {
     status?: "ok" | "ng";
     fixed?: boolean;
     note?: string;
     extra?: string;
 };
 
-export type SectionFiveMeta = {
+export type SectionSevenMeta = {
     siteName?: string;
     roundNo?: string;
     inspectDate?: { d?: string; m?: string; y?: string };
@@ -26,15 +26,15 @@ export type SectionFiveMeta = {
     licExpire?: { d?: string; m?: string; y?: string };
 };
 
-export type SectionFiveForm = {
-    rows: Record<string, SectionFiveRow>;
-    meta: SectionFiveMeta;
+export type SectionSevenForm = {
+    rows: Record<string, SectionSevenRow>;
+    meta: SectionSevenMeta;
 };
 
 type Props = {
     name: string;
-    value?: Partial<SectionFiveForm>;
-    onChange?: (patch: Partial<SectionFiveForm>) => void;
+    value?: Partial<SectionSevenForm>;
+    onChange?: (patch: Partial<SectionSevenForm>) => void;
 };
 
 /* =========== UI Helpers =========== */
@@ -99,7 +99,7 @@ export function getDaysInMonthThai(
 }
 
 /* =========== COMPONENT =========== */
-export default function SectionFiveDetails({ name, value, onChange }: Props) {
+export default function Section2_7Details({ name, value, onChange }: Props) {
     const vRows = value?.rows ?? {};
     const vMeta = value?.meta ?? {};
 
@@ -107,15 +107,15 @@ export default function SectionFiveDetails({ name, value, onChange }: Props) {
     const th = "border border-gray-300 px-3 py-2 text-gray-700";
 
     // ---- emit helpers (event-based, ไม่ลูป) ----
-    const setRow = React.useCallback((id: string, patch: Partial<SectionFiveRow>) => {
+    const setRow = React.useCallback((id: string, patch: Partial<SectionSevenRow>) => {
         onChange?.({ rows: { [id]: patch } });
     }, [onChange]);
 
-    const setMeta = React.useCallback((patch: Partial<SectionFiveMeta>) => {
+    const setMeta = React.useCallback((patch: Partial<SectionSevenMeta>) => {
         onChange?.({ meta: patch });
     }, [onChange]);
 
-    const setMetaDate = React.useCallback(<K extends keyof SectionFiveMeta>(key: K, patch: any) => {
+    const setMetaDate = React.useCallback(<K extends keyof SectionSevenMeta>(key: K, patch: any) => {
         onChange?.({ meta: { [key]: patch } as any });
     }, [onChange]);
 
