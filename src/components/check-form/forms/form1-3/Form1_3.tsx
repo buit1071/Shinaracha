@@ -10,7 +10,7 @@ import Section2_1Details from "@/components/check-form/forms/form1-3/new_form/Se
 import Section2_2Details from "@/components/check-form/forms/form1-3/new_form/Section2_2Details";
 import Section2_3Details from "@/components/check-form/forms/form1-3/new_form/Section2_3Details";
 import Section2_4Details from "@/components/check-form/forms/form1-3/new_form/Section2_4Details";
-// import Section2_5Details from "@/components/check-form/forms/form1-3/new_form/Section2_5Details";
+import Section2_5Details from "@/components/check-form/forms/form1-3/new_form/Section2_5Details";
 import Section2_6Details, { SectionSixForm, SectionSixRow } from "@/components/check-form/forms/form1-3/new_form/Section2_6Details";
 import Section2_7Details, { SectionSevenForm, SectionSevenRow } from "@/components/check-form/forms/form1-3/new_form/Section2_7Details";
 import { showLoading } from "@/lib/loading";
@@ -887,6 +887,38 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         <div className="overflow-hidden">
                             <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
                                 <Section2_4Details />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* ส่วนที่ 5 */}
+                <section className="w-full mb-3">
+                    <button
+                        type="button"
+                        onClick={() => toggle("section2_5")}
+                        aria-expanded={openSections.includes("section2_5")}
+                        className="w-full grid h-[5vh] select-none cursor-pointer"
+                    >
+                        <span className="flex items-center justify-between gap-2 text-black md:text-xl font-bold tracking-wide rounded-xl bg-white px-4 py-2 border shadow-md hover:shadow-lg">
+                            ส่วนที่ 5 ช่วงเวลา และความถี่ในการตรวจบำรุงรักษาป้าย และอุปกรณ์ประกอบของป้าย
+                            <svg
+                                className={`w-4 h-4 transition-transform ${openSections.includes("section2_5") ? "rotate-180" : ""}`}
+                                viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+                            >
+                                <path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" />
+                            </svg>
+                        </span>
+                    </button>
+
+                    {/* พื้นที่เนื้อหา: พับ/กางด้วย CSS grid trick */}
+                    <div
+                        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out
+          ${openSections.includes("section2_5") ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+                    >
+                        <div className="overflow-hidden">
+                            <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
+                                <Section2_5Details />
                             </div>
                         </div>
                     </div>
