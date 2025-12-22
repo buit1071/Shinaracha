@@ -257,13 +257,14 @@ export type SectionTwoForm = {
 };
 
 type Props = {
+    eq_id: string;
     data: SectionTwoForm | null;
     value?: Partial<SectionTwoForm>;
     onChange?: (patch: Partial<SectionTwoForm>) => void;
 };
 
 /* ========================== SECTION TWO ========================== */
-export default function SectionTwoDetails({ data, value, onChange }: Props) {
+export default function SectionTwoDetails({ eq_id, data, value, onChange }: Props) {
     const buildRemoteImgUrl = (name: string) =>
         `${process.env.NEXT_PUBLIC_N8N_UPLOAD_FILE}?name=${encodeURIComponent(name)}`;
     const onChangeRef = React.useRef(onChange);
@@ -380,7 +381,9 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
 
     const s = (v?: string | null) => (v && v.trim() !== "" ? v : "");
     const prevDataRef = React.useRef<string>("");
+    const isSyncingRef = React.useRef(false);
 
+    const ro = (v?: string | null) => (v && v.trim() ? v : "");
     React.useEffect(() => {
         if (!data) return;
 
@@ -388,54 +391,10 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
         if (dataStr === prevDataRef.current) return;
         prevDataRef.current = dataStr;
 
-        // ===== 5.1 ข้อมูลสถานที่ =====
-        setSignName(s(data.signName));
-        setAddrNo(s(data.addrNo));
-        setAddrAlley(s(data.addrAlley));
-        setAddrRoad(s(data.addrRoad));
-        setSubDistrict(s(data.subDistrict));
-        setDistrict(s(data.district));
-        setProvince(s(data.province));
-        setZip(s(data.zip));
-        setTel(s(data.tel));
-        setFax(s(data.fax));
+        // ✅ ไม่มี need isSyncingRef ตรงนี้แล้ว ถ้าเราไม่ไปทับ state ที่ user กรอก
+        // isSyncingRef.current = true;  <-- ลบได้
 
-        // ===== 5.1 ส่วนผู้ใช้กรอก =====
-        setPermitDay(s(data.permitDay));
-        setPermitMonth(s(data.permitMonth));
-        setPermitYear(s(data.permitYear));
-
-        setInspectDay2(s(data.inspectDay2));
-        setInspectMonth2(s(data.inspectMonth2));
-        setInspectYear2(s(data.inspectYear2));
-
-        setInspectDay3(s(data.inspectDay3));
-        setInspectMonth3(s(data.inspectMonth3));
-        setInspectYear3(s(data.inspectYear3));
-
-        setHasOriginalPlan(!!data.hasOriginalPlan);
-        setNoOriginalPlan(!!data.noOriginalPlan);
-        setNoPermitInfo(!!data.noPermitInfo);
-        setNoOld(!!data.noOld);
-        setSignAge(s(data.signAge));
-
-        setMapSketch(s(data.mapSketch));
-        setShapeSketch(s(data.shapeSketch));
-        setPhotosFront(s(data.photosFront));
-        setPhotosSide(s(data.photosSide));
-        setPhotosBase(s(data.photosBase));
-        setRecorder2(s(data.recorder2));
-        setRecorder3(s(data.recorder3));
-
-        // ===== 5.2 ประเภทของป้าย =====
-        setTypeGround(!!data.typeGround);
-        setTypeRooftop(!!data.typeRooftop);
-        setTypeOnRoof(!!data.typeOnRoof);
-        setTypeOnBuilding(!!data.typeOnBuilding);
-        setTypeOtherChecked(!!data.typeOtherChecked);
-        setTypeOther(s(data.typeOther));
-
-        // ===== 5.3 เจ้าของป้าย / ผู้ออกแบบ =====
+        // ===== 5.3 เจ้าของป้าย / ผู้ออกแบบ (ถ้าเป็น read-only) =====
         setProductText(s(data.productText));
         setOwnerName(s(data.ownerName));
         setOwnerNo(s(data.ownerNo));
@@ -452,28 +411,49 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
         setDesignerName(s(data.designerName));
         setDesignerLicense(s(data.designerLicense));
 
-        // ===== 5.4 วัสดุ/รายละเอียด =====
-        setMatSteel(!!data.matSteel);
-        setMatWood(!!data.matWood);
-        setMatStainless(!!data.matStainless);
-        setMatRCC(!!data.matRCC);
-        setMatOtherChecked(!!data.matOtherChecked);
-        setMatOther(s(data.matOther));
-        setPanelMaterial(s(data.panelMaterial));
-        setPanelFaces(s(data.panelFaces));
-        setPanelOpenings(data.panelOpenings ?? "");
-        setPanelOther(s(data.panelOther));
-        setChkMat(!!data.chkMat);
-        setChkFaces(!!data.chkFaces);
-        setChkOpen(!!data.chkOpen);
-        setChkOther(!!data.chkOther);
-
-        onChangeRef.current?.({
-            ...data,
-        });
+        // ✅ จบแค่นี้พอ
     }, [data]);
 
+    const [addrDraft, setAddrDraft] = React.useState(() => ({
+        signName: value?.signName ?? "",
+        addrNo: value?.addrNo ?? "",
+        addrAlley: value?.addrAlley ?? "",
+        addrRoad: value?.addrRoad ?? "",
+        subDistrict: value?.subDistrict ?? "",
+        district: value?.district ?? "",
+        province: value?.province ?? "",
+        zip: value?.zip ?? "",
+        tel: value?.tel ?? "",
+        fax: value?.fax ?? "",
+    }));
+
+    const lastKeyRef = React.useRef<string>("");
+
     React.useEffect(() => {
+        const key = eq_id ?? "";
+        if (!key || key === lastKeyRef.current) return;
+
+        lastKeyRef.current = key;
+
+        setAddrDraft({
+            signName: s(data?.signName),
+            addrNo: s(data?.addrNo),
+            addrAlley: s(data?.addrAlley),
+            addrRoad: s(data?.addrRoad),
+            subDistrict: s(data?.subDistrict),
+            district: s(data?.district),
+            province: s(data?.province),
+            zip: s(data?.zip),
+            tel: s(data?.tel),
+            fax: s(data?.fax),
+        });
+    }, [eq_id]);
+
+    React.useEffect(() => {
+        if (isSyncingRef.current) {
+            isSyncingRef.current = false;
+            return;
+        }
         const patch: Partial<SectionTwoForm> = {
             permitDay, permitMonth, permitYear,
             inspectDay2, inspectMonth2, inspectYear2,
@@ -494,7 +474,7 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
             panelMaterial, panelFaces, panelOpenings, panelOther,
             chkMat, chkFaces, chkOpen, chkOther,
         };
-        onChange?.(patch);
+        onChangeRef.current?.(patch);
     }, [
         permitDay, permitMonth, permitYear,
         inspectDay2, inspectMonth2, inspectYear2,
@@ -512,7 +492,6 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
         matOtherChecked, matOther,
         panelMaterial, panelFaces, panelOpenings, panelOther,
         chkMat, chkFaces, chkOpen, chkOther,
-        onChange,
     ]);
 
     React.useEffect(() => {
@@ -716,7 +695,7 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                         <label className="block text-sm text-gray-600 mb-1">ชื่อป้าย (ถ้ามี)</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={signName}
+                            value={ro(data?.signName)}
                             onChange={(e) => setSignName(e.target.value)}
                         />
                     </div>
@@ -724,7 +703,7 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                         <label className="block text-sm text-gray-600 mb-1">เลขที่</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={addrNo}
+                            value={ro(data?.addrNo)}
                             onChange={(e) => setAddrNo(e.target.value)}
                         />
                     </div>
@@ -732,7 +711,7 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                         <label className="block text-sm text-gray-600 mb-1">ตรอก/ซอย</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={addrAlley}
+                            value={ro(data?.addrAlley)}
                             onChange={(e) => setAddrAlley(e.target.value)}
                         />
                     </div>
@@ -740,7 +719,7 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                         <label className="block text-sm text-gray-600 mb-1">ถนน</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={addrRoad}
+                            value={ro(data?.addrRoad)}
                             onChange={(e) => setAddrRoad(e.target.value)}
                         />
                     </div>
@@ -750,7 +729,7 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                         <label className="block text-sm text-gray-600 mb-1">ตำบล/แขวง</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={subDistrict}
+                            value={ro(data?.subDistrict)}
                             onChange={(e) => setSubDistrict(e.target.value)}
                         />
                     </div>
@@ -758,7 +737,7 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                         <label className="block text-sm text-gray-600 mb-1">อำเภอ/เขต</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={district}
+                            value={ro(data?.district)}
                             onChange={(e) => setDistrict(e.target.value)}
                         />
                     </div>
@@ -766,7 +745,7 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                         <label className="block text-sm text-gray-600 mb-1">จังหวัด</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={province}
+                            value={ro(data?.province)}
                             onChange={(e) => setProvince(e.target.value)}
                         />
                     </div>
@@ -774,7 +753,7 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                         <label className="block text-sm text-gray-600 mb-1">รหัสไปรษณีย์</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={zip}
+                            value={ro(data?.zip)}
                             onChange={(e) => setZip(e.target.value)}
                         />
                     </div>
@@ -784,7 +763,7 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                         <label className="block text-sm text-gray-600 mb-1">โทรศัพท์</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={tel}
+                            value={ro(data?.tel)}
                             onChange={(e) => setTel(e.target.value)}
                         />
                     </div>
@@ -792,7 +771,7 @@ export default function SectionTwoDetails({ data, value, onChange }: Props) {
                         <label className="block text-sm text-gray-600 mb-1">โทรสาร</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={fax}
+                            value={ro(data?.fax)}
                             onChange={(e) => setFax(e.target.value)}
                         />
                     </div>

@@ -10,7 +10,7 @@ import Section2_1Details from "@/components/check-form/forms/form1-3/new_form/Se
 import Section2_2Details from "@/components/check-form/forms/form1-3/new_form/Section2_2Details";
 import Section2_3Details from "@/components/check-form/forms/form1-3/new_form/Section2_3Details";
 import Section2_4Details from "@/components/check-form/forms/form1-3/new_form/Section2_4Details";
-import Section2_5Details from "@/components/check-form/forms/form1-3/new_form/Section2_5Details";
+import Section2_5Details, { Section2_5Form } from "@/components/check-form/forms/form1-3/new_form/Section2_5Details";
 import Section2_6Details, { SectionSixForm, SectionSixRow } from "@/components/check-form/forms/form1-3/new_form/Section2_6Details";
 import Section2_7Details, { SectionSevenForm, SectionSevenRow } from "@/components/check-form/forms/form1-3/new_form/Section2_7Details";
 import { showLoading } from "@/lib/loading";
@@ -35,6 +35,8 @@ type FormData = {
     sectionTwo?: Partial<SectionTwoForm>;
     sectionThree?: Partial<SectionThreeForm>
     sectionFour?: Partial<SectionFourForm>
+    section2_5?: Partial<Section2_5Form>
+    section2_6?: Partial<SectionSixForm>
     section2_7?: Partial<SectionSevenForm>
 };
 
@@ -52,15 +54,15 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
     const [coverSrc, setCoverSrc] = React.useState<string | null>(null);
     const [openSections, setOpenSections] = React.useState<string[]>([]);
 
-    const onSectionTwoChange = React.useCallback(
-        (patch: Partial<SectionTwoForm>) => {
-            setFormData(prev => ({
-                ...prev,
-                sectionTwo: { ...(prev.sectionTwo ?? {}), ...patch },
-            }));
-        },
-        []
-    );
+    const onSectionTwoChange = React.useCallback((patch: Partial<SectionTwoForm>) => {
+        setFormData((prev) => ({
+            ...prev,
+            sectionTwo: {
+                ...(prev.sectionTwo ?? {}),
+                ...(patch ?? {}),
+            },
+        }));
+    }, []);
 
     const onSectionFourChange = React.useCallback((patch: Partial<SectionFourForm>) => {
         setFormData(prev => {
@@ -469,7 +471,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
             {/* ระยะขอบกระดาษ */}
             <div className="p-2 relative">
                 <div className="absolute right-2.5">
-                    <button
+                    {/* <button
                         type="button"
                         onClick={() => exportToExcel(formData.sectionFour ?? null, jobId ?? "")}
                         className="mr-2 w-[100px] h-10 bg-green-600 hover:bg-green-700 active:bg-green-700 text-white rounded-[5px] inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
@@ -484,7 +486,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     >
                         <img src="/images/IconWord.png" alt="Word" className="h-5 w-5 object-contain" />
                         <span className="leading-none">Export</span>
-                    </button>
+                    </button> */}
                 </div>
                 <div className="w-full h-[5vh] grid place-items-center">
                     <span className="text-black md:text-3xl font-bold tracking-wide">
@@ -644,6 +646,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         <div className="overflow-hidden">
                             <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
                                 <SectionTwoDetails
+                                    eq_id={equipment_id}
                                     data={formData.sectionTwo ?? {}}
                                     value={formData.sectionTwo ?? {}}
                                     onChange={onSectionTwoChange}
@@ -918,7 +921,75 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     >
                         <div className="overflow-hidden">
                             <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
-                                <Section2_5Details />
+                                <Section2_5Details
+                                    value={formData.section2_5}
+                                    onChange={(patch) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            section2_5: {
+                                                table1: {
+                                                    ...(prev.section2_5?.table1 ?? {}),
+                                                    ...(patch.table1 ?? {}),
+                                                },
+                                                table2: {
+                                                    ...(prev.section2_5?.table2 ?? {}),
+                                                    ...(patch.table2 ?? {}),
+                                                },
+                                            },
+                                        }))
+                                    }
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* ส่วนที่ 6 */}
+                <section className="w-full mb-3">
+                    <button
+                        type="button"
+                        onClick={() => toggle("section2_6")}
+                        aria-expanded={openSections.includes("section2_6")}
+                        className="w-full grid h-[5vh] select-none cursor-pointer"
+                    >
+                        <span className="flex items-center justify-between gap-2 text-black md:text-xl font-bold tracking-wide rounded-xl bg-white px-4 py-2 border shadow-md hover:shadow-lg">
+                            ส่วนที่ 6 ผลการตรวจสภาพป้าย และอุปกรณ์ประกอบของป้าย
+                            <svg
+                                className={`w-4 h-4 transition-transform ${openSections.includes("section2_6") ? "rotate-180" : ""}`}
+                                viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+                            >
+                                <path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" />
+                            </svg>
+                        </span>
+                    </button>
+
+                    {/* พื้นที่เนื้อหา: พับ/กางด้วย CSS grid trick */}
+                    <div
+                        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out
+          ${openSections.includes("section2_6") ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+                    >
+                        <div className="overflow-hidden">
+                            <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
+                                <Section2_6Details
+                                    form_code={formData.form_code}
+                                    value={formData.section2_6}
+                                    onChange={(patch) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            section2_6: {
+                                                table1: {
+                                                    ...(prev.section2_6?.table1 ?? {}),
+                                                    ...(patch.table1 ?? {}),
+                                                },
+                                                table2: {
+                                                    ...(prev.section2_6?.table2 ?? {}),
+                                                    ...(patch.table2 ?? {}),
+                                                },
+                                            },
+                                        }))
+                                    }
+                                />
+
                             </div>
                         </div>
                     </div>
@@ -952,15 +1023,29 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                             <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
                                 <Section2_7Details
                                     name={name}
-                                    value={formData.section2_7 ?? { rows: {}, meta: {} }}
-                                    onChange={onSectionSevenChange}
+                                    value={formData.section2_7}
+                                    onChange={(patch) =>
+                                        setFormData((prev: any) => ({
+                                            ...prev,
+                                            sectionSeven: {
+                                                rows: {
+                                                    ...(prev.sectionSeven?.rows ?? {}),
+                                                    ...(patch.rows ?? {}), // ✅ merge rows ราย id
+                                                },
+                                                meta: {
+                                                    ...(prev.sectionSeven?.meta ?? {}),
+                                                    ...(patch.meta ?? {}), // ✅ merge meta
+                                                },
+                                            },
+                                        }))
+                                    }
                                 />
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <div className="flex">
+                {/* <div className="flex">
                     <button
                         type="button"
                         onClick={handleSave}
@@ -978,7 +1063,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         Save
                     </button>
                 </div>
-                {/* <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
+                <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
                     {JSON.stringify(formData, null, 2)}
                 </pre> */}
             </div>
