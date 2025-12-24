@@ -5,8 +5,8 @@ export type UseStatus = "ok" | "ng" | ""; // ใช้ได้ / ใช้ไ�
 
 export type SectionThreeRow = {
     // 2 checkbox ด้านบน (เลือกได้อย่างเดียว)
-    noChecked?: boolean;   // ไม่พบ...
-    hasChecked?: boolean;  // มี...
+    noChecked?: boolean; // ไม่พบ...
+    hasChecked?: boolean; // มี...
 
     // รายละเอียดด้านล่าง (เมื่อเลือก hasChecked)
     detail1?: string;
@@ -27,21 +27,21 @@ export type YesNo = "yes" | "no" | "";
 export type OkNg = "ok" | "ng" | "";
 
 export type Section8Row = {
-    exist?: YesNo;       // มี / ไม่มี
-    wear?: YesNo;        // การชำรุดสึกหรอ มี / ไม่มี
-    damage?: YesNo;      // ความเสียหาย มี / ไม่มี
-    stability?: OkNg;    // ความมั่นคงผู้ตรวจสอบ ใช้ได้ / ใช้ไม่ได้
-    note?: string;       // หมายเหตุ
-    labelExtra?: string;
+    exist?: YesNo; // มี / ไม่มี
+    wear?: YesNo; // การชำรุดสึกหรอ มี / ไม่มี
+    damage?: YesNo; // ความเสียหาย มี / ไม่มี
+    stability?: OkNg; // ความมั่นคงผู้ตรวจสอบ ใช้ได้ / ใช้ไม่ได้
+    note?: string; // หมายเหตุ
+    labelExtra?: string; // สำหรับ "อื่น ๆ (โปรดระบุ)"
 };
 
 export type Section9Row = {
-    exist?: YesNo;       // มี / ไม่มี
-    wear?: YesNo;        // การชำรุดสึกหรอ มี / ไม่มี
-    damage?: YesNo;      // ความเสียหาย มี / ไม่มี
-    stability?: OkNg;    // ความมั่นคงผู้ตรวจสอบ ใช้ได้ / ใช้ไม่ได้
-    note?: string;       // หมายเหตุ
-    labelExtra?: string; // สำหรับ "อื่น ๆ (โปรดระบุ)"
+    exist?: YesNo;
+    wear?: YesNo;
+    damage?: YesNo;
+    stability?: OkNg;
+    note?: string;
+    labelExtra?: string;
 };
 
 /** ✅ ใช้ชื่อเดิมเพื่อให้หน้าอื่นไม่แตก */
@@ -59,7 +59,10 @@ type Props = {
 };
 
 /* ========================== HELPERS ========================== */
-const DottedInput: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({ className = "", ...props }) => (
+const DottedInput: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({
+    className = "",
+    ...props
+}) => (
     <input
         {...props}
         className={[
@@ -79,8 +82,18 @@ const TwoLines: React.FC<{
     disabled?: boolean;
 }> = ({ v1, v2, on1, on2, disabled }) => (
     <div className="space-y-2">
-        <DottedInput className="w-full" value={v1} disabled={disabled} onChange={(e) => on1(e.currentTarget.value)} />
-        <DottedInput className="w-full" value={v2} disabled={disabled} onChange={(e) => on2(e.currentTarget.value)} />
+        <DottedInput
+            className="w-full"
+            value={v1}
+            disabled={disabled}
+            onChange={(e) => on1(e.currentTarget.value)}
+        />
+        <DottedInput
+            className="w-full"
+            value={v2}
+            disabled={disabled}
+            onChange={(e) => on2(e.currentTarget.value)}
+        />
     </div>
 );
 
@@ -89,17 +102,14 @@ type TopChoiceText = {
     title: string;
     noText: React.ReactNode;
     hasText: React.ReactNode;
-    note?: string; // หมายเหตุท้ายข้อ (เฉพาะ 5-7)
+    note?: string;
 };
 
 const ITEMS_1_7: TopChoiceText[] = [
     {
-        title: "การตรวจสอบการต่อเติมดัดแปลงปรับปรุงขนาดของป้ายหรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย",
-        noText: (
-            <>
-                ไม่พบการต่อเติม ดัดแปลงปรับปรุงขนาด
-            </>
-        ),
+        title:
+            "การตรวจสอบการต่อเติมดัดแปลงปรับปรุงขนาดของป้ายหรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย",
+        noText: <>ไม่พบการต่อเติม ดัดแปลงปรับปรุงขนาด</>,
         hasText: (
             <>
                 มีการต่อเติม ดัดแปลง ปรับปรุงขนาดของป้าย (หากระบุว่า ‘มี’ ให้บันทึกรายละเอียดด้านล่าง)
@@ -129,13 +139,15 @@ const ITEMS_1_7: TopChoiceText[] = [
             "การวิบัติ หมายถึง การชำรุดของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย ซึ่งมากจนป้ายนั้นไม่สามารถจะใช้งานตามวัตถุประสงค์ได้โดยปลอดภัย",
     },
     {
-        title: `การตรวจสอบความมั่นคงแข็งแรงของโครงสร้างและฐานรากของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย (กรณีป้ายที่ติดตั้งบนพื้นดิน)`,
+        title:
+            "การตรวจสอบความมั่นคงแข็งแรงของโครงสร้างและฐานรากของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย (กรณีป้ายที่ติดตั้งบนพื้นดิน)",
         noText: <>ไม่พบการทรุดตัว **</>,
         hasText: <>มีการทรุดตัว (หากระบุว่า ‘มี’ ให้บันทึกรายละเอียดด้านล่าง)</>,
         note: "การทรุดตัว หมายถึง การยุบตัวลงของโครงสร้างและฐานรากของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย",
     },
     {
-        title: `การตรวจสอบความมั่นคงแข็งแรงของอาคารที่ติดตั้งป้าย (กรณีป้ายบนหลังคา หรือบนดาดฟ้าอาคาร หรือบนส่วนหนึ่งส่วนใดของอาคาร)`,
+        title:
+            "การตรวจสอบความมั่นคงแข็งแรงของอาคารที่ติดตั้งป้าย (กรณีป้ายบนหลังคา หรือบนดาดฟ้าอาคาร หรือบนส่วนหนึ่งส่วนใดของอาคาร)",
         noText: <>ไม่พบการทรุดตัว **</>,
         hasText: <>มีการทรุดตัว (หากระบุว่า ‘มี’ ให้บันทึกรายละเอียดด้านล่าง)</>,
         note: "การทรุดตัว หมายถึง การยุบตัวลงของอาคารที่ติดตั้งป้าย",
@@ -143,6 +155,7 @@ const ITEMS_1_7: TopChoiceText[] = [
 ];
 
 export default function SectionThreeDetails({ value, onChange }: Props) {
+    /* -------------------- 1-7 -------------------- */
     const [items, setItems] = React.useState<Record<string, SectionThreeRow>>({});
 
     React.useEffect(() => {
@@ -164,7 +177,6 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
             emit(id, {
                 noChecked: checked,
                 hasChecked: checked ? false : row.hasChecked,
-                // ถ้าเลือก "ไม่พบ" ให้ล้างรายละเอียด
                 detail1: checked ? "" : row.detail1,
                 detail2: checked ? "" : row.detail2,
             });
@@ -172,7 +184,6 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
             emit(id, {
                 hasChecked: checked,
                 noChecked: checked ? false : row.noChecked,
-                // ถ้าไม่เลือก "มี" ให้ล้างรายละเอียด
                 detail1: checked ? row.detail1 ?? "" : "",
                 detail2: checked ? row.detail2 ?? "" : "",
             });
@@ -180,10 +191,10 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
     };
 
     const setStatus = (id: string, status: UseStatus, checked: boolean) => {
-        const next = checked ? status : "";
-        emit(id, { status: next });
+        emit(id, { status: checked ? status : "" });
     };
 
+    /* -------------------- 8 -------------------- */
     const [section8State, setSection8State] = React.useState<Record<string, Section8Row>>({});
 
     const emit8 = React.useCallback(
@@ -195,10 +206,9 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
         [section8State, onChange]
     );
 
-    // helper: เลือกแบบคู่ (ติ๊กได้อย่างเดียว)
     const setYesNo8 = React.useCallback(
         (rowId: string, key: "exist" | "wear" | "damage", val: YesNo, checked: boolean) => {
-            emit8(rowId, { [key]: checked ? val : "" } as any);
+            emit8(rowId, { [key]: checked ? val : "" } as Pick<Section8Row, typeof key>);
         },
         [emit8]
     );
@@ -210,6 +220,7 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
         [emit8]
     );
 
+    /* -------------------- 9 -------------------- */
     const [section9State, setSection9State] = React.useState<Record<string, Section9Row>>({});
     const [section9Extra1, setSection9Extra1] = React.useState(value?.section9Extra1 ?? "");
     const [section9Extra2, setSection9Extra2] = React.useState(value?.section9Extra2 ?? "");
@@ -219,7 +230,7 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
         setSection9State(value?.section9 ?? {});
         setSection9Extra1(value?.section9Extra1 ?? "");
         setSection9Extra2(value?.section9Extra2 ?? "");
-    }, [value?.section8,value?.section9, value?.section9Extra1, value?.section9Extra2]);
+    }, [value?.section8, value?.section9, value?.section9Extra1, value?.section9Extra2]);
 
     const emit9 = React.useCallback(
         (rowId: string, delta: Partial<Section9Row>) => {
@@ -232,7 +243,7 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
 
     const setYesNo9 = React.useCallback(
         (rowId: string, key: "exist" | "wear" | "damage", val: YesNo, checked: boolean) => {
-            emit9(rowId, { [key]: checked ? val : "" } as any);
+            emit9(rowId, { [key]: checked ? val : "" } as Pick<Section9Row, typeof key>);
         },
         [emit9]
     );
@@ -260,6 +271,7 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                 <div className="pt-1 text-base font-semibold">รายการที่ตรวจสอบ</div>
             </div>
 
+            {/* 1-7 */}
             {ITEMS_1_7.map((cfg, idx) => {
                 const no = idx + 1;
                 const id = `s3-${no}`;
@@ -267,7 +279,6 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
 
                 return (
                     <div key={id} className="border border-gray-400 bg-white">
-                        {/* หัวข้อ */}
                         <div className="border-b border-gray-400 bg-gray-200 px-3 py-2">
                             <div className="text-sm font-semibold leading-snug">
                                 {no}. {cfg.title}
@@ -275,7 +286,6 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                         </div>
 
                         <div className="bg-gray-50 px-3 py-3 space-y-3">
-                            {/* 2 checkbox ด้านบน (คำต่างกันตามข้อ) */}
                             <label className="flex items-start gap-2 text-sm leading-snug">
                                 <input
                                     type="checkbox"
@@ -297,7 +307,6 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                                     <span>{cfg.hasText}</span>
                                 </label>
 
-                                {/* รายละเอียดด้านล่าง (2 บรรทัด) */}
                                 <TwoLines
                                     disabled={!row.hasChecked}
                                     v1={row.detail1 ?? ""}
@@ -309,7 +318,6 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
 
                             <div className="border-t border-gray-300" />
 
-                            {/* ความเห็นของผู้ตรวจสอบ */}
                             <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-2 items-start">
                                 <div className="text-sm font-medium">ความเห็นของผู้ตรวจสอบ</div>
 
@@ -347,7 +355,6 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
 
                             <div className="border-t border-gray-300" />
 
-                            {/* อื่น ๆ */}
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-sm select-none">
                                     <input
@@ -375,7 +382,6 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                                 />
                             </div>
 
-                            {/* หมายเหตุท้ายข้อ (เฉพาะ 5-7) */}
                             {cfg.note && (
                                 <div className="pt-1 text-xs text-gray-700 leading-relaxed">
                                     <span className="font-semibold">หมายเหตุ: </span>
@@ -386,13 +392,14 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                     </div>
                 );
             })}
-            {/* ========================== ข้อ 8 (ตารางตามรูป - แก้ merge + พิมพ์อื่นๆได้) ========================== */}
+
+            {/* ========================== ข้อ 8 ========================== */}
             {(() => {
                 const td = "border border-gray-400 px-2 py-2 align-middle";
-                const th = "border border-gray-400 px-2 py-2 font-semibold text-center";
-                let runningNo = 0;
+                const thBase = "border border-gray-400 px-2 py-2 font-semibold text-center";
+                const thNoBottom = `${thBase} border-b-0`;
+                const thNoTop = `${thBase} border-t-0`;
 
-                // helper: แถวที่เป็น "อื่น ๆ (โปรดระบุ)" ให้มี input ต่อท้ายในคอลัมน์รายการ
                 const renderItemLabel = (rowId: string, text: string) => {
                     const isOther = text.includes("อื่น ๆ (โปรดระบุ)");
                     if (!isOther) return <span>{text}</span>;
@@ -403,15 +410,13 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                             <span>- อื่น ๆ (โปรดระบุ)</span>
                             <input
                                 className="flex-1 bg-transparent border-0 border-b border-dashed border-black/40 focus:outline-none focus:ring-0 px-1"
-                                value={(v as any).labelExtra ?? ""}
-                                onChange={(e) => emit8(rowId, { ...(v as any), labelExtra: e.currentTarget.value } as any)}
-                                placeholder=""
+                                value={v.labelExtra ?? ""}
+                                onChange={(e) => emit8(rowId, { labelExtra: e.currentTarget.value })}
                             />
                         </div>
                     );
                 };
 
-                // CONFIG ใหม่: มีแค่ 2 หัวข้อใหญ่ (1) และ (2) + subgroup + item
                 type RowCfg =
                     | { type: "group"; groupNo: "(1)" | "(2)"; label: string }
                     | { type: "subgroup"; label: string }
@@ -419,28 +424,19 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
 
                 const ROWS: RowCfg[] = [
                     { type: "group", groupNo: "(1)", label: "สิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย" },
-
-                    // ✅ ฐานราก ต้องติ๊กได้ => ทำเป็น item
                     { type: "item", id: "s8-1-foundation", label: "- ฐานราก" },
-
-                    // ✅ แถวข้อความยาวนี้ในรูปติ๊กได้ด้วย => ทำเป็น item
                     {
                         type: "item",
                         id: "s8-1-anchor",
                         label: "- การเชื่อมยึดของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้ายกับฐานรากหรืออาคาร",
                     },
-
                     { type: "item", id: "s8-1-part", label: "- ชิ้นส่วน" },
 
-                    // ✅ รอยต่อ เป็นหัวข้อ merge (ติ๊กไม่ได้)
                     { type: "subgroup", label: "- รอยต่อ" },
-
-                    // ✅ ในรอยต่อ ติ๊กได้ 3 อัน
                     { type: "item", id: "s8-1-bolt", label: "- สลักเกลียว" },
                     { type: "item", id: "s8-1-weld", label: "- การเชื่อม" },
                     { type: "item", id: "s8-1-joint-other", label: "- อื่น ๆ (โปรดระบุ)" },
 
-                    // ✅ กลุ่มนี้ต้องมีตามรูป (อย่าตัดออก)
                     { type: "item", id: "s8-1-sling", label: "- สลิง หรือสายยึด" },
                     { type: "item", id: "s8-1-ladder", label: "- บันไดขึ้นลง" },
                     { type: "item", id: "s8-1-rail", label: "- ราวจับ หรือราวกันตก" },
@@ -462,44 +458,57 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
 
                         <table className="w-full text-sm border-collapse">
                             <thead>
+                                {/* ✅ แถวบน: ไม่มีหัวข้อ "มี" อันแรก + ปิดเส้น row เฉพาะคู่ มี/ไม่มี (exist) */}
                                 <tr className="bg-gray-200">
-                                    <th rowSpan={3} className={`${th} w-[70px]`}>ลำดับที่</th>
-                                    <th rowSpan={3} className={`${th} text-left`}>รายการ</th>
-                                    <th rowSpan={3} className={`${th} w-[60px]`}>ปี</th>
+                                    <th rowSpan={2} className={`${thBase} w-[70px]`}>
+                                        ลำดับที่
+                                    </th>
+                                    <th rowSpan={2} className={`${thBase} text-left`}>
+                                        รายการ
+                                    </th>
 
-                                    <th colSpan={2} className={th}>มี</th>
-                                    <th colSpan={2} className={th}>การชำรุดสึกหรอ</th>
-                                    <th colSpan={2} className={th}>ความเสียหาย</th>
-                                    <th colSpan={2} className={th}>ความมั่นคงผู้ตรวจสอบ</th>
+                                    {/* ✅ ช่องบนของ "มี/ไม่มี" (exist) แยก 2 ช่อง เพื่อให้เส้นตั้ง (col) ต่อเนื่อง แต่ปิดเส้นล่าง */}
+                                    <th className={`${thNoBottom} w-[55px]`}></th>
+                                    <th className={`${thNoBottom} w-[65px]`}></th>
 
-                                    <th rowSpan={3} className={`${th} w-[180px]`}>หมายเหตุ</th>
+                                    <th colSpan={2} className={thBase}>
+                                        การชำรุดสึกหรอ
+                                    </th>
+                                    <th colSpan={2} className={thBase}>
+                                        ความเสียหาย
+                                    </th>
+                                    <th colSpan={2} className={thBase}>
+                                        ความมั่นคงผู้ตรวจสอบ
+                                    </th>
+
+                                    <th rowSpan={2} className={`${thBase} w-[180px]`}>
+                                        หมายเหตุ
+                                    </th>
                                 </tr>
 
+                                {/* ✅ แถวล่าง: "มี/ไม่มี" exist ไม่มีเส้นบน (border-t-0) ตามรูปที่ 2 */}
                                 <tr className="bg-gray-200">
-                                    <th rowSpan={2} className={`${th} w-[50px]`}>มี</th>
-                                    <th rowSpan={2} className={`${th} w-[60px]`}>ไม่มี</th>
+                                    <th className={`${thNoTop} w-[55px]`}>มี</th>
+                                    <th className={`${thNoTop} w-[65px]`}>ไม่มี</th>
 
-                                    <th rowSpan={2} className={`${th} w-[60px]`}>มี</th>
-                                    <th rowSpan={2} className={`${th} w-[60px]`}>ไม่มี</th>
+                                    <th className={`${thBase} w-[55px]`}>มี</th>
+                                    <th className={`${thBase} w-[65px]`}>ไม่มี</th>
 
-                                    <th rowSpan={2} className={`${th} w-[60px]`}>มี</th>
-                                    <th rowSpan={2} className={`${th} w-[60px]`}>ไม่มี</th>
+                                    <th className={`${thBase} w-[55px]`}>มี</th>
+                                    <th className={`${thBase} w-[65px]`}>ไม่มี</th>
 
-                                    <th rowSpan={2} className={`${th} w-[70px]`}>ใช้ได้</th>
-                                    <th rowSpan={2} className={`${th} w-[80px]`}>ใช้ไม่ได้</th>
+                                    <th className={`${thBase} w-[70px]`}>ใช้ได้</th>
+                                    <th className={`${thBase} w-[80px]`}>ใช้ไม่ได้</th>
                                 </tr>
-
-                                <tr className="bg-gray-200" />
                             </thead>
 
                             <tbody>
                                 {ROWS.map((r, idx) => {
-                                    // ✅ แถวหัวข้อใหญ่: ลำดับเป็น (1)/(2) และ merge รายการยาวทั้งแถว
                                     if (r.type === "group") {
                                         return (
-                                            <tr key={`g-${idx}`} className="bg-gray-100">
+                                            <tr key={`g8-${idx}`} className="bg-gray-100">
                                                 <td className={`${td} text-center font-semibold`}>{r.groupNo}</td>
-                                                <td className={`${td} font-semibold`} colSpan={10}>
+                                                <td className={`${td} font-semibold`} colSpan={9}>
                                                     {r.label}
                                                 </td>
                                                 <td className={td}></td>
@@ -507,12 +516,11 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                                         );
                                     }
 
-                                    // ✅ แถวย่อย: ไม่มีเลขลำดับ และ merge รายการยาวทั้งแถว
                                     if (r.type === "subgroup") {
                                         return (
-                                            <tr key={`sg-${idx}`} className="bg-gray-50">
+                                            <tr key={`sg8-${idx}`} className="bg-gray-50">
                                                 <td className={td}></td>
-                                                <td className={`${td} font-semibold`} colSpan={10}>
+                                                <td className={`${td} font-semibold`} colSpan={9}>
                                                     {r.label}
                                                 </td>
                                                 <td className={td}></td>
@@ -520,17 +528,14 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                                         );
                                     }
 
-                                    // item: นับเลขเฉพาะรายการจริง
-                                    runningNo += 1;
                                     const v = section8State[r.id] ?? {};
 
                                     return (
                                         <tr key={r.id} className="odd:bg-white even:bg-gray-50">
                                             <td className={`${td} text-center`}></td>
                                             <td className={td}>{renderItemLabel(r.id, r.label)}</td>
-                                            <td className={td}></td>
 
-                                            {/* มี / ไม่มี */}
+                                            {/* exist */}
                                             <td className={`${td} text-center`}>
                                                 <input
                                                     type="checkbox"
@@ -548,7 +553,7 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                                                 />
                                             </td>
 
-                                            {/* ชำรุดสึกหรอ มี/ไม่มี */}
+                                            {/* wear */}
                                             <td className={`${td} text-center`}>
                                                 <input
                                                     type="checkbox"
@@ -566,7 +571,7 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                                                 />
                                             </td>
 
-                                            {/* ความเสียหาย มี/ไม่มี */}
+                                            {/* damage */}
                                             <td className={`${td} text-center`}>
                                                 <input
                                                     type="checkbox"
@@ -584,7 +589,7 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                                                 />
                                             </td>
 
-                                            {/* ความมั่นคงผู้ตรวจสอบ ใช้ได้/ใช้ไม่ได้ */}
+                                            {/* stability */}
                                             <td className={`${td} text-center`}>
                                                 <input
                                                     type="checkbox"
@@ -602,7 +607,7 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                                                 />
                                             </td>
 
-                                            {/* หมายเหตุ */}
+                                            {/* note */}
                                             <td className={td}>
                                                 <input
                                                     className="w-full bg-transparent border-0 border-b border-dashed border-black/40 focus:outline-none focus:ring-0"
@@ -618,53 +623,36 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                     </div>
                 );
             })()}
-            {/* ========================== ข้อ 9 (ตารางตามรูป + รายละเอียดเพิ่มเติม) ========================== */}
+
+            {/* ========================== ข้อ 9 ========================== */}
             {(() => {
                 const td = "border border-gray-400 px-2 py-2 align-middle";
-                const th = "border border-gray-400 px-2 py-2 font-semibold text-center";
+                const thBase = "border border-gray-400 px-2 py-2 font-semibold text-center";
+                const thNoBottom = `${thBase} border-b-0`;
+                const thNoTop = `${thBase} border-t-0`;
 
                 type RowCfg9 =
                     | { type: "group"; groupNo: "(1)" | "(2)" | "(3)"; label: string }
                     | { type: "item"; id: string; label: string };
 
                 const ROWS9: RowCfg9[] = [
-                    {
-                        type: "group",
-                        groupNo: "(1)",
-                        label: "ระบบไฟฟ้าแสงสว่าง และระบบไฟฟ้ากำลัง",
-                    },
+                    { type: "group", groupNo: "(1)", label: "ระบบไฟฟ้าแสงสว่าง และระบบไฟฟ้ากำลัง" },
                     { type: "item", id: "s9-1-lamp", label: "- โคมไฟฟ้า หรือหลอดไฟ" },
                     { type: "item", id: "s9-1-conduit", label: "- ท่อร้อยสาย" },
                     { type: "item", id: "s9-1-control", label: "- อุปกรณ์ควบคุม" },
                     { type: "item", id: "s9-1-ground", label: "- การต่อลงดิน" },
-                    {
-                        type: "item",
-                        id: "s9-1-maint",
-                        label: "- ตรวจบันทึกการบำรุงรักษา พาหนะบำรุงรักษาตามเวลาที่กำหนด",
-                    },
+                    { type: "item", id: "s9-1-maint", label: "- ตรวจบันทึกการบำรุงรักษา พาหนะบำรุงรักษาตามเวลาที่กำหนด" },
                     { type: "item", id: "s9-1-other", label: "- อื่น ๆ (โปรดระบุ)" },
 
-                    {
-                        type: "group",
-                        groupNo: "(2)",
-                        label: "ระบบป้องกันฟ้าผ่า (ถ้ามี)",
-                    },
+                    { type: "group", groupNo: "(2)", label: "ระบบป้องกันฟ้าผ่า (ถ้ามี)" },
                     { type: "item", id: "s9-2-air", label: "- ตัวนำล่อฟ้า" },
                     { type: "item", id: "s9-2-down", label: "- ตัวนำต่อลงดิน" },
                     { type: "item", id: "s9-2-earth", label: "- รากสายดิน" },
                     { type: "item", id: "s9-2-bond", label: "- จุดต่อประสานศักย์" },
-                    {
-                        type: "item",
-                        id: "s9-2-maint",
-                        label: "- ตรวจบันทึกการบำรุงรักษา พาหนะบำรุงรักษาตามเวลาที่กำหนด",
-                    },
+                    { type: "item", id: "s9-2-maint", label: "- ตรวจบันทึกการบำรุงรักษา พาหนะบำรุงรักษาตามเวลาที่กำหนด" },
                     { type: "item", id: "s9-2-other", label: "- อื่น ๆ (โปรดระบุ)" },
 
-                    {
-                        type: "group",
-                        groupNo: "(3)",
-                        label: "ระบบอุปกรณ์ประกอบอื่น ๆ (ถ้ามี)",
-                    },
+                    { type: "group", groupNo: "(3)", label: "ระบบอุปกรณ์ประกอบอื่น ๆ (ถ้ามี)" },
                     { type: "item", id: "s9-3-sling", label: "- สลิง หรือสายยึด" },
                     { type: "item", id: "s9-3-ladder", label: "- บันไดขึ้นลง" },
                     { type: "item", id: "s9-3-rail", label: "- ราวจับ หรือราวกันตก" },
@@ -698,33 +686,45 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                         <table className="w-full text-sm border-collapse">
                             <thead>
                                 <tr className="bg-gray-200">
-                                    <th rowSpan={3} className={`${th} w-[70px]`}>ลำดับที่</th>
-                                    <th rowSpan={3} className={`${th} text-left`}>รายการ</th>
-                                    <th rowSpan={3} className={`${th} w-[60px]`}>ปี</th>
+                                    <th rowSpan={2} className={`${thBase} w-[70px]`}>
+                                        ลำดับที่
+                                    </th>
+                                    <th rowSpan={2} className={`${thBase} text-left`}>
+                                        รายการ
+                                    </th>
 
-                                    <th colSpan={2} className={th}>มี</th>
-                                    <th colSpan={2} className={th}>การชำรุดสึกหรอ</th>
-                                    <th colSpan={2} className={th}>ความเสียหาย</th>
-                                    <th colSpan={2} className={th}>ความมั่นคงผู้ตรวจสอบ</th>
+                                    {/* ✅ ปิดเส้น row เฉพาะคู่ "มี/ไม่มี" แรก (exist) เหมือนข้อ 8 */}
+                                    <th className={`${thNoBottom} w-[55px]`}></th>
+                                    <th className={`${thNoBottom} w-[65px]`}></th>
 
-                                    <th rowSpan={3} className={`${th} w-[180px]`}>หมายเหตุ</th>
+                                    <th colSpan={2} className={thBase}>
+                                        การชำรุดสึกหรอ
+                                    </th>
+                                    <th colSpan={2} className={thBase}>
+                                        ความเสียหาย
+                                    </th>
+                                    <th colSpan={2} className={thBase}>
+                                        ความมั่นคงผู้ตรวจสอบ
+                                    </th>
+
+                                    <th rowSpan={2} className={`${thBase} w-[180px]`}>
+                                        หมายเหตุ
+                                    </th>
                                 </tr>
 
                                 <tr className="bg-gray-200">
-                                    <th rowSpan={2} className={`${th} w-[50px]`}>มี</th>
-                                    <th rowSpan={2} className={`${th} w-[60px]`}>ไม่มี</th>
+                                    <th className={`${thNoTop} w-[55px]`}>มี</th>
+                                    <th className={`${thNoTop} w-[65px]`}>ไม่มี</th>
 
-                                    <th rowSpan={2} className={`${th} w-[60px]`}>มี</th>
-                                    <th rowSpan={2} className={`${th} w-[60px]`}>ไม่มี</th>
+                                    <th className={`${thBase} w-[55px]`}>มี</th>
+                                    <th className={`${thBase} w-[65px]`}>ไม่มี</th>
 
-                                    <th rowSpan={2} className={`${th} w-[60px]`}>มี</th>
-                                    <th rowSpan={2} className={`${th} w-[60px]`}>ไม่มี</th>
+                                    <th className={`${thBase} w-[55px]`}>มี</th>
+                                    <th className={`${thBase} w-[65px]`}>ไม่มี</th>
 
-                                    <th rowSpan={2} className={`${th} w-[70px]`}>ใช้ได้</th>
-                                    <th rowSpan={2} className={`${th} w-[80px]`}>ใช้ไม่ได้</th>
+                                    <th className={`${thBase} w-[70px]`}>ใช้ได้</th>
+                                    <th className={`${thBase} w-[80px]`}>ใช้ไม่ได้</th>
                                 </tr>
-
-                                <tr className="bg-gray-200" />
                             </thead>
 
                             <tbody>
@@ -733,7 +733,7 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                                         return (
                                             <tr key={`g9-${idx}`} className="bg-gray-100">
                                                 <td className={`${td} text-center font-semibold`}>{r.groupNo}</td>
-                                                <td className={`${td} font-semibold`} colSpan={10}>
+                                                <td className={`${td} font-semibold`} colSpan={9}>
                                                     {r.label}
                                                 </td>
                                                 <td className={td}></td>
@@ -745,13 +745,10 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
 
                                     return (
                                         <tr key={r.id} className="odd:bg-white even:bg-gray-50">
-                                            {/* ✅ ไม่ต้องมีเลข 1..n */}
                                             <td className={`${td} text-center`}></td>
-
                                             <td className={td}>{renderItemLabel9(r.id, r.label)}</td>
-                                            <td className={td}></td>
 
-                                            {/* มี / ไม่มี */}
+                                            {/* exist */}
                                             <td className={`${td} text-center`}>
                                                 <input
                                                     type="checkbox"
@@ -769,7 +766,7 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                                                 />
                                             </td>
 
-                                            {/* ชำรุดสึกหรอ มี/ไม่มี */}
+                                            {/* wear */}
                                             <td className={`${td} text-center`}>
                                                 <input
                                                     type="checkbox"
@@ -787,7 +784,7 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                                                 />
                                             </td>
 
-                                            {/* ความเสียหาย มี/ไม่มี */}
+                                            {/* damage */}
                                             <td className={`${td} text-center`}>
                                                 <input
                                                     type="checkbox"
@@ -805,7 +802,7 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                                                 />
                                             </td>
 
-                                            {/* ความมั่นคงผู้ตรวจสอบ ใช้ได้/ใช้ไม่ได้ */}
+                                            {/* stability */}
                                             <td className={`${td} text-center`}>
                                                 <input
                                                     type="checkbox"
@@ -823,7 +820,7 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                                                 />
                                             </td>
 
-                                            {/* หมายเหตุ */}
+                                            {/* note */}
                                             <td className={td}>
                                                 <input
                                                     className="w-full bg-transparent border-0 border-b border-dashed border-black/40 focus:outline-none focus:ring-0"
@@ -837,7 +834,7 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                             </tbody>
                         </table>
 
-                        {/* ✅ รายละเอียดเพิ่มเติม ต่อท้ายตาราง */}
+                        {/* รายละเอียดเพิ่มเติม */}
                         <div className="px-3 py-3 bg-white border-t border-gray-300">
                             <div className="text-sm font-semibold mb-2">รายละเอียดเพิ่มเติม</div>
                             <div className="space-y-2">

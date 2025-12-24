@@ -4,7 +4,7 @@ import CompanyHeader from "@/components/check-form/forms/form1-3/CompanyHeader";
 import SectionOneDetails from "@/components/check-form/forms/form1-3/SectionOneDetails";
 import SectionTwoDetails, { SectionTwoForm } from "@/components/check-form/forms/form1-3/SectionTwoDetails";
 import SectionThreeDetails, { SectionThreeForm } from "@/components/check-form/forms/form1-3/SectionThreeDetails";
-import SectionFourDetails, { SectionFourForm, SectionFourRow } from "@/components/check-form/forms/form1-3/SectionFourDetails";
+import SectionFourDetails, { SectionFourForm } from "@/components/check-form/forms/form1-3/SectionFourDetails";
 
 import Section2_1Details from "@/components/check-form/forms/form1-3/new_form/Section2_1Details";
 import Section2_2Details from "@/components/check-form/forms/form1-3/new_form/Section2_2Details";
@@ -65,34 +65,67 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
     }, []);
 
     const onSectionFourChange = React.useCallback((patch: Partial<SectionFourForm>) => {
-        setFormData(prev => {
-            type GroupKey = keyof SectionFourForm;             // "table1" | "table2"
-            type GroupRows = Record<string, SectionFourRow>;
-            type GroupPatch = Partial<Record<string, Partial<SectionFourRow>>>;
+        setFormData((prev) => {
+            type TableKey = "table1" | "table2";
+            type AnyRows = Record<string, any>;
 
             const prevS4: Partial<SectionFourForm> = prev.sectionFour ?? {};
 
-            const mergeGroup = (group: GroupKey): GroupRows => {
-                const cur: GroupRows = (prevS4[group] as GroupRows) ?? {};
-                const p: GroupPatch = (patch[group] as GroupPatch) ?? {};
-                const next: GroupRows = { ...cur };
+            // ===== merge table1/table2 แบบ generic (รองรับ visits ถ้ามี) =====
+            const mergeGroup = (group: TableKey): AnyRows => {
+                const cur: AnyRows = (prevS4[group] as AnyRows) ?? {};
+                const p: AnyRows = (patch[group] as AnyRows) ?? {};
+                if (!p || Object.keys(p).length === 0) return cur;
+
+                const next: AnyRows = { ...cur };
+
                 for (const rowId of Object.keys(p)) {
-                    const rowPatch: Partial<SectionFourRow> = p[rowId] ?? {};
-                    const prevRow: SectionFourRow = next[rowId] ?? {};
+                    const rowPatch = p[rowId] ?? {};
+                    const prevRow = next[rowId] ?? {};
+
+                    const mergedVisits =
+                        prevRow?.visits &&
+                            rowPatch?.visits &&
+                            typeof prevRow.visits === "object" &&
+                            typeof rowPatch.visits === "object"
+                            ? { ...prevRow.visits, ...rowPatch.visits }
+                            : rowPatch?.visits ?? prevRow?.visits;
+
                     next[rowId] = {
                         ...prevRow,
                         ...rowPatch,
-                        visits: { ...(prevRow.visits ?? {}), ...(rowPatch.visits ?? {}) },
+                        ...(mergedVisits !== undefined ? { visits: mergedVisits } : {}),
                     };
+                }
+
+                return next;
+            };
+
+            // ===== merge summary (merge รายแถว) =====
+            const mergeSummary = () => {
+                const cur = prevS4.summary ?? {};
+                const p = patch.summary ?? {};
+                if (!p || Object.keys(p).length === 0) return cur;
+
+                const next: any = { ...cur };
+                for (const k of Object.keys(p)) {
+                    next[k] = { ...(cur as any)[k], ...(p as any)[k] };
                 }
                 return next;
             };
 
+            const nextOpinion = { ...(prevS4.opinion ?? {}), ...(patch.opinion ?? {}) };
+            const nextSeverity = (patch.severity ?? prevS4.severity ?? "") as any;
+
             return {
                 ...prev,
                 sectionFour: {
+                    ...prevS4, // กันฟิลด์อื่นหาย
                     table1: mergeGroup("table1"),
                     table2: mergeGroup("table2"),
+                    summary: mergeSummary(),
+                    severity: nextSeverity,
+                    opinion: nextOpinion,
                 },
             };
         });
@@ -251,6 +284,22 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
         };
     }, [formData.cover, formData.coverfilename]);
 
+    type SectionTwoWithPreview = Partial<SectionTwoForm> & {
+        mapSketchPreview?: string | null;
+        mapSketchPreview1?: string | null;
+
+        shapeSketchPreview?: string | null;
+        shapeSketchPreview1?: string | null;
+
+        photosFrontPreview?: string | null;
+        photosSidePreview?: string | null;
+        photosBasePreview?: string | null;
+
+        photosFrontPreview1?: string | null;
+        photosSidePreview1?: string | null;
+        photosBasePreview1?: string | null;
+    };
+
     const handleSave = async () => {
         showLoading(true);
         try {
@@ -269,7 +318,6 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
 
                 const uploadData = await uploadRes.json();
                 if (!uploadRes.ok || !uploadData.success) {
-                    showLoading(false);
                     return showAlert("error", uploadData.error || "อัปโหลดไฟล์ไม่สำเร็จ");
                 }
             }
@@ -283,6 +331,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 if (previewUrl && previewUrl.startsWith("blob:") && filename) {
                     const response = await fetch(previewUrl);
                     const blob = await response.blob();
+
                     const fd = new FormData();
                     fd.append("file", blob, filename);
                     fd.append("filename", filename);
@@ -291,23 +340,36 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         method: "POST",
                         body: fd,
                     });
+
                     const result = await uploadRes.json();
                     if (!uploadRes.ok || !result.success) {
-                        // จะไม่ break flow แต่ถ้าอยากให้ error เลยก็ใส่ showAlert/throw ตรงนี้ได้
+                        // ถ้าต้องการให้หยุดเลย → throw new Error(...)
+                        // ตอนนี้ปล่อยผ่านตามโค้ดเดิม
                     }
                 }
             };
 
-            // upload ทั้ง 5 ภาพ (ถ้ามี)
-            if (sectionTwo) {
-                await Promise.all([
-                    uploadImageIfNeeded(sectionTwo.mapSketchPreview, sectionTwo.mapSketch),
-                    uploadImageIfNeeded(sectionTwo.shapeSketchPreview, sectionTwo.shapeSketch),
-                    uploadImageIfNeeded(sectionTwo.photosFrontPreview, sectionTwo.photosFront),
-                    uploadImageIfNeeded(sectionTwo.photosSidePreview, sectionTwo.photosSide),
-                    uploadImageIfNeeded(sectionTwo.photosBasePreview, sectionTwo.photosBase),
-                ]);
-            }
+            const s2 = (sectionTwo ?? {}) as SectionTwoWithPreview;
+
+            await Promise.all([
+                // map 2 รูป
+                uploadImageIfNeeded(s2.mapSketchPreview, s2.mapSketch as any),
+                uploadImageIfNeeded(s2.mapSketchPreview1, s2.mapSketch1 as any),
+
+                // shape 2 รูป
+                uploadImageIfNeeded(s2.shapeSketchPreview, s2.shapeSketch as any),
+                uploadImageIfNeeded(s2.shapeSketchPreview1, s2.shapeSketch1 as any),
+
+                // รูป 1-3
+                uploadImageIfNeeded(s2.photosFrontPreview, s2.photosFront as any),
+                uploadImageIfNeeded(s2.photosSidePreview, s2.photosSide as any),
+                uploadImageIfNeeded(s2.photosBasePreview, s2.photosBase as any),
+
+                // รูป 4-6
+                uploadImageIfNeeded(s2.photosFrontPreview1, s2.photosFront1 as any),
+                uploadImageIfNeeded(s2.photosSidePreview1, s2.photosSide1 as any),
+                uploadImageIfNeeded(s2.photosBasePreview1, s2.photosBase1 as any),
+            ]);
 
             // ---------- 3. Upload SectionFour photos (row.photos + defect.photos) ----------
             let sectionFourClean = sectionFour;
@@ -315,7 +377,6 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
             if (sectionFour) {
                 const uploadPromises: Promise<void>[] = [];
 
-                // helper สำหรับ upload src ที่เป็น base64
                 const uploadPhotoItem = async (src: string, filename: string): Promise<void> => {
                     if (src && src.startsWith("data:image")) {
                         const res = await fetch(src);
@@ -330,7 +391,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         });
                         const data = await uploadRes.json();
                         if (!uploadRes.ok || !data.success) {
-                            // เช่นกัน ถ้าต้องการให้หยุดทันที สามารถ throw error ได้
+                            // ถ้าต้องการให้หยุดทันที สามารถ throw error ได้
                         }
                     }
                 };
@@ -342,7 +403,6 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     for (const [key, row] of Object.entries(table)) {
                         if (!row) continue;
 
-                        // ----- 3.1 จัดการ photos ของ row -----
                         const cleanedRowPhotos =
                             Array.isArray(row.photos)
                                 ? row.photos
@@ -356,7 +416,6 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                                     .filter(Boolean)
                                 : [];
 
-                        // ----- 3.2 จัดการ defect[].photos -----
                         let cleanedDefect = row.defect;
                         if (Array.isArray(row.defect)) {
                             cleanedDefect = row.defect.map((def: any) => {
@@ -366,14 +425,8 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                                     Array.isArray(defectPhotos)
                                         ? defectPhotos
                                             .map((p: any) => {
-                                                if (
-                                                    p?.src &&
-                                                    p?.filename &&
-                                                    p.src.startsWith("data:image")
-                                                ) {
-                                                    uploadPromises.push(
-                                                        uploadPhotoItem(p.src, p.filename)
-                                                    );
+                                                if (p?.src && p?.filename && p.src.startsWith("data:image")) {
+                                                    uploadPromises.push(uploadPhotoItem(p.src, p.filename));
                                                 }
                                                 if (!p?.filename) return null;
                                                 return { filename: p.filename };
@@ -401,10 +454,8 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 const cleanTable1 = processTable(sectionFour.table1);
                 const cleanTable2 = processTable(sectionFour.table2);
 
-                // รอ upload รูป defect + รูป row ทั้งหมดให้เสร็จ
                 await Promise.all(uploadPromises);
 
-                // สร้าง sectionFour ใหม่แบบ clean
                 sectionFourClean = {
                     ...sectionFour,
                     table1: cleanTable1,
@@ -415,12 +466,17 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
             // ---------- 4. เตรียม payload ----------
             const {
                 mapSketchPreview,
+                mapSketchPreview1,
                 shapeSketchPreview,
+                shapeSketchPreview1,
                 photosFrontPreview,
                 photosSidePreview,
                 photosBasePreview,
+                photosFrontPreview1,
+                photosSidePreview1,
+                photosBasePreview1,
                 ...sectionTwoClean
-            } = sectionTwo || {};
+            } = s2;
 
             const payload: any = {
                 entity: "form1_3",
@@ -436,9 +492,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 },
             };
 
-            if (formData.form_code) {
-                payload.data.form_code = formData.form_code;
-            }
+            if (formData.form_code) payload.data.form_code = formData.form_code;
 
             // ---------- 5. บันทึกข้อมูล ----------
             const res = await fetch("/api/auth/forms/post", {
@@ -448,7 +502,6 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
             });
 
             const data = await res.json();
-            showLoading(false);
 
             if (res.ok && data.success) {
                 await showAlert("success", data.message);
@@ -461,8 +514,9 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 showAlert("error", data.message);
             }
         } catch (err) {
-            showLoading(false);
             showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        } finally {
+            showLoading(false);
         }
     };
 
@@ -471,7 +525,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
             {/* ระยะขอบกระดาษ */}
             <div className="p-2 relative">
                 <div className="absolute right-2.5">
-                    {/* <button
+                    <button
                         type="button"
                         onClick={() => exportToExcel(formData.sectionFour ?? null, jobId ?? "")}
                         className="mr-2 w-[100px] h-10 bg-green-600 hover:bg-green-700 active:bg-green-700 text-white rounded-[5px] inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
@@ -486,7 +540,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     >
                         <img src="/images/IconWord.png" alt="Word" className="h-5 w-5 object-contain" />
                         <span className="leading-none">Export</span>
-                    </button> */}
+                    </button>
                 </div>
                 <div className="w-full h-[5vh] grid place-items-center">
                     <span className="text-black md:text-3xl font-bold tracking-wide">
@@ -1045,7 +1099,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     </div>
                 </section>
 
-                {/* <div className="flex">
+                <div className="flex">
                     <button
                         type="button"
                         onClick={handleSave}
@@ -1065,7 +1119,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 </div>
                 <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
                     {JSON.stringify(formData, null, 2)}
-                </pre> */}
+                </pre>
             </div>
         </>
     )

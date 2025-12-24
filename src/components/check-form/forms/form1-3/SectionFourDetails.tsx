@@ -1,15 +1,7 @@
 import * as React from "react";
 import Select from "react-select";
-import { showLoading } from "@/lib/loading";
-import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
-import { PencilIcon } from "@heroicons/react/24/outline";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import IconButton from "@mui/material/IconButton";
-import { ProblemRow, DefectRow } from "@/interfaces/master";
-/* ========= CONFIG ========= */
-export type VisitKey = "v1";
-const VISITS: { key: VisitKey; label: string }[] = [{ key: "v1", label: "ครั้งที่ 1" }];
 
+/* ========================== UI HELPERS ========================== */
 const DottedInput: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({ className = "", ...props }) => (
     <input
         {...props}
@@ -40,93 +32,52 @@ const CheckTick: React.FC<{ checked: boolean; onChange: () => void; disabled?: b
         ].join(" ")}
         aria-pressed={checked}
     >
-        <span className={["text-white text-[14px] leading-none", checked ? "opacity-100" : "opacity-0"].join(" ")}>✓</span>
+        <span className={["text-white text-[14px] leading-none", checked ? "opacity-100" : "opacity-0"].join(" ")}>
+            ✓
+        </span>
     </button>
 );
 
-/* ========= DATA ========= */
-type RowItem = string | { label: string; inlineInput?: boolean };
-
-const table1Rows: RowItem[] = [
-    "การต่อเติม ดัดแปลง ปรับปรุงขนาดของป้าย",
-    "การเปลี่ยนแปลงน้ำหนักของแผ่นป้าย",
-    "การเปลี่ยนสภาพการใช้งานของป้าย",
-    "การเปลี่ยนแปลงวัสดุของป้าย",
-    "การชำรุดสึกหรอของป้าย",
-    "การวิบัติของของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย",
-    "การทรุดตัวของฐานรากของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย (กรณีป้ายที่ตั้งบนพื้นดิน)",
-    "การเชื่อมยึดระหว่างแผ่นป้ายกับสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย  การเชื่อมยึดระหว่างชิ้นส่วนต่าง ๆ ของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้ายและการเชื่อมยึด",
-];
-
-const table2Groups: { title: string; rows: RowItem[] }[] = [
-    {
-        title: "1 ระบบไฟฟ้าแสงสว่าง",
-        rows: [
-            "สภาพสายไฟฟ้า",
-            "สภาพท่อร้อยสาย รางเดินสาย และรางเคเบิล",
-            "สภาพเครื่องป้องกันกระแสเกิน",
-            "สภาพเครื่องตัดไฟรั่ว",
-            "การต่อลงดินของบริภัณฑ์ ตัวนำต่อลงดิน และความต่อเนื่องลงดินของท่อร้อยสาย รางเดินสาย รางเคเบิล",
-        ],
-    },
-    {
-        title: "2 ระบบป้องกันอันตรายจากฟ้าผ่า(ถ้ามี )",
-        rows: ["ตรวจสอบระบบตัวนำล่อฟ้า ตัวนำต่อลงดิน", "ตรวจสอบระบบรากสายดิน", "ตรวจสอบจุดต่อประสานศักย์"],
-    },
-    {
-        title: "3 ระบบอุปกรณ์ประกอบอื่น ๆ (ถ้ามี)",
-        rows: ["สภาพบันไดขึ้นลง", "สภาพราวจับ และราวกันตก", { label: "อุปกรณ์ประกอบอื่นตามที่เห็นสมควร (ระบุ)", inlineInput: true }],
-    },
-];
-
-type PhotoItem = { src?: string; filename: string };
-
-export type Defect = {
-    problem_id?: string;
-    problem_name: string;
-    photos?: PhotoItem[];
-    isOther?: boolean;
-    note?: string;
-    illegal_suggestion?: string;
-    defect?: string | number | null;
-    defect_name?: string;
-};
-
-export type SectionFourRow = {
-    inspection_item?: string;
-    visits?: Partial<Record<VisitKey, "ok" | "ng" | undefined>>;
-    note?: string;
-    extra?: string;
-    defect?: Defect[];
-};
-
-export type SummaryStatus = "ok" | "ng" | "none" | "";
-export type SectionFourSummaryRow = {
-    status?: SummaryStatus; // ok=ใช้ได้, ng=ใช้ไม่ได้, none=มีการแก้ไขแล้ว, ""=ว่าง
-    note?: string;
-};
-
+/* ========================== TYPES ========================== */
+export type SummaryStatus = "ok" | "ng" | "none" | ""; // ok=ใช้ได้, ng=ใช้ไม่ได้, none=มีการแก้ไขแล้ว
 export type MinorMajor = "minor" | "major" | "";
+
+export type SectionFourSummaryRow = {
+    status?: SummaryStatus;
+    note?: string; // หมายเหตุ
+};
+
 export type SectionFourOpinion = {
-    companyName?: string;     // บริษัท..........
-    signOwner?: string;       // ป้ายของ..........
-    signType?: string;        // ป้าย..........
-    majorFix?: string;        // แก้ไขในเรื่อง..........
-    regNo?: string;           // ทะเบียนเลขที่........
-    regFrom?: string;         // จาก........
-    regBy?: string;           // โดยนาม........
-    regAddress?: string;      // เลขที่..........
-    ownerName?: string;       // (..............)
+    companyName?: string; // บริษัท...
+    signOwner?: string; // ป้ายของ...
+    signType?: string; // ป้าย...
+    majorFix?: string; // (เฉพาะ Major) แก้ไขในเรื่อง...
+
+    // ลงชื่อ/ชื่อพิมพ์ ผู้ตรวจสอบ
+    inspectorSign?: string; // ช่อง “ลงชื่อ ....”
+    inspectorPrintedName?: string; // ชื่อในวงเล็บใต้ลายเซ็น
+
+    // วันที่
     day?: string;
     month?: string;
     year?: string;
+
+    // เลขทะเบียนผู้ตรวจสอบ
+    regNo?: string;
+    regFrom?: string;
+    regBy?: string;
+    regAddress?: string;
+
+    // เจ้าของป้าย
+    ownerSign?: string; // ช่อง “ลงชื่อ ....” (เจ้าของป้าย)
+    ownerName?: string; // ชื่อในวงเล็บใต้ลายเซ็นเจ้าของป้าย
 };
 
 export type SectionFourForm = {
-    table1: Record<string, SectionFourRow>;
-    table2: Record<string, SectionFourRow>;
+    // (เผื่อของเดิมที่ parent ส่งมา)
+    table1?: Record<string, any>;
+    table2?: Record<string, any>;
 
-    // ✅ ตารางสรุปผล (ตามรูป)
     summary?: Record<"row1" | "row2" | "row3" | "row4" | "row5", SectionFourSummaryRow>;
     severity?: MinorMajor; // minor/major
     opinion?: SectionFourOpinion;
@@ -137,36 +88,43 @@ type Props = {
     onChange?: (patch: Partial<SectionFourForm>) => void;
 };
 
-/* ========= COMPONENT ========= */
+/* ========================== COMPONENT ========================== */
 export default function SectionFourDetails({ value, onChange }: Props) {
-    const buildRemoteImgUrl = (name: string) => `${process.env.NEXT_PUBLIC_N8N_UPLOAD_FILE}?name=${encodeURIComponent(name)}`;
-
+    /* ---------- style tokens (ตามรูป) ---------- */
     const th = "border border-gray-800 px-2 py-2 text-center font-semibold";
     const td = "border border-gray-800 px-2 py-2 align-middle";
     const tdCenter = "border border-gray-800 px-2 py-2 align-middle text-center";
-    const headBlue = "bg-[#7fa1d9]";      // ฟ้าแบบในรูป
-    const stripe = "bg-[#d8e0f2]";        // แถวสลับแบบในรูป
+    const headBlue = "bg-[#7fa1d9]"; // ฟ้าอ่อนหัวตารางสรุป
+    const stripe = "bg-[#d8e0f2]"; // แถวสลับ
+    const opinionHead = "bg-[#4f79c8]"; // หัวข้อ “สรุปความเห็นผู้ตรวจสอบ”
 
-    const SEVERITY_OPTIONS = [
-        { value: "minor", label: "Minor" },
-        { value: "major", label: "Major" },
-    ] as const;
+    /* ---------- summary rows ---------- */
+    const SUMMARY_ROWS: { key: "row1" | "row2" | "row3" | "row4" | "row5"; no: number; label: string }[] = [
+        { key: "row1", no: 1, label: "สิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย" },
+        { key: "row2", no: 2, label: "แผ่นป้าย" },
+        { key: "row3", no: 3, label: "ระบบไฟฟ้าแสงสว่างและระบบไฟฟ้ากำลัง" },
+        { key: "row4", no: 4, label: "ระบบป้องกันฟ้าผ่า (ถ้ามี)" },
+        { key: "row5", no: 5, label: "ระบบอุปกรณ์ประกอบอื่น (ถ้ามี)" },
+    ];
 
+    /* ---------- local state + sync ---------- */
+    const [summary, setSummary] = React.useState<Record<string, SectionFourSummaryRow>>(value?.summary ?? {});
     const [severity, setSeverity] = React.useState<MinorMajor>(value?.severity ?? "");
+    const [opinion, setOpinion] = React.useState<SectionFourOpinion>({
+        inspectorPrintedName: "ร้อยโท วโรดม สุจริตกุล", // default ตามรูป (แก้ได้)
+        ...(value?.opinion ?? {}),
+    });
 
+    React.useEffect(() => setSummary(value?.summary ?? {}), [value?.summary]);
+    React.useEffect(() => setSeverity(value?.severity ?? ""), [value?.severity]);
     React.useEffect(() => {
-        setSeverity(value?.severity ?? "");
-    }, [value?.severity]);
+        setOpinion((prev) => ({
+            inspectorPrintedName: prev.inspectorPrintedName ?? "ร้อยโท วโรดม สุจริตกุล",
+            ...(value?.opinion ?? {}),
+        }));
+    }, [value?.opinion]);
 
-    const selectedSeverity =
-        SEVERITY_OPTIONS.find((o) => o.value === severity) ?? null;
-
-    const [summary, setSummary] = React.useState<Record<string, SectionFourSummaryRow>>({});
-
-    React.useEffect(() => {
-        setSummary(value?.summary ?? {});
-    }, [value?.summary]);
-
+    /* ---------- emit helpers (ส่ง patch ให้ parent merge) ---------- */
     const emitSummary = React.useCallback(
         (rowKey: "row1" | "row2" | "row3" | "row4" | "row5", delta: Partial<SectionFourSummaryRow>) => {
             const next = { ...(summary[rowKey] ?? {}), ...delta };
@@ -181,36 +139,40 @@ export default function SectionFourDetails({ value, onChange }: Props) {
         emitSummary(rowKey, { status: cur === status ? "" : status });
     };
 
-    const SUMMARY_ROWS: { key: "row1" | "row2" | "row3" | "row4" | "row5"; no: number; label: string; }[] = [
-        { key: "row1", no: 1, label: "สิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย" },
-        { key: "row2", no: 2, label: "แผ่นป้าย" },
-        { key: "row3", no: 3, label: "ระบบไฟฟ้าแสงสว่างและระบบไฟฟ้ากำลัง" },
-        { key: "row4", no: 4, label: "ระบบป้องกันฟ้าผ่า (ถ้ามี)" },
-        { key: "row5", no: 5, label: "ระบบอุปกรณ์ประกอบอื่น (ถ้ามี)" },
-    ];
-
-    const THAI_MONTHS = [
-        "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
-        "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
-    ];
-
-    const beNow = new Date().getFullYear() + 543;
-    const YEARS = Array.from({ length: 50 }, (_, i) => String(beNow - i));
-
-    const [opinion, setOpinion] = React.useState<SectionFourOpinion>(value?.opinion ?? {});
-    React.useEffect(() => setOpinion(value?.opinion ?? {}), [value?.opinion]);
-
     const emitOpinion = (delta: Partial<SectionFourOpinion>) => {
         const next = { ...(opinion ?? {}), ...delta };
         setOpinion(next);
         onChange?.({ opinion: next } as Partial<SectionFourForm>);
     };
 
-    const severityLabel =
-        severity === "minor" ? "Minor" : severity === "major" ? "Major" : "";
+    const SEVERITY_OPTIONS = [
+        { value: "minor", label: "Minor" },
+        { value: "major", label: "Major" },
+    ] as const;
+
+    const selectedSeverity = SEVERITY_OPTIONS.find((o) => o.value === severity) ?? null;
+
+    const THAI_MONTHS = [
+        "มกราคม",
+        "กุมภาพันธ์",
+        "มีนาคม",
+        "เมษายน",
+        "พฤษภาคม",
+        "มิถุนายน",
+        "กรกฎาคม",
+        "สิงหาคม",
+        "กันยายน",
+        "ตุลาคม",
+        "พฤศจิกายน",
+        "ธันวาคม",
+    ];
+
+    const beNow = new Date().getFullYear() + 543;
+    const YEARS = React.useMemo(() => Array.from({ length: 50 }, (_, i) => String(beNow - i)), [beNow]);
 
     return (
         <section className="p-2 text-gray-900">
+            {/* ===================== ตารางสรุปผลการตรวจสอบ ===================== */}
             <div className="w-full">
                 <table className="w-full border-collapse text-sm">
                     <thead>
@@ -219,6 +181,7 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                                 สรุปผลการตรวจสอบป้ายหรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย และอุปกรณ์ประกอบของป้าย
                             </th>
                         </tr>
+
                         <tr className="bg-gray-100">
                             <th className={`${th} w-[60px]`}>ลำดับ</th>
                             <th className={`${th} text-left`}>รายการตรวจสอบ</th>
@@ -239,9 +202,7 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                                     <td className={`${td} text-center`}>{r.no}</td>
 
                                     <td className={td}>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-medium">{r.label}</span>
-                                        </div>
+                                        <span className="font-medium">{r.label}</span>
                                     </td>
 
                                     <td className={tdCenter}>
@@ -275,7 +236,8 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                     </tbody>
                 </table>
             </div>
-            {/* ✅ Select Minor/Major ต่อจากตาราง */}
+
+            {/* ===================== Select Minor/Major ===================== */}
             <div className="mt-4 flex items-center gap-3">
                 <div className="text-sm font-semibold">ประเภท:</div>
 
@@ -294,32 +256,14 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                         menuPortalTarget={typeof window !== "undefined" ? document.body : null}
                         menuPosition="fixed"
                         styles={{
-                            control: (base, state) => ({
-                                ...base,
-                                minHeight: 34,
-                                color: "#111827", // ✅ text ดำ
-                            }),
-                            singleValue: (base) => ({
-                                ...base,
-                                color: "#111827", // ✅ ค่าเลือกแล้ว
-                            }),
-                            placeholder: (base) => ({
-                                ...base,
-                                color: "#111827", // ✅ placeholder ให้ดำตามที่ขอ
-                                opacity: 0.9,
-                            }),
-                            input: (base) => ({
-                                ...base,
-                                color: "#111827", // ✅ ตอนพิมพ์
-                            }),
+                            control: (base) => ({ ...base, minHeight: 34, color: "#111827" }),
+                            singleValue: (base) => ({ ...base, color: "#111827" }),
+                            placeholder: (base) => ({ ...base, color: "#111827", opacity: 0.9 }),
+                            input: (base) => ({ ...base, color: "#111827" }),
                             option: (base, state) => ({
                                 ...base,
-                                color: "#111827", // ✅ ตัวเลือกใน dropdown
-                                backgroundColor: state.isSelected
-                                    ? "#E5E7EB" // เทาอ่อนตอนเลือก
-                                    : state.isFocused
-                                        ? "#F3F4F6" // เทาอ่อนตอน hover
-                                        : "#FFFFFF",
+                                color: "#111827",
+                                backgroundColor: state.isSelected ? "#E5E7EB" : state.isFocused ? "#F3F4F6" : "#FFFFFF",
                                 cursor: "pointer",
                             }),
                             menuPortal: (base) => ({ ...base, zIndex: 9999 }),
@@ -331,15 +275,14 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                     />
                 </div>
             </div>
-            {/* ===================== สรุปความเห็นผู้ตรวจสอบ (Minor/Major) ===================== */}
+
+            {/* ===================== สรุปความเห็นผู้ตรวจสอบ ===================== */}
             <div className="mt-5 border border-gray-800 w-full">
-                <div className="bg-[#4f79c8] text-black font-semibold px-3 py-2 text-sm">
-                    สรุปความเห็นผู้ตรวจสอบ
-                </div>
+                <div className={`${opinionHead} text-black font-semibold px-3 py-2 text-sm`}>สรุปความเห็นผู้ตรวจสอบ</div>
 
-                <div className="bg-[#d8e0f2] h-6" />
+                <div className={stripe + " h-6"} />
 
-                {/* ย่อหน้าแรก: ต่างกันแค่ข้อความ Minor/Major */}
+                {/* ย่อหน้าแรก */}
                 <div className="px-3 py-3 text-sm leading-relaxed">
                     ตามที่บริษัท{" "}
                     <DottedInput
@@ -375,7 +318,7 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                     )}
                 </div>
 
-                {/* ย่อหน้าที่ 2: Minor / Major ต่างกันแค่ท้ายประโยค */}
+                {/* ย่อหน้าที่ 2 */}
                 <div className="px-3 pb-3 text-sm leading-relaxed">
                     ข้าพเจ้าในฐานะผู้ตรวจสอบป้ายขอรับรองว่าได้ทำการตรวจสอบสภาพป้ายดังกล่าว โดยผลการตรวจสอบป้ายและอุปกรณ์ประกอบของป้ายถูกต้อง
                     และเป็นจริงตามที่ได้ระบุไว้ในรายงานฉบับนี้ รวมทั้งยังได้ให้เจ้าของป้าย ผู้ครอบครอง หรือผู้ดูแลป้าย ได้รับทราบผลการตรวจสอบสภาพป้าย
@@ -389,20 +332,30 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                     )}
                 </div>
 
-                <div className="bg-[#d8e0f2] h-6" />
+                <div className={stripe + " h-6"} />
 
                 {/* ลงชื่อผู้ตรวจสอบ + วันที่ */}
                 <div className="px-3 py-3 text-sm">
                     <div className="grid grid-cols-[1fr_1fr] gap-6 items-end">
                         <div className="flex items-end gap-2">
                             <span className="w-12">ลงชื่อ</span>
-                            <DottedInput className="flex-1" value={""} onChange={() => { }} />
+                            <DottedInput
+                                className="flex-1"
+                                value={opinion.inspectorSign ?? ""}
+                                onChange={(e) => emitOpinion({ inspectorSign: e.currentTarget.value })}
+                            />
                         </div>
                         <div className="text-center">ผู้ตรวจสอบ</div>
                     </div>
 
                     <div className="mt-1 text-center text-xs text-gray-800">
-                        ( ร้อยโท วโรดม สุจริตกุล )
+                        ({" "}
+                        <DottedInput
+                            className="w-[260px] text-center"
+                            value={opinion.inspectorPrintedName ?? ""}
+                            onChange={(e) => emitOpinion({ inspectorPrintedName: e.currentTarget.value })}
+                        />{" "}
+                        )
                     </div>
 
                     <div className="mt-2 flex items-center gap-2">
@@ -415,7 +368,9 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                         >
                             <option value=""></option>
                             {Array.from({ length: 31 }, (_, i) => String(i + 1)).map((d) => (
-                                <option key={d} value={d}>{d}</option>
+                                <option key={d} value={d}>
+                                    {d}
+                                </option>
                             ))}
                         </select>
 
@@ -428,7 +383,9 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                         >
                             <option value=""></option>
                             {THAI_MONTHS.map((m) => (
-                                <option key={m} value={m}>{m}</option>
+                                <option key={m} value={m}>
+                                    {m}
+                                </option>
                             ))}
                         </select>
 
@@ -441,23 +398,21 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                         >
                             <option value=""></option>
                             {YEARS.map((y) => (
-                                <option key={y} value={y}>{y}</option>
+                                <option key={y} value={y}>
+                                    {y}
+                                </option>
                             ))}
                         </select>
                     </div>
                 </div>
 
-                <div className="bg-[#d8e0f2] h-6" />
+                <div className={stripe + " h-6"} />
 
-                {/* เลขทะเบียนผู้ตรวจสอบ (ช่องว่างเป็น input ตามที่ให้) */}
+                {/* เลขทะเบียนผู้ตรวจสอบ */}
                 <div className="px-3 py-3 text-sm leading-relaxed">
                     <div className="font-semibold mb-1">เลขทะเบียนผู้ตรวจสอบ</div>
                     ผู้ตรวจสอบประเภทนิติบุคคล ทะเบียนเลขที่{" "}
-                    <DottedInput
-                        className="w-[180px]"
-                        value={opinion.regNo ?? ""}
-                        onChange={(e) => emitOpinion({ regNo: e.currentTarget.value })}
-                    />{" "}
+                    <DottedInput className="w-[180px]" value={opinion.regNo ?? ""} onChange={(e) => emitOpinion({ regNo: e.currentTarget.value })} />{" "}
                     จาก{" "}
                     <DottedInput
                         className="w-[260px]"
@@ -465,11 +420,7 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                         onChange={(e) => emitOpinion({ regFrom: e.currentTarget.value })}
                     />{" "}
                     โดยนาม{" "}
-                    <DottedInput
-                        className="w-[260px]"
-                        value={opinion.regBy ?? ""}
-                        onChange={(e) => emitOpinion({ regBy: e.currentTarget.value })}
-                    />
+                    <DottedInput className="w-[260px]" value={opinion.regBy ?? ""} onChange={(e) => emitOpinion({ regBy: e.currentTarget.value })} />
                     <div className="mt-1">
                         เลขที่{" "}
                         <DottedInput
@@ -480,9 +431,9 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                     </div>
                 </div>
 
-                <div className="bg-[#d8e0f2] h-6" />
+                <div className={stripe + " h-6"} />
 
-                {/* ย่อหน้ารับรองของเจ้าของป้าย: Minor/Major ต่างกันเล็กน้อย */}
+                {/* ย่อหน้ารับรองของเจ้าของป้าย */}
                 <div className="px-3 py-3 text-sm leading-relaxed">
                     ข้าพเจ้าในฐานะเจ้าของป้าย ผู้ครอบครองป้าย หรือผู้ดูแลป้าย ขอรับรองว่าได้มีการตรวจสอบป้ายตามรายงานดังกล่าวข้างต้นจริง
                     โดยการตรวจสอบป้ายนั้นกระทำโดยผู้ตรวจสอบป้ายซึ่งได้รับใบอนุญาตจากกรมโยธาธิการและผังเมือง
@@ -490,19 +441,11 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                         <>
                             {" "}
                             รวมทั้งข้าพเจ้ายังได้รับทราบข้อเสนอแนะและแนวทางในการปรับปรุงแก้ไขตามคำแนะนำของผู้ตรวจสอบป้ายอีกด้วย
-                            พร้อมกันนี้ยังได้จัดทำแผนในการปรับปรุงแก้ไขมาพร้อมกับรายงานการตรวจสอบป้ายในครั้งนี้ด้วย
+                            พร้อมกันนี้ยังได้จัดทำแผนในการปรับปรุงแก้ไขมาพร้อมกับรายงานการตรวจสอบป้ายในครั้งนี้ด้วย และข้าพเจ้าได้อ่านและเข้าใจในรายงานดังกล่าวครบถ้วนแล้ว
+                            จึงลงลายมือชื่อไว้เป็นสำคัญ
                         </>
                     ) : (
-                        <>
-                            {" "}
-                            ข้าพเจ้าได้อ่านและเข้าใจในรายงานดังกล่าวครบถ้วนแล้ว จึงลงลายมือชื่อไว้เป็นสำคัญ
-                        </>
-                    )}
-                    {severity === "major" && (
-                        <>
-                            {" "}
-                            ข้าพเจ้าได้อ่านและเข้าใจในรายงานดังกล่าวครบถ้วนแล้ว จึงลงลายมือชื่อไว้เป็นสำคัญ
-                        </>
+                        <> ข้าพเจ้าได้อ่านและเข้าใจในรายงานดังกล่าวครบถ้วนแล้ว จึงลงลายมือชื่อไว้เป็นสำคัญ</>
                     )}
                 </div>
 
@@ -511,7 +454,11 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                     <div className="grid grid-cols-[1fr_1fr] gap-6 items-end">
                         <div className="flex items-end gap-2">
                             <span className="w-12">ลงชื่อ</span>
-                            <DottedInput className="flex-1" value={""} onChange={() => { }} />
+                            <DottedInput
+                                className="flex-1"
+                                value={opinion.ownerSign ?? ""}
+                                onChange={(e) => emitOpinion({ ownerSign: e.currentTarget.value })}
+                            />
                         </div>
                         <div className="text-center">
                             เจ้าของป้ายหรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย/ผู้ครอบครองป้าย หรือผู้รับมอบอำนาจ
@@ -529,16 +476,14 @@ export default function SectionFourDetails({ value, onChange }: Props) {
                     </div>
                 </div>
 
-                {/* ป้าย Minor/Major ตามที่เลือก */}
+                {/* ป้าย Minor/Major */}
                 {(severity === "minor" || severity === "major") && (
                     <div className="py-6 flex justify-center">
                         <div
                             className={[
                                 "w-[210px] h-[70px] rounded-xl flex items-center justify-center",
                                 "text-3xl font-extrabold border-2",
-                                severity === "minor"
-                                    ? "bg-green-500 border-green-700 text-black"
-                                    : "bg-red-600 border-red-800 text-black",
+                                severity === "minor" ? "bg-green-500 border-green-700 text-black" : "bg-red-600 border-red-800 text-black",
                             ].join(" ")}
                         >
                             {severity === "minor" ? "Minor" : "Major"}
