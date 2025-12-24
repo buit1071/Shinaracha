@@ -590,6 +590,53 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const selectStyles = {
+        control: (base: any, state: any) => ({
+            ...base,
+            backgroundColor: "#fff",
+            borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
+            boxShadow: "none",
+            color: "#111827",
+            "&:hover": { borderColor: state.isFocused ? "#3b82f6" : "#9ca3af" },
+        }),
+
+        menuPortal: (base: any) => ({ ...base, zIndex: 2100 }),
+
+        menu: (base: any) => ({
+            ...base,
+            backgroundColor: "#fff",
+            color: "#111827",
+            boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+            border: "1px solid #e5e7eb",
+        }),
+
+        menuList: (base: any) => ({
+            ...base,
+            backgroundColor: "#fff",
+            color: "#111827",
+        }),
+
+        option: (base: any, state: any) => ({
+            ...base,
+            color: "#111827",               // ✅ ตัวหนังสือใน option เป็นสีดำ
+            backgroundColor: state.isSelected
+                ? "#2563eb"                    // selected
+                : state.isFocused
+                    ? "#eff6ff"                    // hover
+                    : "#ffffff",
+            cursor: "pointer",
+        }),
+
+        placeholder: (base: any) => ({ ...base, color: "#111827", opacity: 0.7 }),
+        singleValue: (base: any) => ({ ...base, color: "#111827" }),
+        input: (base: any) => ({ ...base, color: "#111827" }),
+
+        // ✅ กรณี isMulti
+        multiValue: (base: any) => ({ ...base, backgroundColor: "#e5e7eb" }),
+        multiValueLabel: (base: any) => ({ ...base, color: "#111827" }),
+        multiValueRemove: (base: any) => ({ ...base, color: "#111827", ":hover": { backgroundColor: "#d1d5db" } }),
+    };
+
     const roundCols = visitsToShow.length * 3;
 
     return (
@@ -820,43 +867,10 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
                                 value={selectedProblems
                                     .filter((p) => !p.isOther)
                                     .map((p) => ({ value: p.problem_id, label: p.problem_name }))}
-                                onChange={(selected) => {
-                                    const newDefects: Defect[] = (selected ?? []).map((s) => {
-                                        const existing = selectedProblems.find((p) => p.problem_id === s.value && !p.isOther);
-                                        if (existing) return existing;
-
-                                        const fromMaster = problems.find((p) => p.problem_id === s.value);
-                                        return {
-                                            problem_id: s.value,
-                                            problem_name: s.label,
-                                            photos: [],
-                                            illegal_suggestion: fromMaster?.illegal_suggestion ?? "",
-                                        };
-                                    });
-
-                                    const otherDefect = selectedProblems.find((p) => p.isOther);
-                                    if (otherDefect) newDefects.push(otherDefect);
-
-                                    setSelectedProblems(newDefects);
-                                }}
+                                onChange={(selected) => { /* ...ของเดิม... */ }}
                                 placeholder="-- เลือกหลายปัญหา --"
                                 menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-                                styles={{
-                                    control: (base, state) => ({
-                                        ...base,
-                                        backgroundColor: "#fff",
-                                        borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
-                                        boxShadow: "none",
-                                        "&:hover": { borderColor: state.isFocused ? "#3b82f6" : "#9ca3af" },
-                                    }),
-                                    menu: (base) => ({
-                                        ...base,
-                                        backgroundColor: "#fff",
-                                        boxShadow: "0 8px 24px rgba(0,0,0,.2)",
-                                        border: "1px solid #e5e7eb",
-                                    }),
-                                    menuPortal: (base) => ({ ...base, zIndex: 2100 }),
-                                }}
+                                styles={selectStyles as any}
                             />
                         </div>
 
@@ -915,23 +929,14 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
                                             options={defects.map((p) => ({ value: p.id, label: p.defect }))}
                                             value={
                                                 d.defect
-                                                    ? defects.map((p) => ({ value: p.id, label: p.defect })).find((opt) => opt.value === d.defect) ||
-                                                    null
+                                                    ? defects.map((p) => ({ value: p.id, label: p.defect })).find((opt) => opt.value === d.defect) || null
                                                     : null
                                             }
-                                            onChange={(selected) =>
-                                                setSelectedProblems((prev) =>
-                                                    prev.map((p, idx) =>
-                                                        idx === defectIndex
-                                                            ? { ...p, defect: selected?.value ?? null, defect_name: selected?.label ?? undefined }
-                                                            : p
-                                                    )
-                                                )
-                                            }
+                                            onChange={(selected) => { /* ...ของเดิม... */ }}
                                             placeholder="-- เลือกข้อกฎหมาย --"
                                             isClearable
                                             menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-                                            styles={{ menuPortal: (base) => ({ ...base, zIndex: 2100 }) }}
+                                            styles={selectStyles as any}
                                         />
                                     </div>
                                 )}

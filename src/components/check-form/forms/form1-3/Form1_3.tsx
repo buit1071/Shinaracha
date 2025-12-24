@@ -10,7 +10,10 @@ import Section2_1Details from "@/components/check-form/forms/form1-3/new_form/Se
 import Section2_2Details from "@/components/check-form/forms/form1-3/new_form/Section2_2Details";
 import Section2_3Details from "@/components/check-form/forms/form1-3/new_form/Section2_3Details";
 import Section2_4Details from "@/components/check-form/forms/form1-3/new_form/Section2_4Details";
-import Section2_5Details, { Section2_5Form } from "@/components/check-form/forms/form1-3/new_form/Section2_5Details";
+import Section2_5Details, {
+    Section2_5Form,
+    Section2_5Row,
+} from "@/components/check-form/forms/form1-3/new_form/Section2_5Details";
 import Section2_6Details, { SectionSixForm, SectionSixRow } from "@/components/check-form/forms/form1-3/new_form/Section2_6Details";
 import Section2_7Details, { SectionSevenForm, SectionSevenRow } from "@/components/check-form/forms/form1-3/new_form/Section2_7Details";
 import { showLoading } from "@/lib/loading";
@@ -131,34 +134,35 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
         });
     }, []);
 
-    const onSectionSevenChange = React.useCallback((patch: Partial<SectionSevenForm>) => {
-        setFormData(prev => {
-            const cur = prev.section2_7 ?? { rows: {}, meta: {} };
+    const onSection2_5Change = React.useCallback((patch: Partial<Section2_5Form>) => {
+        setFormData((prev) => {
+            type TableKey = "table1" | "table2";
+            type Rows = Record<string, Section2_5Row>;
+            type RowsPatch = Partial<Record<string, Partial<Section2_5Row>>>;
 
-            // ---- merge rows (ทีละแถว) ----
-            const curRows = cur.rows ?? {};
-            const pRows = patch.rows ?? {};
-            const nextRows: Record<string, SectionSevenRow> = { ...curRows };
-            Object.keys(pRows).forEach((id) => {
-                const rowPatch = pRows[id] ?? {};
-                const prevRow = curRows[id] ?? {};
-                nextRows[id] = { ...prevRow, ...rowPatch };     // ✅ รวมคีย์เดิมกับคีย์ที่เปลี่ยน
-            });
+            const prevS25: Partial<Section2_5Form> = prev.section2_5 ?? {};
 
-            // ---- merge meta (รวม object ซ้อนชั้นด้วย) ----
-            const curMeta = cur.meta ?? {};
-            const pMeta = patch.meta ?? {};
-            const mergedMeta = {
-                ...curMeta,
-                ...pMeta,
-                inspectDate: { ...(curMeta.inspectDate ?? {}), ...(pMeta.inspectDate ?? {}) },
-                licIssue: { ...(curMeta.licIssue ?? {}), ...(pMeta.licIssue ?? {}) },
-                licExpire: { ...(curMeta.licExpire ?? {}), ...(pMeta.licExpire ?? {}) },
+            const mergeTable = (key: TableKey): Rows => {
+                const cur: Rows = (prevS25[key] as Rows) ?? {};
+                const p: RowsPatch = (patch[key] as RowsPatch) ?? {};
+                if (!p || Object.keys(p).length === 0) return cur;
+
+                const next: Rows = { ...cur };
+                for (const rowId of Object.keys(p)) {
+                    const rowPatch = p[rowId] ?? {};
+                    const prevRow = next[rowId] ?? {};
+                    next[rowId] = { ...prevRow, ...rowPatch };
+                }
+                return next;
             };
 
             return {
                 ...prev,
-                sectionSeven: { rows: nextRows, meta: mergedMeta },
+                section2_5: {
+                    ...prevS25,              // กัน field อื่น (ถ้ามีในอนาคต) หาย
+                    table1: mergeTable("table1"),
+                    table2: mergeTable("table2"),
+                },
             };
         });
     }, []);
@@ -977,21 +981,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                             <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
                                 <Section2_5Details
                                     value={formData.section2_5}
-                                    onChange={(patch) =>
-                                        setFormData((prev) => ({
-                                            ...prev,
-                                            section2_5: {
-                                                table1: {
-                                                    ...(prev.section2_5?.table1 ?? {}),
-                                                    ...(patch.table1 ?? {}),
-                                                },
-                                                table2: {
-                                                    ...(prev.section2_5?.table2 ?? {}),
-                                                    ...(patch.table2 ?? {}),
-                                                },
-                                            },
-                                        }))
-                                    }
+                                    onChange={onSection2_5Change}
                                 />
                             </div>
                         </div>
@@ -1043,7 +1033,6 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                                         }))
                                     }
                                 />
-
                             </div>
                         </div>
                     </div>
@@ -1081,14 +1070,14 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                                     onChange={(patch) =>
                                         setFormData((prev: any) => ({
                                             ...prev,
-                                            sectionSeven: {
+                                            section2_7: {
                                                 rows: {
-                                                    ...(prev.sectionSeven?.rows ?? {}),
-                                                    ...(patch.rows ?? {}), // ✅ merge rows ราย id
+                                                    ...(prev.section2_7?.rows ?? {}),
+                                                    ...(patch.rows ?? {}), // merge rows ราย id
                                                 },
                                                 meta: {
-                                                    ...(prev.sectionSeven?.meta ?? {}),
-                                                    ...(patch.meta ?? {}), // ✅ merge meta
+                                                    ...(prev.section2_7?.meta ?? {}),
+                                                    ...(patch.meta ?? {}), // merge meta
                                                 },
                                             },
                                         }))

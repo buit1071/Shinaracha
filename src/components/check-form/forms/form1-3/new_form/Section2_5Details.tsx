@@ -56,17 +56,17 @@ const FREQS_TABLE1: { key: Exclude<FreqKey, "">; label: string }[] = [
     { key: "3y", label: "3\nปี" }, // ✅ เพิ่ม
 ];
 
-type Row1 = { id: string; label: React.ReactNode; defaultFreq?: Exclude<FreqKey, ""> };
+type Row1 = { id: string; label: React.ReactNode };
 const TABLE1_ROWS: Row1[] = [
-    { id: "r1", label: <>การต่อเติม ดัดแปลง ปรับปรุงขนาดของป้ายหรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย</>, defaultFreq: "1y" },
-    { id: "r2", label: <>การเปลี่ยนแปลงน้ำหนักของแผ่นป้าย</>, defaultFreq: "1y" },
-    { id: "r3", label: <>การเปลี่ยนสภาพการใช้งานของป้าย</>, defaultFreq: "1y" },
-    { id: "r4", label: <>การเปลี่ยนแปลงวัสดุของป้าย หรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย</>, defaultFreq: "1y" },
-    { id: "r5", label: <>การชำรุดสึกหรอของป้าย หรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย</>, defaultFreq: "1y" },
-    { id: "r6", label: <>การวิบัติของป้าย หรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย</>, defaultFreq: "1y" },
-    { id: "r7", label: <>ความมั่นคงแข็งแรงของโครงสร้างและฐานรากของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย (กรณีป้ายที่ติดตั้งบนพื้นดิน)</>, defaultFreq: "1y" },
-    { id: "r8", label: <>ความมั่นคงแข็งแรงของอาคารที่ติดตั้งป้าย (กรณีป้ายบนหลังคา หรือบนดาดฟ้าอาคาร หรือบนส่วนหนึ่งส่วนใดของอาคาร)</>, defaultFreq: "1y" },
-    { id: "r9", label: <>การเชื่อมยึดระหว่างแผ่นป้ายกับสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย การเชื่อมยึดระหว่างชิ้นส่วนต่าง ๆ ของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย และการเชื่อมยึดระหว่างสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้ายกับฐานรากหรืออาคาร</>, defaultFreq: "1y" },
+    { id: "r1", label: <>การต่อเติม ดัดแปลง ปรับปรุงขนาดของป้ายหรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย</> },
+    { id: "r2", label: <>การเปลี่ยนแปลงน้ำหนักของแผ่นป้าย</> },
+    { id: "r3", label: <>การเปลี่ยนสภาพการใช้งานของป้าย</> },
+    { id: "r4", label: <>การเปลี่ยนแปลงวัสดุของป้าย หรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย</> },
+    { id: "r5", label: <>การชำรุดสึกหรอของป้าย หรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย</> },
+    { id: "r6", label: <>การวิบัติของป้าย หรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย</> },
+    { id: "r7", label: <>ความมั่นคงแข็งแรงของโครงสร้างและฐานรากของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย (กรณีป้ายที่ติดตั้งบนพื้นดิน)</> },
+    { id: "r8", label: <>ความมั่นคงแข็งแรงของอาคารที่ติดตั้งป้าย (กรณีป้ายบนหลังคา หรือบนดาดฟ้าอาคาร หรือบนส่วนหนึ่งส่วนใดของอาคาร)</> },
+    { id: "r9", label: <>การเชื่อมยึดระหว่างแผ่นป้ายกับสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย การเชื่อมยึดระหว่างชิ้นส่วนต่าง ๆ ของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย และการเชื่อมยึดระหว่างสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้ายกับฐานรากหรืออาคาร</> },
 ];
 
 /* ========================== TABLE 2 CONFIG (ตามภาพ) ========================== */
@@ -80,39 +80,29 @@ const FREQS_TABLE2: { key: Exclude<FreqKey, "">; label: string }[] = [
 
 // โครงสร้างตามภาพ: มีหัวข้อใหญ่ 1/2/3 แล้วมีรายการย่อย (1)(2)...
 type T2Row =
-    | { type: "section"; no: string; title: string } // แถวหัวข้อ (เลข 1/2/3 ด้านซ้าย)
-    | { type: "item"; id: string; label: React.ReactNode; defaultFreq?: Exclude<FreqKey, "">; indent?: "none" | "sub" }
-    | { type: "other"; id: string; prefix?: string; defaultFreq?: Exclude<FreqKey, ""> };
+    | { type: "section"; no: string; title: string }
+    | { type: "item"; id: string; label: React.ReactNode; indent?: "none" | "sub" }
+    | { type: "other"; id: string; prefix?: string };
 
 const TABLE2_ROWS: T2Row[] = [
     { type: "section", no: "1", title: "ระบบไฟฟ้าแสงสว่างและระบบไฟฟ้ากำลัง" },
-    { type: "item", id: "t2-1-1", label: <>(1) สภาพสายไฟฟ้า</>, defaultFreq: "1y" },
-    { type: "item", id: "t2-1-2", label: <>(2) สภาพท่อร้อยสาย รางเดินสาย และรางเคเบิล</>, defaultFreq: "1y" },
-    { type: "item", id: "t2-1-3", label: <>(3) สภาพเครื่องป้องกันกระแสเกิน</>, defaultFreq: "1y" },
-    { type: "item", id: "t2-1-4", label: <>(4) สภาพเครื่องตัดไฟรั่ว</>, defaultFreq: "1y" },
-    {
-        type: "item",
-        id: "t2-1-5",
-        label: (
-            <>
-                (5) การต่อลงดินของบริภัณฑ์ ตัวนำต่อลงดิน และความต่อเนื่องลงดินของท่อร้อยสาย รางเดินสาย รางเคเบิล
-            </>
-        ),
-        defaultFreq: "1y",
-    },
+    { type: "item", id: "t2-1-1", label: <>(1) สภาพสายไฟฟ้า</> },
+    { type: "item", id: "t2-1-2", label: <>(2) สภาพท่อร้อยสาย รางเดินสาย และรางเคเบิล</> },
+    { type: "item", id: "t2-1-3", label: <>(3) สภาพเครื่องป้องกันกระแสเกิน</> },
+    { type: "item", id: "t2-1-4", label: <>(4) สภาพเครื่องตัดไฟรั่ว</> },
+    { type: "item", id: "t2-1-5", label: <>(5) การต่อลงดินของบริภัณฑ์ ตัวนำต่อลงดิน และความต่อเนื่องลงดินของท่อร้อยสาย รางเดินสาย รางเคเบิล</> },
 
     { type: "section", no: "2", title: "ระบบป้องกันฟ้าผ่า (ถ้ามี)" },
-    { type: "item", id: "t2-2-1", label: <>(1) ตรวจสอบระบบตัวนำล่อฟ้า ตัวนำต่อลงดิน</>, defaultFreq: "1y" },
-    { type: "item", id: "t2-2-2", label: <>(2) ตรวจสอบระบบรากสายดิน</>, defaultFreq: "1y" },
-    { type: "item", id: "t2-2-3", label: <>(3) ตรวจสอบจุดต่อประสานศักย์</>, defaultFreq: "1y" },
+    { type: "item", id: "t2-2-1", label: <>(1) ตรวจสอบระบบตัวนำล่อฟ้า ตัวนำต่อลงดิน</> },
+    { type: "item", id: "t2-2-2", label: <>(2) ตรวจสอบระบบรากสายดิน</> },
+    { type: "item", id: "t2-2-3", label: <>(3) ตรวจสอบจุดต่อประสานศักย์</> },
 
     { type: "section", no: "3", title: "ระบบอุปกรณ์ประกอบอื่น ๆ (ถ้ามี)" },
-    { type: "item", id: "t2-3-1", label: <>(1) สลิง หรือสายยึด</>, defaultFreq: "1y" },
-    { type: "item", id: "t2-3-2", label: <>(2) บันไดขึ้นลง</>, defaultFreq: "1y" },
-    { type: "item", id: "t2-3-3", label: <>(3) สภาพราวจับ หรือราวกันตก</>, defaultFreq: "1y" },
-    { type: "item", id: "t2-3-4", label: <>(4) สภาพ CATWALK</>, defaultFreq: "1y" },
-    // อื่น ๆ (โปรดระบุ) ต้องพิมพ์เพิ่มได้
-    { type: "other", id: "t2-3-5", prefix: "- อื่น ๆ (โปรดระบุ)", defaultFreq: "1y" },
+    { type: "item", id: "t2-3-1", label: <>(1) สลิง หรือสายยึด</> },
+    { type: "item", id: "t2-3-2", label: <>(2) บันไดขึ้นลง</> },
+    { type: "item", id: "t2-3-3", label: <>(3) สภาพราวจับ หรือราวกันตก</> },
+    { type: "item", id: "t2-3-4", label: <>(4) สภาพ CATWALK</> },
+    { type: "other", id: "t2-3-5", prefix: "- อื่น ๆ (โปรดระบุ)" },
 ];
 
 /* ========================== COMPONENT ========================== */
@@ -128,25 +118,34 @@ export default function Section2_5Details({ value, onChange }: Props) {
 
     // sync จาก value (พร้อม default)
     React.useEffect(() => {
+        // ===== table1 init (ไม่ตั้ง default) =====
         const init1: Record<string, Section2_5Row> = {};
         TABLE1_ROWS.forEach((r) => {
             const v = value?.table1?.[r.id];
-            init1[r.id] = { freq: (v?.freq ?? r.defaultFreq ?? "") as FreqKey, note: v?.note ?? "" };
+            init1[r.id] = {
+                freq: (v?.freq ?? "") as FreqKey,     // ✅ ไม่มีค่า = ว่าง
+                note: v?.note ?? "",
+            };
         });
-        Object.entries(value?.table1 ?? {}).forEach(([k, v]) => (init1[k] = { ...(init1[k] ?? {}), ...(v ?? {}) }));
+        Object.entries(value?.table1 ?? {}).forEach(([k, v]) => {
+            init1[k] = { ...(init1[k] ?? {}), ...(v ?? {}) };
+        });
         setTable1(init1);
 
+        // ===== table2 init (ไม่ตั้ง default) =====
         const init2: Record<string, Section2_5Row> = {};
         TABLE2_ROWS.forEach((r) => {
             if (r.type === "section") return;
             const v = value?.table2?.[r.id];
             init2[r.id] = {
-                freq: (v?.freq ?? r.defaultFreq ?? "") as FreqKey,
+                freq: (v?.freq ?? "") as FreqKey,     // ✅ ไม่มีค่า = ว่าง
                 note: v?.note ?? "",
                 customLabel: v?.customLabel ?? "",
             };
         });
-        Object.entries(value?.table2 ?? {}).forEach(([k, v]) => (init2[k] = { ...(init2[k] ?? {}), ...(v ?? {}) }));
+        Object.entries(value?.table2 ?? {}).forEach(([k, v]) => {
+            init2[k] = { ...(init2[k] ?? {}), ...(v ?? {}) };
+        });
         setTable2(init2);
     }, [value?.table1, value?.table2]);
 
