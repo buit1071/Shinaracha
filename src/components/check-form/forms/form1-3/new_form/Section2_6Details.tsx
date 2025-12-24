@@ -159,6 +159,26 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
     const buildRemoteImgUrl = (name: string) =>
         `${process.env.NEXT_PUBLIC_N8N_UPLOAD_FILE}?name=${encodeURIComponent(name)}`;
 
+    const getPhotoSrc = React.useCallback(
+        (p?: PhotoItem | null) => {
+            if (!p) return "";
+
+            // ถ้ามี src แล้ว (data/blob/http) ใช้เลย
+            if (p.src) {
+                if (p.src.startsWith("data:")) return p.src;
+                if (p.src.startsWith("blob:")) return p.src;
+                if (/^https?:\/\//i.test(p.src)) return p.src;
+
+                // เผื่อ src เป็นแค่ filename เฉยๆ
+                return buildRemoteImgUrl(p.src);
+            }
+
+            // ถ้าไม่มี src แต่มี filename -> สร้าง remote url
+            return p.filename ? buildRemoteImgUrl(p.filename) : "";
+        },
+        [buildRemoteImgUrl]
+    );
+
     const videoRef = React.useRef<HTMLVideoElement>(null);
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
     const fileRef = React.useRef<HTMLInputElement>(null);
@@ -375,11 +395,12 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
     };
 
     const pad = (n: number) => String(n).padStart(2, "0");
-    const makeDefectName = () => {
+    const makeDefectName = (ext: string = "png") => {
         const d = new Date();
-        return `defect_${pad(d.getDate())}${pad(d.getMonth() + 1)}${d.getFullYear()}${pad(d.getHours())}${pad(
-            d.getMinutes()
-        )}${pad(d.getSeconds())}`;
+        const pad = (n: number) => String(n).padStart(2, "0");
+        return `defect_${pad(d.getDate())}${pad(d.getMonth() + 1)}${d.getFullYear()}${pad(
+            d.getHours()
+        )}${pad(d.getMinutes())}${pad(d.getSeconds())}.${ext}`;
     };
 
     const closeCamera = () => {
@@ -416,7 +437,7 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
         setOverlayMode("view");
         setViewTarget({ defectIndex, photoIndex });
 
-        const src = p.src && p.src.startsWith("data:") ? p.src : p.src ?? buildRemoteImgUrl(p.filename);
+        const src = getPhotoSrc(p);
         setCaptured(src);
         setCapturedName(p.filename);
         setCamOpen(true);
@@ -479,16 +500,17 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
         const file = e.target.files?.[0];
         if (!file || !camTarget) return;
 
-        const { defectIndex } = camTarget;
-        const cur = selectedProblems?.[defectIndex]?.photos ?? [];
-        if (cur.length >= 2) return;
+        const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
 
         const reader = new FileReader();
         reader.onload = () => {
             setSelectedProblems((prev) =>
                 prev.map((d, idx) => {
-                    if (idx !== defectIndex) return d;
-                    const next = [...(d.photos ?? []), { src: reader.result as string, filename: makeDefectName() }].slice(0, 2);
+                    if (idx !== camTarget.defectIndex) return d;
+                    const next = [
+                        ...(d.photos ?? []),
+                        { src: reader.result as string, filename: makeDefectName(ext) },
+                    ].slice(0, 2);
                     return { ...d, photos: next };
                 })
             );
@@ -867,7 +889,28 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
                                 value={selectedProblems
                                     .filter((p) => !p.isOther)
                                     .map((p) => ({ value: p.problem_id, label: p.problem_name }))}
-                                onChange={(selected) => { /* ...ของเดิม... */ }}
+                                onChange={(selected) => {
+                                    const newDefects: Defect[] = (selected ?? []).map((s) => {
+                                        const existing = selectedProblems.find(
+                                            (p) => p.problem_id === s.value && !p.isOther
+                                        );
+                                        if (existing) return existing;
+
+                                        const fromMaster = problems.find((p) => p.problem_id === s.value);
+                                        return {
+                                            problem_id: s.value,
+                                            problem_name: s.label,
+                                            photos: [],
+                                            illegal_suggestion: fromMaster?.illegal_suggestion ?? "",
+                                        };
+                                    });
+
+                                    // ✅ คง "Other" ที่ user เพิ่มเองไว้
+                                    const otherDefect = selectedProblems.find((p) => p.isOther);
+                                    if (otherDefect) newDefects.push(otherDefect);
+
+                                    setSelectedProblems(newDefects);
+                                }}
                                 placeholder="-- เลือกหลายปัญหา --"
                                 menuPortalTarget={typeof window !== "undefined" ? document.body : null}
                                 styles={selectStyles as any}
@@ -932,7 +975,19 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
                                                     ? defects.map((p) => ({ value: p.id, label: p.defect })).find((opt) => opt.value === d.defect) || null
                                                     : null
                                             }
-                                            onChange={(selected) => { /* ...ของเดิม... */ }}
+                                            onChange={(selected) =>
+                                                setSelectedProblems((prev) =>
+                                                    prev.map((p, idx) =>
+                                                        idx === defectIndex
+                                                            ? {
+                                                                ...p,
+                                                                defect: selected?.value ?? null,
+                                                                defect_name: selected?.label ?? undefined,
+                                                            }
+                                                            : p
+                                                    )
+                                                )
+                                            }
                                             placeholder="-- เลือกข้อกฎหมาย --"
                                             isClearable
                                             menuPortalTarget={typeof window !== "undefined" ? document.body : null}

@@ -13,7 +13,7 @@ function ImageField({
 }: {
     label: string;
     value: string | null;
-    onChange: (v: string | null) => void;
+    onChange: (p: { url: string | null; file: File | null }) => void;
     hint?: string;
     square?: boolean;
     width?: number;
@@ -25,11 +25,21 @@ function ImageField({
     const pick = (e: React.ChangeEvent<HTMLInputElement>) => {
         const f = e.target.files?.[0];
         if (!f) return;
+
+        // revoke รูปเก่าถ้าเป็น blob
+        if (value && value.startsWith("blob:")) URL.revokeObjectURL(value);
+
         const url = URL.createObjectURL(f);
-        onChange(url);
+        onChange({ url, file: f });
+
+        // reset input เพื่อเลือกไฟล์เดิมซ้ำได้
+        e.target.value = "";
     };
 
-    const clear = () => onChange(null);
+    const clear = () => {
+        if (value && value.startsWith("blob:")) URL.revokeObjectURL(value);
+        onChange({ url: null, file: null });
+    };
 
     const boxW = width;
     const boxH = square ? Math.min(width, height) : height;
@@ -58,9 +68,7 @@ function ImageField({
                     ) : (
                         <div className="text-gray-600 text-sm text-center px-4">
                             ยังไม่มีรูปอัปโหลด
-                            {hint ? (
-                                <div className="text-xs text-gray-500 mt-1">{hint}</div>
-                            ) : null}
+                            {hint ? <div className="text-xs text-gray-500 mt-1">{hint}</div> : null}
                         </div>
                     )}
                 </div>
@@ -104,21 +112,29 @@ function ImageGallery({
 }: {
     label: string;
     values: string[];
-    onChange: (urls: string[]) => void;
+    onChange: (p: { urls: string[]; files: File[] }) => void;
     hint?: string;
     single?: boolean;
 }) {
     const pick = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files ?? []);
         if (!files.length) return;
+
+        // revoke รูปเก่าถ้าเป็น blob (เฉพาะตัวแรกที่โชว์)
+        if (values?.[0] && values[0].startsWith("blob:")) URL.revokeObjectURL(values[0]);
+
         const urls = files.map((f) => URL.createObjectURL(f));
-        onChange(single ? [urls[0]] : [...values, ...urls]);
+        onChange({ urls: single ? [urls[0]] : [...values, ...urls], files });
+
+        e.target.value = "";
     };
 
     const removeAt = (idx: number) => {
         const next = values.slice();
+        const removed = next[idx];
+        if (removed && removed.startsWith("blob:")) URL.revokeObjectURL(removed);
         next.splice(idx, 1);
-        onChange(next);
+        onChange({ urls: next, files: [] });
     };
 
     return (
@@ -234,16 +250,16 @@ export type SectionTwoForm = {
     // --- 1) แผนที่/พิกัด ---
     latitude?: string;
     longitude?: string;
-    mapSketch?: string | null;
-    mapSketch1?: string | null;
+    mapSketch?: string | File | null;
+    mapSketch1?: string | File | null;
 
     // --- วันที่ตรวจ/ผู้บันทึก + รูปแบบ ---
     inspectDay3?: string;
     inspectMonth3?: string;
     inspectYear3?: string;
     recorder3?: string;
-    shapeSketch?: string | null;
-    shapeSketch1?: string | null;
+    shapeSketch?: string | File | null;
+    shapeSketch1?: string | File | null;
 
     // --- ขนาด/พื้นที่/โครงสร้าง + รูป 1-6 ---
     signWidthM?: string | null;
@@ -252,12 +268,12 @@ export type SectionTwoForm = {
     signAreaMore?: string | null;
     structureHeightMore?: string | null;
 
-    photosFront?: string | null;
-    photosSide?: string | null;
-    photosBase?: string | null;
-    photosFront1?: string | null;
-    photosSide1?: string | null;
-    photosBase1?: string | null;
+    photosFront?: string | File | null;
+    photosSide?: string | File | null;
+    photosBase?: string | File | null;
+    photosFront1?: string | File | null;
+    photosSide1?: string | File | null;
+    photosBase1?: string | File | null;
 
     // --- 2) ประเภทป้าย ---
     typeGround?: boolean;
@@ -398,83 +414,137 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
     const [p5, setP5] = React.useState<string | null>(null);
     const [p6, setP6] = React.useState<string | null>(null);
 
+    const isBlobUrl = (u: string | null) => !!u && u.startsWith("blob:");
+
+    // helper: แปลงค่าที่เก็บในฟอร์ม -> url สำหรับแสดงผล
+    // - ถ้าเป็น string: ถือว่าเป็น filename -> buildRemote
+    // - ถ้าเป็น File: ไม่ต้องทำอะไร (เพราะเราโชว์จาก blob preview อยู่แล้ว)
+    const toRemoteUrlIfString = (val: unknown) => {
+        if (typeof val === "string" && val.trim() !== "") return buildRemoteImgUrl(val);
+        return null;
+    };
+
     // ถ้าไม่ได้เลือก blob ใหม่ ให้แสดงจาก filename ที่อยู่ใน formData
     React.useEffect(() => {
-        if (!mapPrev || !mapPrev.startsWith("blob:")) {
-            setMapPrev(v.mapSketch ? buildRemoteImgUrl(v.mapSketch) : null);
-        }
-    }, [v.mapSketch]);
+        // ถ้าตอนนี้ preview เป็น blob อยู่ (user เพิ่งเลือก) อย่าทับ
+        if (isBlobUrl(mapPrev)) return;
+
+        // ถ้า v.mapSketch เป็น File (user เพิ่งเลือก) ก็อย่าทับ (รอ blob ที่ set แล้ว)
+        if (v.mapSketch instanceof File) return;
+
+        // กรณีเป็น filename string (มาจาก DB)
+        setMapPrev(toRemoteUrlIfString(v.mapSketch));
+    }, [v.mapSketch, buildRemoteImgUrl]); // buildRemoteImgUrl เป็น callback อยู่แล้ว
 
     React.useEffect(() => {
-        if (!mapPrev1 || !mapPrev1.startsWith("blob:")) {
-            setMapPrev1(v.mapSketch1 ? buildRemoteImgUrl(v.mapSketch1) : null);
-        }
-    }, [v.mapSketch1]);
+        if (isBlobUrl(mapPrev1)) return;
+        if (v.mapSketch1 instanceof File) return;
+        setMapPrev1(toRemoteUrlIfString(v.mapSketch1));
+    }, [v.mapSketch1, buildRemoteImgUrl]);
+
+    /** ---------------- shapeSketch ---------------- */
+    React.useEffect(() => {
+        if (isBlobUrl(shapePrev)) return;
+        if (v.shapeSketch instanceof File) return;
+        setShapePrev(toRemoteUrlIfString(v.shapeSketch));
+    }, [v.shapeSketch, buildRemoteImgUrl]);
 
     React.useEffect(() => {
-        if (!shapePrev || !shapePrev.startsWith("blob:")) {
-            setShapePrev(v.shapeSketch ? buildRemoteImgUrl(v.shapeSketch) : null);
-        }
-    }, [v.shapeSketch]);
+        if (isBlobUrl(shapePrev1)) return;
+        if (v.shapeSketch1 instanceof File) return;
+        setShapePrev1(toRemoteUrlIfString(v.shapeSketch1));
+    }, [v.shapeSketch1, buildRemoteImgUrl]);
+
+    /** ---------------- photos 1-6 ---------------- */
+    React.useEffect(() => {
+        if (isBlobUrl(p1)) return;
+        if (v.photosFront instanceof File) return;
+        setP1(toRemoteUrlIfString(v.photosFront));
+    }, [v.photosFront, buildRemoteImgUrl]);
 
     React.useEffect(() => {
-        if (!shapePrev1 || !shapePrev1.startsWith("blob:")) {
-            setShapePrev1(v.shapeSketch1 ? buildRemoteImgUrl(v.shapeSketch1) : null);
-        }
-    }, [v.shapeSketch1]);
+        if (isBlobUrl(p2)) return;
+        if (v.photosSide instanceof File) return;
+        setP2(toRemoteUrlIfString(v.photosSide));
+    }, [v.photosSide, buildRemoteImgUrl]);
 
     React.useEffect(() => {
-        if (!p1 || !p1.startsWith("blob:")) setP1(v.photosFront ? buildRemoteImgUrl(v.photosFront) : null);
-    }, [v.photosFront]);
-    React.useEffect(() => {
-        if (!p2 || !p2.startsWith("blob:")) setP2(v.photosSide ? buildRemoteImgUrl(v.photosSide) : null);
-    }, [v.photosSide]);
-    React.useEffect(() => {
-        if (!p3 || !p3.startsWith("blob:")) setP3(v.photosBase ? buildRemoteImgUrl(v.photosBase) : null);
-    }, [v.photosBase]);
+        if (isBlobUrl(p3)) return;
+        if (v.photosBase instanceof File) return;
+        setP3(toRemoteUrlIfString(v.photosBase));
+    }, [v.photosBase, buildRemoteImgUrl]);
 
     React.useEffect(() => {
-        if (!p4 || !p4.startsWith("blob:")) setP4(v.photosFront1 ? buildRemoteImgUrl(v.photosFront1) : null);
-    }, [v.photosFront1]);
+        if (isBlobUrl(p4)) return;
+        if (v.photosFront1 instanceof File) return;
+        setP4(toRemoteUrlIfString(v.photosFront1));
+    }, [v.photosFront1, buildRemoteImgUrl]);
+
     React.useEffect(() => {
-        if (!p5 || !p5.startsWith("blob:")) setP5(v.photosSide1 ? buildRemoteImgUrl(v.photosSide1) : null);
-    }, [v.photosSide1]);
+        if (isBlobUrl(p5)) return;
+        if (v.photosSide1 instanceof File) return;
+        setP5(toRemoteUrlIfString(v.photosSide1));
+    }, [v.photosSide1, buildRemoteImgUrl]);
+
     React.useEffect(() => {
-        if (!p6 || !p6.startsWith("blob:")) setP6(v.photosBase1 ? buildRemoteImgUrl(v.photosBase1) : null);
-    }, [v.photosBase1]);
+        if (isBlobUrl(p6)) return;
+        if (v.photosBase1 instanceof File) return;
+        setP6(toRemoteUrlIfString(v.photosBase1));
+    }, [v.photosBase1, buildRemoteImgUrl]);
+
+    const extFromFile = (f: File) => {
+        const byName = f.name.split(".").pop()?.toLowerCase();
+        if (byName) return byName;
+        const t = f.type || "";
+        if (t.includes("png")) return "png";
+        if (t.includes("webp")) return "webp";
+        return "jpg";
+    };
 
     // ===== handlers ภาพ: เก็บ filename ลง FormData.sectionTwo + แสดง blob preview =====
     const pickSingleImage = (
-        blobUrl: string | null,
+        p: { url: string | null; file: File | null },
         prefix: string,
         fieldKey: keyof SectionTwoForm,
         setPreview: (v: string | null) => void
     ) => {
-        if (!blobUrl) {
+        if (!p?.file || !p?.url) {
             setPreview(null);
             patch({ [fieldKey]: null } as any);
             return;
         }
-        const filename = makeFileName(prefix, "jpg");
-        setPreview(blobUrl);
-        patch({ [fieldKey]: filename } as any);
+
+        const ext = extFromFile(p.file);
+        const filename = makeFileName(prefix, ext);
+
+        // ✅ rename ไฟล์จริงให้ชื่อใหม่ แล้วเก็บ File ขึ้น parent
+        const renamed = new File([p.file], filename, { type: p.file.type || "image/jpeg" });
+
+        setPreview(p.url);
+        patch({ [fieldKey]: renamed } as any);
     };
 
     const pickGalleryImage = (
-        urls: string[],
+        p: { urls: string[]; files: File[] },
         prefix: string,
         fieldKey: keyof SectionTwoForm,
         setPreview: (v: string | null) => void
     ) => {
-        const blobUrl = urls?.[0] ?? null;
-        if (!blobUrl) {
+        const url = p?.urls?.[0] ?? null;
+        const file = p?.files?.[0] ?? null;
+
+        if (!file || !url) {
             setPreview(null);
             patch({ [fieldKey]: null } as any);
             return;
         }
-        const filename = makeFileName(prefix, "jpg");
-        setPreview(blobUrl);
-        patch({ [fieldKey]: filename } as any);
+
+        const ext = extFromFile(file);
+        const filename = makeFileName(prefix, ext);
+        const renamed = new File([file], filename, { type: file.type || "image/jpeg" });
+
+        setPreview(url);
+        patch({ [fieldKey]: renamed } as any);
     };
 
     return (

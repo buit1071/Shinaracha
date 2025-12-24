@@ -306,10 +306,164 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
 
     const handleSave = async () => {
         showLoading(true);
+
+        const stopLoading = () => {
+            try {
+                showLoading(false);
+            } catch { }
+        };
+
+        const alertAndStop = async (type: "success" | "error", msg: string) => {
+            stopLoading();
+            await showAlert(type, msg);
+        };
+
         try {
             const { cover, sectionTwo, sectionFour, ...rest } = formData;
 
-            // ---------- 1. Upload cover ----------
+            // ===== helper: extract filename from n8n url (?name=xxx) =====
+            const extractNameFromUrl = (u: string): string | null => {
+                try {
+                    const url = new URL(u);
+                    return url.searchParams.get("name");
+                } catch {
+                    return null;
+                }
+            };
+
+            // ===== helper: generate fallback filename =====
+            const makeName = (mime?: string) => {
+                const ext =
+                    mime?.includes("png") ? "png" :
+                        mime?.includes("jpeg") ? "jpg" :
+                            mime?.includes("webp") ? "webp" : "png";
+                return `IMG-${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
+            };
+
+            // ===== helper: if value is plain filename (not url/blob/data) =====
+            const toPlainFilename = (v: any): string | null => {
+                if (typeof v !== "string") return null;
+                if (v.startsWith("blob:")) return null;
+                if (v.startsWith("data:")) return null;
+                if (/^https?:\/\//i.test(v)) return null;
+                return v; // plain filename
+            };
+
+            // ===== upload any image source (blob:, data:image, File/Blob, http(s) pass-through) =====
+            const uploadImageSource = async (
+                src: string | File | Blob | null | undefined,
+                filename?: string | null
+            ): Promise<string | null> => {
+                if (!src) return null;
+
+                // URL เดิมบน server → ไม่ต้อง upload, แค่คืนชื่อไฟล์
+                if (typeof src === "string" && /^https?:\/\//i.test(src)) {
+                    return filename ?? extractNameFromUrl(src) ?? null;
+                }
+
+                let blob: Blob | null = null;
+                let mime = "";
+
+                if (src instanceof File) {
+                    blob = src;
+                    mime = src.type || "";
+                    filename = filename ?? src.name;
+                } else if (src instanceof Blob) {
+                    blob = src;
+                    mime = src.type || "";
+                } else if (typeof src === "string") {
+                    // รองรับ blob: และ data:image
+                    if (src.startsWith("blob:") || src.startsWith("data:image")) {
+                        const res = await fetch(src);
+                        blob = await res.blob();
+                        mime = blob.type || "";
+                    } else {
+                        // ถ้าเป็น string แปลกๆ ให้ถือเป็นชื่อไฟล์
+                        return filename ?? src;
+                    }
+                }
+
+                if (!blob) return null;
+
+                const finalName = filename ?? makeName(mime);
+
+                const fd = new FormData();
+                fd.append("file", blob, finalName);
+                fd.append("filename", finalName);
+
+                const uploadRes = await fetch("/api/auth/upload-file", {
+                    method: "POST",
+                    body: fd,
+                });
+
+                const result = await uploadRes.json();
+                if (!uploadRes.ok || !result.success) {
+                    throw new Error(result.error || "อัปโหลดรูปไม่สำเร็จ");
+                }
+
+                return finalName;
+            };
+
+            const cleanSection2_6 = async (s26: any) => {
+                if (!s26) return s26;
+
+                const cleanTable = async (table: Record<string, any> | undefined) => {
+                    if (!table) return {};
+
+                    const out: Record<string, any> = {};
+
+                    for (const [rowId, row] of Object.entries(table)) {
+                        if (!row) continue;
+
+                        const map = row.defect_by_visit ?? {};
+                        const nextMap: any = {};
+
+                        for (const [vk, defs] of Object.entries(map)) {
+                            const arr = Array.isArray(defs) ? defs : [];
+                            nextMap[vk] = await Promise.all(
+                                arr.map(async (def: any) => {
+                                    const photos = Array.isArray(def.photos) ? def.photos : [];
+
+                                    const cleanedPhotos = await Promise.all(
+                                        photos.map(async (p: any) => {
+                                            // p.src อาจเป็น data/blob/http หรือไม่มีเลย
+                                            if (p?.src) {
+                                                const name = await uploadImageSource(p.src, p.filename ?? null);
+                                                return name ? { filename: name } : null;
+                                            }
+                                            // ถ้ามีแต่ filename (รูปเดิมจาก backend)
+                                            if (p?.filename) return { filename: p.filename };
+                                            return null;
+                                        })
+                                    );
+
+                                    return {
+                                        ...def,
+                                        photos: cleanedPhotos.filter(Boolean),
+                                    };
+                                })
+                            );
+                        }
+
+                        out[rowId] = {
+                            ...row,
+                            defect_by_visit: nextMap,
+                        };
+                    }
+
+                    return out;
+                };
+
+                return {
+                    ...s26,
+                    table1: await cleanTable(s26.table1),
+                    table2: await cleanTable(s26.table2),
+                };
+            };
+
+            // ============================================================
+            // 1) Upload cover
+            // ============================================================
             if (cover instanceof File) {
                 const fd = new FormData();
                 fd.append("file", cover);
@@ -322,152 +476,47 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
 
                 const uploadData = await uploadRes.json();
                 if (!uploadRes.ok || !uploadData.success) {
-                    return showAlert("error", uploadData.error || "อัปโหลดไฟล์ไม่สำเร็จ");
+                    await alertAndStop("error", uploadData.error || "อัปโหลดไฟล์ไม่สำเร็จ");
+                    return;
                 }
             }
 
-            // ---------- 2. Upload SectionTwo images ----------
-            const uploadImageIfNeeded = async (
-                previewUrl: string | null | undefined,
-                filename: string | null | undefined
-            ): Promise<void> => {
-                // ✅ อัปโหลดเฉพาะกรณี preview เป็น blob:
-                if (previewUrl && previewUrl.startsWith("blob:") && filename) {
-                    const response = await fetch(previewUrl);
-                    const blob = await response.blob();
+            // ============================================================
+            // 2) Upload SectionTwo images (สำคัญ: ต้องเอาชื่อไฟล์กลับไปใส่ payload)
+            // ============================================================
+            const s2 = (sectionTwo ?? {}) as any;
 
-                    const fd = new FormData();
-                    fd.append("file", blob, filename);
-                    fd.append("filename", filename);
+            // เลือก src ที่จะอัปโหลด: ใช้ preview ก่อน ถ้าไม่มีค่อยใช้ field จริง
+            const pickSrc = (preview: any, original: any) => preview ?? original;
 
-                    const uploadRes = await fetch("/api/auth/upload-file", {
-                        method: "POST",
-                        body: fd,
-                    });
+            const [
+                mapSketchName,
+                mapSketch1Name,
+                shapeSketchName,
+                shapeSketch1Name,
+                photosFrontName,
+                photosSideName,
+                photosBaseName,
+                photosFront1Name,
+                photosSide1Name,
+                photosBase1Name,
+            ] = await Promise.all([
+                uploadImageSource(pickSrc(s2.mapSketchPreview, s2.mapSketch), toPlainFilename(s2.mapSketch)),
+                uploadImageSource(pickSrc(s2.mapSketchPreview1, s2.mapSketch1), toPlainFilename(s2.mapSketch1)),
 
-                    const result = await uploadRes.json();
-                    if (!uploadRes.ok || !result.success) {
-                        // ถ้าต้องการให้หยุดเลย → throw new Error(...)
-                        // ตอนนี้ปล่อยผ่านตามโค้ดเดิม
-                    }
-                }
-            };
+                uploadImageSource(pickSrc(s2.shapeSketchPreview, s2.shapeSketch), toPlainFilename(s2.shapeSketch)),
+                uploadImageSource(pickSrc(s2.shapeSketchPreview1, s2.shapeSketch1), toPlainFilename(s2.shapeSketch1)),
 
-            const s2 = (sectionTwo ?? {}) as SectionTwoWithPreview;
+                uploadImageSource(pickSrc(s2.photosFrontPreview, s2.photosFront), toPlainFilename(s2.photosFront)),
+                uploadImageSource(pickSrc(s2.photosSidePreview, s2.photosSide), toPlainFilename(s2.photosSide)),
+                uploadImageSource(pickSrc(s2.photosBasePreview, s2.photosBase), toPlainFilename(s2.photosBase)),
 
-            await Promise.all([
-                // map 2 รูป
-                uploadImageIfNeeded(s2.mapSketchPreview, s2.mapSketch as any),
-                uploadImageIfNeeded(s2.mapSketchPreview1, s2.mapSketch1 as any),
-
-                // shape 2 รูป
-                uploadImageIfNeeded(s2.shapeSketchPreview, s2.shapeSketch as any),
-                uploadImageIfNeeded(s2.shapeSketchPreview1, s2.shapeSketch1 as any),
-
-                // รูป 1-3
-                uploadImageIfNeeded(s2.photosFrontPreview, s2.photosFront as any),
-                uploadImageIfNeeded(s2.photosSidePreview, s2.photosSide as any),
-                uploadImageIfNeeded(s2.photosBasePreview, s2.photosBase as any),
-
-                // รูป 4-6
-                uploadImageIfNeeded(s2.photosFrontPreview1, s2.photosFront1 as any),
-                uploadImageIfNeeded(s2.photosSidePreview1, s2.photosSide1 as any),
-                uploadImageIfNeeded(s2.photosBasePreview1, s2.photosBase1 as any),
+                uploadImageSource(pickSrc(s2.photosFrontPreview1, s2.photosFront1), toPlainFilename(s2.photosFront1)),
+                uploadImageSource(pickSrc(s2.photosSidePreview1, s2.photosSide1), toPlainFilename(s2.photosSide1)),
+                uploadImageSource(pickSrc(s2.photosBasePreview1, s2.photosBase1), toPlainFilename(s2.photosBase1)),
             ]);
 
-            // ---------- 3. Upload SectionFour photos (row.photos + defect.photos) ----------
-            let sectionFourClean = sectionFour;
-
-            if (sectionFour) {
-                const uploadPromises: Promise<void>[] = [];
-
-                const uploadPhotoItem = async (src: string, filename: string): Promise<void> => {
-                    if (src && src.startsWith("data:image")) {
-                        const res = await fetch(src);
-                        const blob = await res.blob();
-                        const fd = new FormData();
-                        fd.append("file", blob, filename);
-                        fd.append("filename", filename);
-
-                        const uploadRes = await fetch("/api/auth/upload-file", {
-                            method: "POST",
-                            body: fd,
-                        });
-                        const data = await uploadRes.json();
-                        if (!uploadRes.ok || !data.success) {
-                            // ถ้าต้องการให้หยุดทันที สามารถ throw error ได้
-                        }
-                    }
-                };
-
-                const processTable = (table: Record<string, any> | undefined): Record<string, any> => {
-                    if (!table) return {};
-                    const clean: Record<string, any> = {};
-
-                    for (const [key, row] of Object.entries(table)) {
-                        if (!row) continue;
-
-                        const cleanedRowPhotos =
-                            Array.isArray(row.photos)
-                                ? row.photos
-                                    .map((p: any) => {
-                                        if (p?.src && p?.filename && p.src.startsWith("data:image")) {
-                                            uploadPromises.push(uploadPhotoItem(p.src, p.filename));
-                                        }
-                                        if (!p?.filename) return null;
-                                        return { filename: p.filename };
-                                    })
-                                    .filter(Boolean)
-                                : [];
-
-                        let cleanedDefect = row.defect;
-                        if (Array.isArray(row.defect)) {
-                            cleanedDefect = row.defect.map((def: any) => {
-                                const { photos: defectPhotos, ...restDef } = def || {};
-
-                                const cleanedDefectPhotos =
-                                    Array.isArray(defectPhotos)
-                                        ? defectPhotos
-                                            .map((p: any) => {
-                                                if (p?.src && p?.filename && p.src.startsWith("data:image")) {
-                                                    uploadPromises.push(uploadPhotoItem(p.src, p.filename));
-                                                }
-                                                if (!p?.filename) return null;
-                                                return { filename: p.filename };
-                                            })
-                                            .filter(Boolean)
-                                        : [];
-
-                                return {
-                                    ...restDef,
-                                    photos: cleanedDefectPhotos,
-                                };
-                            });
-                        }
-
-                        clean[key] = {
-                            ...row,
-                            photos: cleanedRowPhotos,
-                            defect: cleanedDefect,
-                        };
-                    }
-
-                    return clean;
-                };
-
-                const cleanTable1 = processTable(sectionFour.table1);
-                const cleanTable2 = processTable(sectionFour.table2);
-
-                await Promise.all(uploadPromises);
-
-                sectionFourClean = {
-                    ...sectionFour,
-                    table1: cleanTable1,
-                    table2: cleanTable2,
-                };
-            }
-
-            // ---------- 4. เตรียม payload ----------
+            // ลบ preview fields ทิ้ง + ใส่ชื่อไฟล์ที่อัปโหลดกลับเข้าไป
             const {
                 mapSketchPreview,
                 mapSketchPreview1,
@@ -479,15 +528,103 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 photosFrontPreview1,
                 photosSidePreview1,
                 photosBasePreview1,
-                ...sectionTwoClean
+                ...sectionTwoBase
             } = s2;
 
+            const sectionTwoClean = {
+                ...sectionTwoBase,
+                mapSketch: mapSketchName ?? sectionTwoBase.mapSketch,
+                mapSketch1: mapSketch1Name ?? sectionTwoBase.mapSketch1,
+
+                shapeSketch: shapeSketchName ?? sectionTwoBase.shapeSketch,
+                shapeSketch1: shapeSketch1Name ?? sectionTwoBase.shapeSketch1,
+
+                photosFront: photosFrontName ?? sectionTwoBase.photosFront,
+                photosSide: photosSideName ?? sectionTwoBase.photosSide,
+                photosBase: photosBaseName ?? sectionTwoBase.photosBase,
+
+                photosFront1: photosFront1Name ?? sectionTwoBase.photosFront1,
+                photosSide1: photosSide1Name ?? sectionTwoBase.photosSide1,
+                photosBase1: photosBase1Name ?? sectionTwoBase.photosBase1,
+            };
+
+            // ============================================================
+            // 3) Upload SectionFour photos (รองรับ blob: + data:image + http)
+            // ============================================================
+            let sectionFourClean = sectionFour;
+
+            const cleanPhotoList = async (photos: any[] | undefined) => {
+                if (!Array.isArray(photos)) return [];
+
+                const names = await Promise.all(
+                    photos.map(async (p) => {
+                        if (!p) return null;
+                        const fallbackName =
+                            p.filename ??
+                            (typeof p.src === "string" ? extractNameFromUrl(p.src) : null) ??
+                            null;
+
+                        return await uploadImageSource(p.src ?? null, fallbackName);
+                    })
+                );
+
+                return names
+                    .filter((n): n is string => !!n)
+                    .map((n) => ({ filename: n }));
+            };
+
+            const processTable = async (table: Record<string, any> | undefined): Promise<Record<string, any>> => {
+                if (!table) return {};
+                const clean: Record<string, any> = {};
+
+                for (const [key, row] of Object.entries(table)) {
+                    if (!row) continue;
+
+                    const cleanedRowPhotos = await cleanPhotoList(row.photos);
+
+                    let cleanedDefect = row.defect;
+                    if (Array.isArray(row.defect)) {
+                        cleanedDefect = await Promise.all(
+                            row.defect.map(async (def: any) => {
+                                const { photos: defectPhotos, ...restDef } = def || {};
+                                const cleanedDefectPhotos = await cleanPhotoList(defectPhotos);
+                                return { ...restDef, photos: cleanedDefectPhotos };
+                            })
+                        );
+                    }
+
+                    clean[key] = {
+                        ...row,
+                        photos: cleanedRowPhotos,
+                        defect: cleanedDefect,
+                    };
+                }
+
+                return clean;
+            };
+
+            if (sectionFour) {
+                const cleanTable1 = await processTable((sectionFour as any).table1);
+                const cleanTable2 = await processTable((sectionFour as any).table2);
+
+                sectionFourClean = {
+                    ...sectionFour,
+                    table1: cleanTable1,
+                    table2: cleanTable2,
+                };
+            }
+
+            const section2_6Clean = await cleanSection2_6((rest as any).section2_6);
+            // ============================================================
+            // 4) Prepare payload (รวม section2_5/2_6/2_7 อยู่ใน rest แล้ว)
+            // ============================================================
             const payload: any = {
                 entity: "form1_3",
                 data: {
                     ...rest,
                     sectionTwo: sectionTwoClean,
                     sectionFour: sectionFourClean,
+                    section2_6: section2_6Clean,
                     job_id: jobId,
                     equipment_id: equipment_id,
                     is_active: 1,
@@ -498,7 +635,9 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
 
             if (formData.form_code) payload.data.form_code = formData.form_code;
 
-            // ---------- 5. บันทึกข้อมูล ----------
+            // ============================================================
+            // 5) Save form data
+            // ============================================================
             const res = await fetch("/api/auth/forms/post", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -508,19 +647,22 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
             const data = await res.json();
 
             if (res.ok && data.success) {
+                stopLoading(); // ✅ ปิดก่อนกันค้าง
                 await showAlert("success", data.message);
+
                 if (data.form_code && !formData.form_code) {
                     setFormData((prev) => ({ ...prev, form_code: data.form_code }));
                 }
-                onBack();
+
+                onBack(); // ✅ ค่อยย้อนกลับหลัง user กดตกลง
                 return;
-            } else {
-                showAlert("error", data.message);
             }
-        } catch (err) {
-            showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+
+            await alertAndStop("error", data.message || "บันทึกไม่สำเร็จ");
+        } catch (err: any) {
+            await alertAndStop("error", err?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
-            showLoading(false);
+            stopLoading(); // กันหลุดทุกกรณี
         }
     };
 
@@ -529,7 +671,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
             {/* ระยะขอบกระดาษ */}
             <div className="p-2 relative">
                 <div className="absolute right-2.5">
-                    <button
+                    {/* <button
                         type="button"
                         onClick={() => exportToExcel(formData.sectionFour ?? null, jobId ?? "")}
                         className="mr-2 w-[100px] h-10 bg-green-600 hover:bg-green-700 active:bg-green-700 text-white rounded-[5px] inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
@@ -544,7 +686,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     >
                         <img src="/images/IconWord.png" alt="Word" className="h-5 w-5 object-contain" />
                         <span className="leading-none">Export</span>
-                    </button>
+                    </button> */}
                 </div>
                 <div className="w-full h-[5vh] grid place-items-center">
                     <span className="text-black md:text-3xl font-bold tracking-wide">
@@ -1106,9 +1248,9 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         Save
                     </button>
                 </div>
-                <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
+                {/* <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
                     {JSON.stringify(formData, null, 2)}
-                </pre>
+                </pre> */}
             </div>
         </>
     )
