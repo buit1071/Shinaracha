@@ -13,6 +13,7 @@ export default function LoginForm() {
     e.preventDefault();
     setErr(null);
     showLoading(true);
+
     try {
       const r = await fetch("/api/auth/login", {
         method: "POST",
@@ -25,12 +26,20 @@ export default function LoginForm() {
         throw new Error(data.message || "Login failed");
       }
 
-      localStorage.setItem("currentUser", JSON.stringify(data.user));
-      router.replace("/dashboard");
-      showLoading(false);
+      const user = data.user;
+      localStorage.setItem("currentUser", JSON.stringify(user));
+
+      // ✅ ถ้าเป็น permission นี้ ให้เข้า /job เลย
+      if (user?.permission_id === "PER-93994499") {
+        router.replace("/job");
+      } else {
+        router.replace("/dashboard");
+      }
+
     } catch (e: any) {
-      showLoading(false);
       setErr(e.message);
+    } finally {
+      showLoading(false);
     }
   };
 

@@ -45,6 +45,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     const avatarUrl = user?.image_url ? `/images/profile/${user.image_url}` : null;
     const isShinaracha = user?.company_id === "COM-27162740";
+    const isTaskOnly = user?.permission_id === "PER-93994499";
 
     useEffect(() => {
         showLoading(false);
@@ -129,7 +130,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             {/* Sidebar */}
             <aside
                 className={`fixed lg:static top-0 left-0 h-screen bg-gray-800 text-white border-r border-black/10 flex flex-col transition-all duration-300 ease-in-out z-40 overflow-hidden
-                    ${isCollapsed ? "lg:w-16" : "lg:w-64"}
+                    ${isCollapsed ? "lg:w-16" : "lg:w-70"}
                     ${isMobileMenuOpen ? "translate-x-0 w-72" : "-translate-x-full lg:translate-x-0"}
                 `}
             >
@@ -187,80 +188,106 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <div className="hidden lg:block flex-none w-[90%] h-px bg-white/60 mx-auto" />
 
                 {/* Navigation - บนมือถือแสดงข้อความเต็ม, บน desktop ตาม isCollapsed */}
-                <nav className="flex-1 min-h-0 overflow-y-auto px-2 py-3 space-y-2" style={{
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: '#4B5563 #1F2937'
-                }}>
-                    <NavLink
-                        href="/dashboard"
-                        currentPath={pathname}
-                        icon={HomeIcon}
-                        collapsed={isCollapsed}
-                        isMobile={isMobileMenuOpen}
-                        onClick={closeMobileMenu}
-                    >
-                        หน้าหลัก
-                    </NavLink>
+                <nav
+                    className="flex-1 min-h-0 overflow-y-auto px-2 py-3 space-y-2"
+                    style={{ scrollbarWidth: "thin", scrollbarColor: "#4B5563 #1F2937" }}
+                >
+                    {/* ====== เมนูทั้งหมดด้านบน: ซ่อนเมื่อเป็น TaskOnly ====== */}
+                    {!isTaskOnly && (
+                        <>
+                            <NavLink
+                                href="/dashboard"
+                                currentPath={pathname}
+                                icon={HomeIcon}
+                                collapsed={isCollapsed}
+                                isMobile={isMobileMenuOpen}
+                                onClick={closeMobileMenu}
+                            >
+                                หน้าหลัก
+                            </NavLink>
 
-                    {/* ข้อมูลบริษัท */}
-                    <SectionButton
-                        icon={BuildingOfficeIcon}
-                        label="ข้อมูลบริษัท"
-                        open={openMenus.includes("company")}
-                        onClick={() => toggleMenu("company")}
-                        collapsed={isCollapsed}
-                        isMobile={isMobileMenuOpen}
-                    />
-                    {openMenus.includes("company") && (!isCollapsed || isMobileMenuOpen) && (
-                        <div className="ml-7 mt-1 space-y-1">
-                            <NavLink href="/company" currentPath={pathname} icon={BuildingOfficeIcon} collapsed={false} onClick={closeMobileMenu}>
-                                บริษัท
-                            </NavLink>
-                            <NavLink href="/team" currentPath={pathname} icon={UsersIcon} collapsed={false} onClick={closeMobileMenu}>
-                                ทีมตรวจ
-                            </NavLink>
-                            <NavLink href="/zone" currentPath={pathname} icon={MapIcon} collapsed={false} onClick={closeMobileMenu}>
-                                พื้นที่การตรวจ
-                            </NavLink>
-                            <NavLink href="/employee" currentPath={pathname} icon={IdentificationIcon} collapsed={false} onClick={closeMobileMenu}>
-                                ข้อมูลพนักงาน
-                            </NavLink>
-                            <NavLink href="/permission" currentPath={pathname} icon={KeyIcon} collapsed={false} onClick={closeMobileMenu}>
-                                สิทธิการใช้งาน
-                            </NavLink>
-                            <NavLink href="/holiday" currentPath={pathname} icon={CalendarDaysIcon} collapsed={false} onClick={closeMobileMenu}>
-                                วันหยุด
-                            </NavLink>
-                        </div>
+                            {/* ข้อมูลบริษัท */}
+                            <SectionButton
+                                icon={BuildingOfficeIcon}
+                                label="ข้อมูลบริษัท"
+                                open={openMenus.includes("company")}
+                                onClick={() => toggleMenu("company")}
+                                collapsed={isCollapsed}
+                                isMobile={isMobileMenuOpen}
+                            />
+                            {openMenus.includes("company") && (!isCollapsed || isMobileMenuOpen) && (
+                                <div className="ml-7 mt-1 space-y-1">
+                                    <NavLink href="/company" currentPath={pathname} icon={BuildingOfficeIcon} collapsed={false} onClick={closeMobileMenu}>
+                                        บริษัท
+                                    </NavLink>
+                                    <NavLink href="/team" currentPath={pathname} icon={UsersIcon} collapsed={false} onClick={closeMobileMenu}>
+                                        ทีมตรวจ
+                                    </NavLink>
+                                    <NavLink href="/zone" currentPath={pathname} icon={MapIcon} collapsed={false} onClick={closeMobileMenu}>
+                                        พื้นที่การตรวจ
+                                    </NavLink>
+                                    <NavLink href="/employee" currentPath={pathname} icon={IdentificationIcon} collapsed={false} onClick={closeMobileMenu}>
+                                        ข้อมูลพนักงาน
+                                    </NavLink>
+                                    <NavLink href="/permission" currentPath={pathname} icon={KeyIcon} collapsed={false} onClick={closeMobileMenu}>
+                                        สิทธิการใช้งาน
+                                    </NavLink>
+                                    <NavLink href="/holiday" currentPath={pathname} icon={CalendarDaysIcon} collapsed={false} onClick={closeMobileMenu}>
+                                        วันหยุด
+                                    </NavLink>
+                                </div>
+                            )}
+
+                            {/* ข้อมูลหลัก */}
+                            <SectionButton
+                                icon={Cog6ToothIcon}
+                                label="ข้อมูลหลัก Master Data"
+                                open={openMenus.includes("settings")}
+                                onClick={() => toggleMenu("settings")}
+                                collapsed={isCollapsed}
+                                isMobile={isMobileMenuOpen}
+                            />
+                            {openMenus.includes("settings") && (!isCollapsed || isMobileMenuOpen) && (
+                                <div className="ml-7 mt-1 space-y-1">
+                                    <NavLink href="/project-list" currentPath={pathname} icon={ClipboardDocumentListIcon} collapsed={false} onClick={closeMobileMenu}>
+                                        จัดการโครงการ
+                                    </NavLink>
+                                    <NavLink href="/inspection-type" currentPath={pathname} icon={Cog6ToothIcon} collapsed={false} onClick={closeMobileMenu}>
+                                        การบริการ
+                                    </NavLink>
+                                    <NavLink href="/customer-group" currentPath={pathname} icon={Squares2X2Icon} collapsed={false} onClick={closeMobileMenu}>
+                                        กลุ่มลูกค้า
+                                    </NavLink>
+                                    <NavLink href="/customer" currentPath={pathname} icon={UserGroupIcon} collapsed={false} onClick={closeMobileMenu}>
+                                        ข้อมูลลูกค้า
+                                    </NavLink>
+                                    <NavLink href="/equipment-type" currentPath={pathname} icon={Cog6ToothIcon} collapsed={false} onClick={closeMobileMenu}>
+                                        ประเภทระบบ & อุปกรณ์
+                                    </NavLink>
+                                    <NavLink href="/inspection-form" currentPath={pathname} icon={DocumentTextIcon} collapsed={false} onClick={closeMobileMenu}>
+                                        แบบฟอร์ม
+                                    </NavLink>
+                                    <NavLink href="/equipment" currentPath={pathname} icon={WrenchScrewdriverIcon} collapsed={false} onClick={closeMobileMenu}>
+                                        ระบบ & อุปกรณ์
+                                    </NavLink>
+                                    <NavLink href="/location" currentPath={pathname} icon={MapPinIcon} collapsed={false} onClick={closeMobileMenu}>
+                                        สถานที่ติดตั้ง
+                                    </NavLink>
+                                    <NavLink href="/legal-regulations" currentPath={pathname} icon={ScaleIcon} collapsed={false} onClick={closeMobileMenu}>
+                                        ข้อบังคับกฎหมาย (major)
+                                    </NavLink>
+                                    <NavLink href="/defects" currentPath={pathname} icon={ExclamationTriangleIcon} collapsed={false} onClick={closeMobileMenu}>
+                                        รายการปัญหา (minor)
+                                    </NavLink>
+                                </div>
+                            )}
+                        </>
                     )}
 
-                    {/* ข้อมูลหลัก */}
-                    <SectionButton
-                        icon={Cog6ToothIcon}
-                        label="ข้อมูลหลัก"
-                        open={openMenus.includes("settings")}
-                        onClick={() => toggleMenu("settings")}
-                        collapsed={isCollapsed}
-                        isMobile={isMobileMenuOpen}
-                    />
-                    {openMenus.includes("settings") && (!isCollapsed || isMobileMenuOpen) && (
-                        <div className="ml-7 mt-1 space-y-1">
-                            <NavLink href="/equipment" currentPath={pathname} icon={WrenchScrewdriverIcon} collapsed={false} onClick={closeMobileMenu}>
-                                ระบบ & อุปกรณ์
-                            </NavLink>
-                            <NavLink href="/equipment-type" currentPath={pathname} icon={Cog6ToothIcon} collapsed={false} onClick={closeMobileMenu}>
-                                ประเภทระบบ & อุปกรณ์
-                            </NavLink>
-                            <NavLink href="/location" currentPath={pathname} icon={MapPinIcon} collapsed={false} onClick={closeMobileMenu}>
-                                สถานที่ติดตั้ง
-                            </NavLink>
-                        </div>
-                    )}
-
-                    {/* ตั้งค่ารายงาน */}
+                    {/* ====== งาน Task (อยู่ล่างสุดเหมือนเดิม และ TaskOnly ก็ยังเห็น) ====== */}
                     <SectionButton
                         icon={ClipboardDocumentListIcon}
-                        label="ตั้งค่ารายงาน"
+                        label="งาน Task"
                         open={openMenus.includes("projects")}
                         onClick={() => toggleMenu("projects")}
                         collapsed={isCollapsed}
@@ -268,35 +295,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     />
                     {openMenus.includes("projects") && (!isCollapsed || isMobileMenuOpen) && (
                         <div className="ml-7 mt-1 space-y-1">
-                            <NavLink href="/inspection-form" currentPath={pathname} icon={DocumentTextIcon} collapsed={false} onClick={closeMobileMenu}>
-                                แบบฟอร์ม
-                            </NavLink>
-                            <NavLink href="/customer" currentPath={pathname} icon={UserGroupIcon} collapsed={false} onClick={closeMobileMenu}>
-                                ข้อมูลลูกค้า
-                            </NavLink>
-                            <NavLink href="/customer-group" currentPath={pathname} icon={Squares2X2Icon} collapsed={false} onClick={closeMobileMenu}>
-                                กลุ่มลูกค้า
-                            </NavLink>
-                            <NavLink href="/project-list" currentPath={pathname} icon={ClipboardDocumentListIcon} collapsed={false} onClick={closeMobileMenu}>
-                                จัดการโครงการ
-                            </NavLink>
                             <NavLink href="/job" currentPath={pathname} icon={BriefcaseIcon} collapsed={false} onClick={closeMobileMenu}>
                                 จัดการงาน
-                            </NavLink>
-                            <NavLink href="/inspection-type" currentPath={pathname} icon={Cog6ToothIcon} collapsed={false} onClick={closeMobileMenu}>
-                                การบริการ
                             </NavLink>
                             <NavLink href="/report" currentPath={pathname} icon={DocumentTextIcon} collapsed={false} onClick={closeMobileMenu}>
                                 ข้อมูลแบบฟอร์ม
                             </NavLink>
                             <NavLink href="/plan" currentPath={pathname} icon={TableCellsIcon} collapsed={false} onClick={closeMobileMenu}>
                                 ตารางแผนงาน
-                            </NavLink>
-                            <NavLink href="/legal-regulations" currentPath={pathname} icon={ScaleIcon} collapsed={false} onClick={closeMobileMenu}>
-                                ข้อบังคับกฎหมาย
-                            </NavLink>
-                            <NavLink href="/defects" currentPath={pathname} icon={ExclamationTriangleIcon} collapsed={false} onClick={closeMobileMenu}>
-                                รายการปัญหา
                             </NavLink>
                         </div>
                     )}
