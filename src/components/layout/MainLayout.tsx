@@ -230,7 +230,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                         ข้อมูลพนักงาน
                                     </NavLink>
                                     <NavLink href="/permission" currentPath={pathname} icon={KeyIcon} collapsed={false} onClick={closeMobileMenu}>
-                                        สิทธิการใช้งาน
+                                        สิทธิ์การใช้งาน
                                     </NavLink>
                                     <NavLink href="/holiday" currentPath={pathname} icon={CalendarDaysIcon} collapsed={false} onClick={closeMobileMenu}>
                                         วันหยุด
