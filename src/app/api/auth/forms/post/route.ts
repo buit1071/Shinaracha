@@ -17,8 +17,6 @@ export async function POST(req: Request) {
 
         // ✅ FORM 1_3
         if (entity === "form1_3") {
-            const report_no = 1;
-            const form_no = 3;
 
             // ✅ รับค่า form_code จาก frontend ถ้ามี (ใช้ตอน update)
             const form_code = data.form_code || generateId("FORM1_3");
@@ -69,12 +67,10 @@ export async function POST(req: Request) {
                 // 🆕 INSERT (ยังไม่มี)
                 const insertSql = `
             INSERT INTO formdata_sign_forms 
-                (report_no, form_no, form_code, form_data, is_active, created_by, created_date, updated_by, updated_date, form_status, job_id, equipment_id)
-            VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, NOW(), ?, ?, ?)
+                (form_code, form_data, is_active, created_by, created_date, updated_by, updated_date, form_status, job_id, equipment_id)
+            VALUES (?, ?, ?, ?, NOW(), ?, NOW(), ?, ?, ?)
         `;
                 await query(insertSql, [
-                    report_no,
-                    form_no,
                     form_code,
                     form_data,
                     isActive,

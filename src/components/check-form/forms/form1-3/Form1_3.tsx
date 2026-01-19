@@ -678,15 +678,15 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     >
                         <img src="/images/IconExcel.webp" alt="Excel" className="h-5 w-5 object-contain" />
                         <span className="leading-none">Defect</span>
-                    </button>
+                    </button> */}
                     <button
                         type="button"
-                        onClick={() => exportToDocx(formData)}
+                        onClick={() => exportToDocx(isShinaracha, formData)}
                         className="w-[100px] h-10 bg-sky-600 hover:bg-sky-700 active:bg-sky-700 text-white rounded-[5px] inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
                     >
                         <img src="/images/IconWord.png" alt="Word" className="h-5 w-5 object-contain" />
                         <span className="leading-none">Export</span>
-                    </button> */}
+                    </button>
                 </div>
                 <div className="w-full h-[5vh] grid place-items-center">
                     <span className="text-black md:text-3xl font-bold tracking-wide">
