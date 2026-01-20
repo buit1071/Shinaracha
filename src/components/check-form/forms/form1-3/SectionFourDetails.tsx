@@ -74,10 +74,6 @@ export type SectionFourOpinion = {
 };
 
 export type SectionFourForm = {
-    // (เผื่อของเดิมที่ parent ส่งมา)
-    table1?: Record<string, any>;
-    table2?: Record<string, any>;
-
     summary?: Record<"row1" | "row2" | "row3" | "row4" | "row5", SectionFourSummaryRow>;
     severity?: MinorMajor; // minor/major
     opinion?: SectionFourOpinion;

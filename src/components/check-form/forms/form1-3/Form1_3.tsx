@@ -69,63 +69,31 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
 
     const onSectionFourChange = React.useCallback((patch: Partial<SectionFourForm>) => {
         setFormData((prev) => {
-            type TableKey = "table1" | "table2";
-            type AnyRows = Record<string, any>;
-
             const prevS4: Partial<SectionFourForm> = prev.sectionFour ?? {};
-
-            // ===== merge table1/table2 แบบ generic (รองรับ visits ถ้ามี) =====
-            const mergeGroup = (group: TableKey): AnyRows => {
-                const cur: AnyRows = (prevS4[group] as AnyRows) ?? {};
-                const p: AnyRows = (patch[group] as AnyRows) ?? {};
-                if (!p || Object.keys(p).length === 0) return cur;
-
-                const next: AnyRows = { ...cur };
-
-                for (const rowId of Object.keys(p)) {
-                    const rowPatch = p[rowId] ?? {};
-                    const prevRow = next[rowId] ?? {};
-
-                    const mergedVisits =
-                        prevRow?.visits &&
-                            rowPatch?.visits &&
-                            typeof prevRow.visits === "object" &&
-                            typeof rowPatch.visits === "object"
-                            ? { ...prevRow.visits, ...rowPatch.visits }
-                            : rowPatch?.visits ?? prevRow?.visits;
-
-                    next[rowId] = {
-                        ...prevRow,
-                        ...rowPatch,
-                        ...(mergedVisits !== undefined ? { visits: mergedVisits } : {}),
-                    };
-                }
-
-                return next;
-            };
 
             // ===== merge summary (merge รายแถว) =====
             const mergeSummary = () => {
                 const cur = prevS4.summary ?? {};
                 const p = patch.summary ?? {};
+                // ถ้าไม่มี patch ของ summary มา ให้ใช้ของเดิม
                 if (!p || Object.keys(p).length === 0) return cur;
 
                 const next: any = { ...cur };
                 for (const k of Object.keys(p)) {
+                    // merge ทีละ row (row1, row2, ...)
                     next[k] = { ...(cur as any)[k], ...(p as any)[k] };
                 }
                 return next;
             };
 
+            // ===== merge opinion & severity =====
             const nextOpinion = { ...(prevS4.opinion ?? {}), ...(patch.opinion ?? {}) };
             const nextSeverity = (patch.severity ?? prevS4.severity ?? "") as any;
 
             return {
                 ...prev,
                 sectionFour: {
-                    ...prevS4, // กันฟิลด์อื่นหาย
-                    table1: mergeGroup("table1"),
-                    table2: mergeGroup("table2"),
+                    ...prevS4, // กันฟิลด์อื่นหาย (ถ้ามี)
                     summary: mergeSummary(),
                     severity: nextSeverity,
                     opinion: nextOpinion,
@@ -604,13 +572,8 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
             };
 
             if (sectionFour) {
-                const cleanTable1 = await processTable((sectionFour as any).table1);
-                const cleanTable2 = await processTable((sectionFour as any).table2);
-
                 sectionFourClean = {
                     ...sectionFour,
-                    table1: cleanTable1,
-                    table2: cleanTable2,
                 };
             }
 
@@ -953,7 +916,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         <div className="overflow-hidden">
                             <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
                                 <SectionFourDetails
-                                    value={formData.sectionFour ?? { table1: {}, table2: {} }}
+                                    value={formData.sectionFour ?? {}}
                                     onChange={onSectionFourChange}
                                 />
                             </div>
@@ -1248,9 +1211,9 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         Save
                     </button>
                 </div>
-                {/* <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
+                <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
                     {JSON.stringify(formData, null, 2)}
-                </pre> */}
+                </pre>
             </div>
         </>
     )

@@ -99,16 +99,18 @@ async function loadPublicAsPngBytes(url: string): Promise<Uint8Array> {
     return new Uint8Array(ab);
 }
 
-async function getImageBuffer(imageName: string): Promise<Buffer> {
-    const url = buildRemoteCoverUrl(imageName);
-
-    const res = await fetch(url);
-    if (!res.ok) {
-        throw new Error("โหลดรูปไม่สำเร็จ");
+async function getImageBuffer(imageName: string): Promise<Uint8Array | undefined> {
+    if (!imageName) return undefined; // ดักไว้ก่อนถ้าไม่มีชื่อรูป
+    try {
+        const url = buildRemoteCoverUrl(imageName);
+        const res = await fetch(url);
+        if (!res.ok) return undefined; // ถ้าโหลดไม่ได้ ให้คืนค่า undefined แทนที่จะ throw error
+        const arrayBuffer = await res.arrayBuffer();
+        return new Uint8Array(arrayBuffer);
+    } catch (e) {
+        console.error("Load image failed:", imageName, e);
+        return undefined;
     }
-
-    const arrayBuffer = await res.arrayBuffer();
-    return Buffer.from(arrayBuffer);
 }
 
 /** โหลดรูปจาก n8n (cover) แล้วคืน PNG bytes + ขนาดจริง */
@@ -433,6 +435,74 @@ const headerCell = (text: string, colSpan = 1) =>
         ],
     });
 
+const checkCell = (isChecked: boolean) =>
+    new TableCell({
+        verticalAlign: VerticalAlign.CENTER,
+        children: [
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                    new TextRun({
+                        text: isChecked ? "✓" : "", // หรือใช้ "P" กับ font Wingdings 2
+                        font: "Angsana New",
+                        size: 32,
+                        bold: true,
+                    }),
+                ],
+            }),
+        ],
+    });
+
+const dashCell = (isDash: boolean) =>
+    new TableCell({
+        verticalAlign: VerticalAlign.CENTER,
+        children: [
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                    new TextRun({
+                        text: isDash ? "-" : "",
+                        size: 32,
+                    }),
+                ],
+            }),
+        ],
+    });
+
+const createRowS4 = (index: string, label: string, data: any, defaultNoteIfNone: string = "") => {
+    const status = data?.status || "none";
+    let note = data?.note || "";
+
+    if (status === "none" && !note && defaultNoteIfNone) {
+        note = defaultNoteIfNone;
+    }
+
+    return new TableRow({
+        children: [
+            // 1. ลำดับ
+            new TableCell({
+                verticalAlign: VerticalAlign.CENTER,
+                children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: index, size: 32 })] })],
+            }),
+            // 2. รายการตรวจสอบ
+            new TableCell({
+                verticalAlign: VerticalAlign.CENTER,
+                children: [new Paragraph({ children: [new TextRun({ text: label, size: 32 })] })],
+            }),
+            // 3. ใช้ได้
+            status === 'ok' ? checkCell(true) : (status === 'none' ? dashCell(true) : checkCell(false)),
+            // 4. ใช้ไม่ได้
+            status === 'ng' ? checkCell(true) : (status === 'none' ? dashCell(true) : checkCell(false)),
+            // 5. มีการแก้ไขแล้ว
+            status === 'fixed' ? checkCell(true) : (status === 'none' ? dashCell(true) : checkCell(false)),
+            // 6. หมายเหตุ
+            new TableCell({
+                verticalAlign: VerticalAlign.CENTER,
+                children: [new Paragraph({ children: [new TextRun({ text: note, size: 28 })] })],
+            }),
+        ],
+    });
+};
 
 /** ✅ โลโก้ 2 รูปมุมขวาล่าง ขนาดเท่ากัน คั่น ~1px */
 async function pBottomRightLogos(isShinaracha: boolean) {
@@ -466,7 +536,7 @@ async function pBottomRightLogos(isShinaracha: boolean) {
     });
 }
 
-const imageCell = (buffer?: Buffer) =>
+const imageCell = (buffer?: Uint8Array) =>
     new TableCell({
         borders: {
             top: { style: BorderStyle.NONE },
@@ -478,10 +548,10 @@ const imageCell = (buffer?: Buffer) =>
             new Paragraph({
                 alignment: AlignmentType.CENTER,
                 spacing: { before: 120, after: 120 },
-                children: buffer
+                children: buffer // เช็คว่ามี buffer ไหม
                     ? [
                         new ImageRun({
-                            data: buffer,
+                            data: buffer, // ตรงนี้รับ Uint8Array ได้เลย
                             type: "png",
                             transformation: {
                                 width: 260,
@@ -489,7 +559,7 @@ const imageCell = (buffer?: Buffer) =>
                             },
                         }),
                     ]
-                    : [],
+                    : [], // ถ้าไม่มีรูป ใส่ array ว่าง (ไม่แสดงอะไร)
             }),
         ],
     });
@@ -760,6 +830,138 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
         const s3 = formData.sectionThree ?? { items: {} };
         const section8: Record<string, Section8Row> = s3.section8 ?? {};
         const section9: Record<string, Section9Row> = s3.section9 ?? {};
+        const s4 = formData.sectionFour || {};
+        const summary: any = s4.summary || {};
+        const opinion = s4.opinion || {};
+        const dayStr = opinion.day && opinion.day !== "-" ? opinion.day : "....";
+        const monthStr = opinion.month && opinion.month !== "-" ? opinion.month : "....................";
+        const yearStr = opinion.year && opinion.year !== "-" ? opinion.year : ".........";
+        const dateString = `${dayStr} ${monthStr} ${yearStr}`;
+
+        const compName = s2?.ownerName || opinion.companyName || "..................................................................";
+        const sName = s2?.signName || "..................................................................";
+
+        const inspectorName = opinion.inspectorPrintedName && opinion.inspectorPrintedName !== "-"
+            ? opinion.inspectorPrintedName
+            : "..................................................................";
+
+        const ownerNamePrint = opinion.ownerName && opinion.ownerName !== "-"
+            ? opinion.ownerName
+            : "..................................................................";
+
+        const tableS4 = new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: {
+                top: { style: BorderStyle.SINGLE, size: 1 },
+                bottom: { style: BorderStyle.SINGLE, size: 1 },
+                left: { style: BorderStyle.SINGLE, size: 1 },
+                right: { style: BorderStyle.SINGLE, size: 1 },
+                insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+                insideVertical: { style: BorderStyle.SINGLE, size: 1 },
+            },
+            rows: [
+                // --- Header Row 1 (Merge) ---
+                new TableRow({
+                    children: [
+                        new TableCell({
+                            columnSpan: 6,
+                            verticalAlign: VerticalAlign.CENTER,
+                            children: [
+                                new Paragraph({
+                                    children: [
+                                        new TextRun({
+                                            text: "สรุปผลการตรวจสอบป้ายหรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย และอุปกรณ์ประกอบของป้าย",
+                                            bold: true,
+                                            size: 32,
+                                        }),
+                                    ],
+                                }),
+                            ],
+                        }),
+                    ],
+                }),
+                // --- Header Row 2 ---
+                new TableRow({
+                    children: [
+                        new TableCell({ width: { size: 5, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "ลำดับ", bold: true, size: 32 })] })] }),
+                        new TableCell({ width: { size: 45, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "รายการตรวจสอบ", bold: true, size: 32 })] })] }),
+                        new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "ใช้ได้", bold: true, size: 32 })] })] }),
+                        new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "ใช้ไม่ได้", bold: true, size: 32 })] })] }),
+                        new TableCell({ width: { size: 15, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "มีการแก้ไขแล้ว", bold: true, size: 32 })] })] }),
+                        new TableCell({ width: { size: 15, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "หมายเหตุ", bold: true, size: 32 })] })] }),
+                    ],
+                }),
+                // --- Data Rows ---
+                createRowS4("1", "สิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย", summary.row1),
+                createRowS4("2", "แผ่นป้าย", summary.row2),
+                createRowS4("3", "ระบบไฟฟ้าแสงสว่างและระบบไฟฟ้ากำลัง", summary.row3),
+                createRowS4("4", "ระบบป้องกันฟ้าผ่า (ถ้ามี)", summary.row4, "- ไม่มี"),
+                createRowS4("5", "ระบบอุปกรณ์ประกอบอื่นๆ (ถ้ามี)", summary.row5, "- ไม่มี"),
+            ],
+        });
+
+        const signatureBlock = (roleLabel: string, name: string, dateLine?: string) => {
+            return new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                borders: {
+                    top: { style: BorderStyle.NONE },
+                    bottom: { style: BorderStyle.NONE },
+                    left: { style: BorderStyle.NONE },
+                    right: { style: BorderStyle.NONE },
+                    insideHorizontal: { style: BorderStyle.NONE },
+                    insideVertical: { style: BorderStyle.NONE },
+                },
+                rows: [
+                    new TableRow({
+                        children: [
+                            // คอลัมน์ซ้ายว่างไว้ (เพื่อให้บล็อกเซ็นชื่อไปอยู่ขวา)
+                            new TableCell({
+                                width: { size: 40, type: WidthType.PERCENTAGE },
+                                children: [new Paragraph({})],
+                            }),
+                            // คอลัมน์ขวา สำหรับลงชื่อ
+                            new TableCell({
+                                width: { size: 60, type: WidthType.PERCENTAGE },
+                                children: [
+                                    new Paragraph({
+                                        alignment: AlignmentType.CENTER,
+                                        children: [
+                                            new TextRun({ text: `ลงชื่อ .............................................................. ${roleLabel}`, size: 32 }),
+                                        ],
+                                    }),
+                                    new Paragraph({
+                                        alignment: AlignmentType.CENTER,
+                                        spacing: { before: 100 },
+                                        children: [
+                                            new TextRun({ text: `( ${name} )`, size: 32 }),
+                                        ],
+                                    }),
+                                    // ถ้ามีวันที่ให้ใส่ด้วย
+                                    ...(dateLine ? [
+                                        new Paragraph({
+                                            alignment: AlignmentType.CENTER,
+                                            spacing: { before: 100 },
+                                            children: [
+                                                new TextRun({ text: `วันที่ ${dateLine}`, size: 32 }),
+                                            ],
+                                        })
+                                    ] : [
+                                        // ถ้าไม่มีวันที่ (เช่นของเจ้าของป้าย) ให้ใส่บรรทัดตำแหน่ง
+                                        new Paragraph({
+                                            alignment: AlignmentType.CENTER,
+                                            spacing: { before: 100 },
+                                            children: [
+                                                new TextRun({ text: "ผู้ครอบครองป้าย หรือผู้รับมอบอำนาจ", size: 32 }),
+                                            ],
+                                        })
+                                    ]),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            });
+        };
 
         const HEADER_FROM_TOP = Math.round(MARGIN.top * 0.55);
         // ✅ เพิ่ม = header ลงมา / ลด = header ขึ้นไป
@@ -772,15 +974,27 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
         const spacer = (cm: number) =>
             new Paragraph({ spacing: { before: cmToTwip(cm) } });
 
-        const imageBuffer = await getImageBuffer(s2?.mapSketch as string);
-        const imageBuffer1 = await getImageBuffer(s2?.shapeSketch1 as string);
-        const imageBuffer2 = await getImageBuffer(s2?.shapeSketch as string);
-        const imageBuffer3 = await getImageBuffer(s2?.photosFront as string);
-        const imageBuffer4 = await getImageBuffer(s2?.photosSide as string);
-        const imageBuffer5 = await getImageBuffer(s2?.photosBase as string);
-        const imageBuffer6 = await getImageBuffer(s2?.photosFront1 as string);
-        const imageBuffer7 = await getImageBuffer(s2?.photosSide1 as string);
-        const imageBuffer8 = await getImageBuffer(s2?.photosBase1 as string);
+        const [
+            imageBuffer,
+            imageBuffer1,
+            imageBuffer2,
+            imageBuffer3,
+            imageBuffer4,
+            imageBuffer5,
+            imageBuffer6,
+            imageBuffer7,
+            imageBuffer8
+        ] = await Promise.all([
+            getImageBuffer(s2?.mapSketch as string),
+            getImageBuffer(s2?.shapeSketch1 as string),
+            getImageBuffer(s2?.shapeSketch as string),
+            getImageBuffer(s2?.photosFront as string),
+            getImageBuffer(s2?.photosSide as string),
+            getImageBuffer(s2?.photosBase as string),
+            getImageBuffer(s2?.photosFront1 as string),
+            getImageBuffer(s2?.photosSide1 as string),
+            getImageBuffer(s2?.photosBase1 as string),
+        ]);
 
         const CHECK_ITEMS = [
             {
@@ -1724,14 +1938,16 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
                     after: 200,
                 },
                 children: [
-                    new ImageRun({
-                        data: imageBuffer,
-                        type: "png",
-                        transformation: {
-                            width: 520,
-                            height: 300,
-                        },
-                    }),
+                    ...(imageBuffer ? [
+                        new ImageRun({
+                            data: imageBuffer,
+                            type: "png",
+                            transformation: {
+                                width: 520,
+                                height: 300,
+                            },
+                        }),
+                    ] : []), // ถ้าไม่มี imageBuffer ให้ส่ง array ว่างกลับไป
                 ],
             }),
 
@@ -1842,14 +2058,17 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
                     after: 200,
                 },
                 children: [
-                    new ImageRun({
-                        data: imageBuffer1,
-                        type: "png",
-                        transformation: {
-                            width: 520,
-                            height: 300,
-                        },
-                    }),
+                    // เช็คว่ามีข้อมูลรูปภาพไหม?
+                    imageBuffer1
+                        ? new ImageRun({
+                            data: imageBuffer1, // ✅ ต้องแน่ใจว่าเป็น Uint8Array (ตามที่แก้ไปข้อก่อนหน้า)
+                            type: "png",
+                            transformation: {
+                                width: 520,
+                                height: 300,
+                            },
+                        })
+                        : new TextRun(""), // ❌ ถ้าไม่มีรูป ให้ใส่ข้อความว่างๆ แทน กัน Error
                 ],
             }),
 
@@ -1871,14 +2090,16 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
                     after: 200,
                 },
                 children: [
-                    new ImageRun({
-                        data: imageBuffer2,
-                        type: "png",
-                        transformation: {
-                            width: 520,
-                            height: 300,
-                        },
-                    }),
+                    ...(imageBuffer2 ? [
+                        new ImageRun({
+                            data: imageBuffer2,
+                            type: "png",
+                            transformation: {
+                                width: 520,
+                                height: 300,
+                            },
+                        }),
+                    ] : []), // ถ้าไม่มี imageBuffer2 ให้ส่ง array ว่างกลับไป
                 ],
             }),
 
@@ -3087,6 +3308,159 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
             );
         }
 
+        const section4 = [
+            new Paragraph({
+                pageBreakBefore: true,
+                children: [
+                    new TextRun({
+                        text: "ส่วนที่ 4 สรุปผลการตรวจสอบป้าย",
+                        bold: true,
+                        size: 48, // 24pt
+                    }),
+                ],
+            }),
+            // ตาราง
+            tableS4,
+            // หมายเหตุท้ายตาราง
+            new Paragraph({
+                spacing: { before: 100 },
+                children: [
+                    new TextRun({ text: "หมายเหตุ", bold: true, underline: {}, size: 24 }),
+                    new TextRun({ text: "   N/A  หมายถึง  มีระบบ แต่ไม่สามารถตรวจสอบ / ทดสอบได้", size: 24 }),
+                ],
+            }),
+
+            // --- ขึ้นหน้าใหม่ + หัวข้อ ---
+            new Paragraph({
+                pageBreakBefore: true,
+                spacing: { after: 300 },
+                children: [
+                    new TextRun({
+                        text: "สรุปความเห็นผู้ตรวจสอบ",
+                        bold: true,
+                        underline: {},
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // --- ย่อหน้า 1 ---
+            new Paragraph({
+                indent: { firstLine: 720 },
+                spacing: { line: 360, lineRule: "auto", after: 200 },
+                children: [
+                    new TextRun({
+                        text: `ตามที่บริษัท โปรไฟร์ อินสเปคเตอร์ จำกัด ได้ทำการตรวจสอบป้ายของ ${compName} ชื่อ ${sName} ตามหลักเกณฑ์การตรวจสอบแล้วเห็นว่า โครงสร้างป้ายมีความแข็งแรง อยู่ในสภาพปลอดภัยในการใช้งาน`,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // --- ย่อหน้า 2 ---
+            new Paragraph({
+                indent: { firstLine: 720 },
+                spacing: { line: 360, lineRule: "auto", after: 400 },
+                children: [
+                    new TextRun({
+                        text: "ข้าพเจ้าในฐานะผู้ตรวจสอบป้ายขอรับรองว่าได้ทำการตรวจสอบสภาพป้ายดังกล่าว โดยผลการตรวจสอบป้ายและอุปกรณ์ประกอบของป้ายถูกต้อง และเป็นจริงตามที่ได้ระบุไว้ในรายงานฉบับนี้ รวมทั้งยังได้ให้เจ้าของป้าย ผู้ครอบครอง หรือผู้ดูแลป้าย ได้รับทราบผลการตรวจสอบสภาพป้ายและอุปกรณ์ประกอบของป้ายตามรายงานข้างต้นอย่างครบถ้วนแล้ว",
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // ===============================================
+            // 1. ลงชื่อผู้ตรวจสอบ (ชิดซ้าย)
+            // ===============================================
+            new Paragraph({
+                spacing: { before: 200 },
+                children: [
+                    new TextRun({ text: "ลงชื่อ .............................................................. ผู้ตรวจสอบ", size: 32 }),
+                ],
+            }),
+            new Paragraph({
+                indent: { left: 720 }, // ย่อหน้าเข้ามานิดหน่อยให้ชื่อตรงกับเส้นประ
+                spacing: { before: 100 },
+                children: [
+                    new TextRun({ text: `( ${inspectorName} )`, size: 32 }),
+                ],
+            }),
+            new Paragraph({
+                indent: { left: 720 },
+                spacing: { before: 100 },
+                children: [
+                    new TextRun({ text: `วันที่ ${dateString}`, size: 32 }),
+                ],
+            }),
+
+            // --- ข้อมูลเลขทะเบียนผู้ตรวจสอบ (ชิดซ้ายปกติ) ---
+            new Paragraph({
+                spacing: { before: 400, after: 100 },
+                children: [
+                    new TextRun({ text: "เลขทะเบียนผู้ตรวจสอบ", bold: true, underline: {}, size: 32 }),
+                ],
+            }),
+            new Paragraph({
+                children: [
+                    new TextRun({
+                        text: "ผู้ตรวจสอบประเภทนิติบุคคล ทะเบียนเลขที่ น.0022/2550 จาก กรมโยธาธิการและผังเมืองกระทรวงมหาดไทย",
+                        size: 32
+                    }),
+                ],
+            }),
+            new Paragraph({
+                children: [
+                    new TextRun({ text: "โดยนาม บริษัท โปรไฟร์ อินสเปคเตอร์ จำกัด", size: 32 }),
+                ],
+            }),
+            new Paragraph({
+                spacing: { after: 400 },
+                children: [
+                    new TextRun({ text: "เลขที่ 112 ซอยรามคำแหง 112 แขวงสะพานสูง เขตสะพานสูง กรุงเทพมหานคร 10240", size: 32 }),
+                ],
+            }),
+
+            // --- ย่อหน้าการรับรองของเจ้าของป้าย ---
+            new Paragraph({
+                indent: { firstLine: 720 },
+                spacing: { line: 360, lineRule: "auto", after: 400 },
+                children: [
+                    new TextRun({
+                        text: "ข้าพเจ้าในฐานะเจ้าของป้าย ผู้ครอบครองป้าย หรือผู้ดูแลป้าย ขอรับรองว่าได้มีการตรวจสอบป้ายตามรายงานดังกล่าวข้างต้นจริง โดยการตรวจสอบป้ายนั้นกระทำโดยผู้ตรวจสอบป้ายซึ่งได้รับใบอนุญาตจากกรมโยธาธิการและผังเมือง ข้าพเจ้าได้อ่านและเข้าใจในรายงานดังกล่าวครบถ้วนแล้ว จึงลงลายมือชื่อไว้เป็นสำคัญ",
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // ===============================================
+            // 2. ลงชื่อเจ้าของป้าย (ชิดซ้าย + ข้อความต่อกัน)
+            // ===============================================
+            new Paragraph({
+                spacing: { before: 200 },
+                children: [
+                    new TextRun({
+                        text: "ลงชื่อ ........................................................................เจ้าของป้ายหรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย /",
+                        size: 32
+                    }),
+                ],
+            }),
+            new Paragraph({
+                indent: { left: 4320 }, // ย่อหน้าให้ข้อความ "ผู้ครอบครอง..." ไปต่อท้าย slash หรือขึ้นบรรทัดใหม่แบบสวยงาม
+                children: [
+                    new TextRun({
+                        text: "ผู้ครอบครองป้าย หรือผู้รับมอบอำนาจ",
+                        size: 32
+                    }),
+                ],
+            }),
+            new Paragraph({
+                indent: { left: 720 }, // ย่อหน้าชื่อในวงเล็บ
+                spacing: { before: 100 },
+                children: [
+                    new TextRun({ text: `( ${ownerNamePrint} )`, size: 32 }),
+                ],
+            }),
+        ];
+
         const doc = new Document({
             styles: {
                 default: {
@@ -3223,7 +3597,7 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
                     footers: {
                         default: reportFooter,
                     },
-                    children: [...section1, ...section2, ...section3],
+                    children: [...section1, ...section2, ...section3, ...section4],
                 }
             ],
         });
