@@ -18,7 +18,7 @@ import {
     BorderStyle,
     PageNumber,
     ShadingType,
-    UnderlineType,
+    NumberFormat,
     TextDirection,
     TabStopPosition,
 } from "docx";
@@ -3461,6 +3461,827 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
             }),
         ];
 
+        const txtType = coverType || "-";
+        const txtName = coverName || "-";
+        const txtCompany = coverCompany || "-";
+        const txtAddress = coverAddress || "-";
+
+        const planCover = [
+            // 1. ดันลงมาจากด้านบน
+            new Paragraph({ spacing: { before: 400 } }),
+
+            // 2. กรอบหัวข้อ
+            new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                borders: {
+                    top: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+                    bottom: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+                    left: { style: BorderStyle.NONE },
+                    right: { style: BorderStyle.NONE },
+                    insideHorizontal: { style: BorderStyle.NONE },
+                    insideVertical: { style: BorderStyle.NONE },
+                },
+                rows: [
+                    new TableRow({
+                        children: [
+                            new TableCell({
+                                margins: { top: 400, bottom: 400 },
+                                children: [
+                                    new Paragraph({
+                                        alignment: AlignmentType.CENTER,
+                                        children: [
+                                            new TextRun({
+                                                text: "แผนปฏิบัติการการตรวจบำรุงรักษาป้าย",
+                                                font: FONT_TH,
+                                                bold: true,
+                                                size: 72,
+                                            }),
+                                        ],
+                                    }),
+                                    new Paragraph({
+                                        alignment: AlignmentType.CENTER,
+                                        spacing: { before: 100 },
+                                        children: [
+                                            new TextRun({
+                                                text: "และอุปกรณ์ประกอบของป้าย",
+                                                font: FONT_TH,
+                                                bold: true,
+                                                size: 72,
+                                            }),
+                                        ],
+                                    }),
+                                    new Paragraph({
+                                        alignment: AlignmentType.CENTER,
+                                        spacing: { before: 100 },
+                                        children: [
+                                            new TextRun({
+                                                text: "และคู่มือปฏิบัติการตามแผน",
+                                                font: FONT_TH,
+                                                bold: true,
+                                                size: 72,
+                                            }),
+                                        ],
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+
+            // 3. สำหรับเจ้าของป้าย...
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 1440 },
+                children: [
+                    new TextRun({
+                        text: "สำหรับเจ้าของป้าย หรือผู้ดูแลป้าย",
+                        font: FONT_TH,
+                        bold: true,
+                        size: 60,
+                    }),
+                ],
+            }),
+
+            // 4. รายละเอียดป้าย
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 1440 },
+                children: [
+                    new TextRun({
+                        text: txtType,
+                        font: FONT_TH,
+                        bold: true,
+                        size: 60,
+                    }),
+                ],
+            }),
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 120 },
+                children: [
+                    new TextRun({
+                        text: txtName,
+                        font: FONT_TH,
+                        bold: true,
+                        size: 60,
+                    }),
+                ],
+            }),
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 120 },
+                children: [
+                    new TextRun({
+                        text: txtCompany,
+                        font: FONT_TH,
+                        bold: true,
+                        size: 60,
+                    }),
+                ],
+            }),
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 120 },
+                children: [
+                    new TextRun({
+                        text: txtAddress,
+                        font: FONT_TH,
+                        bold: true,
+                        size: 60,
+                    }),
+                ],
+            }),
+        ];
+
+        const maintenancePart1Section = [
+            // 1. หัวข้อใส่กรอบ (ใช้ Table)
+            new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                borders: {
+                    top: { style: BorderStyle.SINGLE, size: 6 },
+                    bottom: { style: BorderStyle.SINGLE, size: 6 },
+                    left: { style: BorderStyle.SINGLE, size: 6 },
+                    right: { style: BorderStyle.SINGLE, size: 6 },
+                    insideHorizontal: { style: BorderStyle.NONE },
+                    insideVertical: { style: BorderStyle.NONE },
+                },
+                rows: [
+                    new TableRow({
+                        children: [
+                            new TableCell({
+                                margins: { left: 200, right: 200 },
+                                children: [
+                                    new Paragraph({
+                                        pageBreakBefore: true,
+                                        alignment: AlignmentType.LEFT,
+                                        children: [
+                                            new TextRun({
+                                                text: "ส่วนที่ 1 ขอบเขตของการตรวจบำรุงรักษาป้าย และอุปกรณ์ประกอบของป้าย",
+                                                font: FONT_TH,
+                                                bold: true,
+                                                size: 40, // 20pt
+                                            }),
+                                        ],
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+
+            // เว้นวรรคหลังหัวข้อ
+            new Paragraph({ spacing: { before: 50 } }),
+
+            // 1.1
+            new Paragraph({
+                indent: { firstLine: 720 }, // ย่อหน้า
+                children: [
+                    new TextRun({
+                        text: "1.1 ",
+                        font: FONT_TH,
+                        size: 32, // 16pt
+                    }),
+                    new TextRun({
+                        text: "ในแผนปฏิบัติการการตรวจบำรุงรักษาป้ายและอุปกรณ์ประกอบของป้าย",
+                        font: FONT_TH,
+                        bold: true,
+                        size: 32,
+                    }),
+                    new TextRun({
+                        text: " และคู่มือปฏิบัติการตามแผนนี้",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // นิยาม: ป้าย
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({ text: "“ป้าย”", font: FONT_TH, bold: true, size: 32 }),
+                    new TextRun({
+                        text: " ในที่นี้ให้หมายความรวมถึง แผ่นป้ายและสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // นิยาม: การตรวจสอบป้าย
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({ text: "การตรวจสอบป้าย", font: FONT_TH, bold: true, size: 32 }),
+                    new TextRun({
+                        text: " หมายถึง การตรวจสอบสภาพของป้ายด้านความมั่นคงแข็งแรง และตรวจสอบระบบอุปกรณ์ประกอบต่าง ๆ ของป้ายโดยผู้ตรวจสอบอาคาร ตามมาตรา 32 ทวิ แห่งพระราชบัญญัติควบคุมอาคาร พ.ศ. 2522",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // นิยาม: การตรวจบำรุงรักษาป้าย...
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({ text: "การตรวจบำรุงรักษาป้ายและอุปกรณ์ประกอบของป้าย", font: FONT_TH, bold: true, size: 32 }),
+                    new TextRun({
+                        text: " หมายถึง การบำรุงรักษาป้าย และระบบอุปกรณ์ประกอบต่าง ๆ ของป้าย โดยเจ้าของป้าย หรือผู้ดูแลป้าย",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // นิยาม: ผู้ตรวจสอบอาคาร
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({ text: "ผู้ตรวจสอบอาคาร", font: FONT_TH, bold: true, size: 32 }),
+                    new TextRun({
+                        text: " หมายถึง ผู้ซึ่งได้รับใบอนุญาตประกอบวิชาชีพ วิศวกรรมควบคุม หรือผู้ซึ่งได้รับใบอนุญาตประกอบวิชาชีพสถาปัตยกรรมควบคุม ตามกฎหมายว่าด้วยการนั้น แล้วแต่กรณี ซึ่งได้ขึ้นทะเบียนเป็นผู้ตรวจสอบอาคารตามพระราชบัญญัติควบคุมอาคาร พ.ศ.2522",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // นิยาม: เจ้าของป้าย
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({ text: "เจ้าของป้าย", font: FONT_TH, bold: true, size: 32 }),
+                    new TextRun({
+                        text: " หมายถึง ผู้ที่มีสิทธิ์เป็นเจ้าของป้าย",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // นิยาม: ผู้ดูแลป้าย
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({ text: "ผู้ดูแลป้าย", font: FONT_TH, bold: true, size: 32 }),
+                    new TextRun({
+                        text: " หมายถึง เจ้าของป้ายหรือ ผู้ที่ที่ได้รับมอบหมายจากเจ้าของป้ายให้มีหน้าที่ตรวจสอบการบำรุงรักษาป้าย และระบบอุปกรณ์ประกอบต่าง ๆ ของป้าย",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // นิยาม: แผนการตรวจสอบป้าย
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({ text: "แผนการตรวจสอบป้าย", font: FONT_TH, bold: true, size: 32 }),
+                    new TextRun({
+                        text: " หมายถึง แผนการตรวจสอบสภาพป้าย และอุปกรณ์ประกอบต่าง ๆ ของป้ายสำหรับผู้ตรวจสอบอาคาร",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // นิยาม: แผนปฏิบัติการการตรวจบำรุงรักษาป้าย...
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({ text: "แผนปฏิบัติการการตรวจบำรุงรักษาป้ายและอุปกรณ์ประกอบของป้าย", font: FONT_TH, bold: true, size: 32 }),
+                    new TextRun({
+                        text: " หมายถึง แผนปฏิบัติการการตรวจ บำรุงรักษาป้ายและอุปกรณ์ประกอบต่าง ๆ ของป้ายที่ผู้ตรวจสอบอาคารกำหนดให้กับเจ้าของป้ายหรือผู้ดูแลป้าย",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // นิยาม: แบบแปลนป้าย
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({ text: "แบบแปลนป้าย", font: FONT_TH, bold: true, size: 32 }),
+                    new TextRun({
+                        text: " หมายถึง แบบแปลนของป้ายที่ต้องตรวจสอบ",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // 1.2
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({ text: "1.2 ", font: FONT_TH, size: 32 }),
+                    new TextRun({ text: "เจ้าของป้าย หรือผู้ดูแลป้าย", font: FONT_TH, bold: true, size: 32 }),
+                    new TextRun({
+                        text: " มีหน้าที่ตรวจสอบการบำรุงรักษาป้าย และระบบอุปกรณ์ประกอบต่าง ๆ ของป้าย ตามที่ผู้ตรวจสอบอาคารได้กำหนดไว้ และจัดให้มีการทดสอบการทำงานของระบบ และ ในระหว่างปี แล้วรายงานผลการตรวจสอบต่อเจ้าพนักงานท้องถิ่น ตามหลักเกณฑ์ วิธีการ และเงื่อนไข ที่กำหนดในกฎกระทรวงเกี่ยวกับการตรวจสอบอาคาร",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // 1.3
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({ text: "1.3 ", font: FONT_TH, size: 32 }),
+                    new TextRun({ text: "ผู้ตรวจสอบอาคาร", font: FONT_TH, size: 32 }), // ในโจทย์ไม่ได้สั่งให้หนา แต่ถ้าต้องการหนา ให้ใส่ bold: true
+                    new TextRun({
+                        text: " กำหนดแผนการตรวจสอบสภาพป้ายและอุปกรณ์ประกอบต่าง ๆ ของป้ายไว้ ตามแผนการตรวจสอบป้ายประจำปี ให้เจ้าของป้ายและหรือผู้ดูแลป้ายใช้เป็นแนวทางการปฏิบัติ ผู้ตรวจสอบอาคารสามารถแก้ไขเปลี่ยนแปลงแผนการตรวจสอบนี้ได้ตามความเหมาะสม",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // 1.4
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({ text: "1.4 ", font: FONT_TH, size: 32 }),
+                    new TextRun({ text: "เจ้าของป้าย หรือผู้ดูแลป้าย", font: FONT_TH, size: 32 }), // โจทย์ไม่ได้สั่งหนา
+                    new TextRun({
+                        text: "จะต้องดำเนินการตรวจสอบบำรุงรักษาป้ายและระบบอุปกรณ์ประกอบ ต่าง ๆ ของป้ายให้เป็นไปตามแผนปฏิบัติการการตรวจบำรุงรักษาป้ายและอุปกรณ์ประกอบของป้าย และคู่มือปฏิบัติการตามแผนฉบับนี้ รวมทั้ง ตามคู่มือปฏิบัติของผู้ผลิตหรือผู้ติดตั้งระบบและ อุปกรณ์ของป้ายและต้องจัดให้มีการบันทึกข้อมูลการตรวจบำรุงรักษาป้ายตามช่วงระยะเวลาที่ได้กำหนดไว้",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+        ];
+
+        const maintenancePart2Section = [
+            new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                borders: {
+                    top: { style: BorderStyle.SINGLE, size: 6 },
+                    bottom: { style: BorderStyle.SINGLE, size: 6 },
+                    left: { style: BorderStyle.SINGLE, size: 6 },
+                    right: { style: BorderStyle.SINGLE, size: 6 },
+                    insideHorizontal: { style: BorderStyle.NONE },
+                    insideVertical: { style: BorderStyle.NONE },
+                },
+                rows: [
+                    new TableRow({
+                        children: [
+                            new TableCell({
+                                margins: { left: 200, right: 200 },
+                                children: [
+                                    new Paragraph({
+                                        pageBreakBefore: true,
+                                        alignment: AlignmentType.LEFT,
+                                        children: [
+                                            new TextRun({
+                                                text: "ส่วนที่ 2 แผนปฏิบัติการการตรวจบำรุงรักษาป้ายและอุปกรณ์ประกอบของป้าย",
+                                                font: FONT_TH,
+                                                bold: true,
+                                                size: 40, // 20pt
+                                            }),
+                                        ],
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            // เว้นวรรคหลังหัวข้อ
+            new Paragraph({ spacing: { before: 50 } }),
+
+            // เกริ่นนำ
+            new Paragraph({
+                indent: { firstLine: 720 }, // Indent 1.27cm
+                children: [
+                    new TextRun({
+                        text: "ผู้ตรวจสอบอาคาร",
+                        font: FONT_TH,
+                        bold: true, // 16 หนา
+                        size: 32,
+                    }),
+                    new TextRun({
+                        text: " กำหนดแผนปฏิบัติการการตรวจบำรุงรักษาป้ายและอุปกรณ์ประกอบของป้ายดังนี้",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // 2.1
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({ text: "2.1 ", font: FONT_TH, size: 32 }),
+                    new TextRun({
+                        text: "ให้เจ้าของป้าย หรือผู้ดูแลป้ายที่ได้รับมอบหมายจากเจ้าของป้ายมีหน้าที่ตรวจสอบการบำรุงรักษาป้ายและอุปกรณ์ประกอบต่าง ๆ ของป้าย จัดให้มีการทดสอบการทำงานของระบบและอุปกรณ์ในระหว่างปีตามที่ผู้ตรวจสอบอาคารกำหนด หรือตามคู่มือของผู้ผลิตหรือผู้ติดตั้งระบบอุปกรณ์ประกอบของป้าย",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // 2.2
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({ text: "2.2 ", font: FONT_TH, size: 32 }),
+                    new TextRun({
+                        text: "เจ้าของหรือผู้ดูแลป้ายต้องตรวจบำรุงรักษาป้ายอย่างสม่ำเสมอตาม",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                    new TextRun({
+                        text: "แผนปฏิบัติการการตรวจบำรุงรักษาป้ายและอุปกรณ์ประกอบของป้าย และคู่มือปฏิบัติการตามแผน",
+                        font: FONT_TH,
+                        bold: true, // 16 หนา
+                        size: 32,
+                    }),
+                    new TextRun({
+                        text: "ที่ผู้ตรวจสอบอาคาร ได้จัดทำไว้ และบันทึกข้อมูลการตรวจบำรุงรักษาตามระยะเวลาที่ผู้ตรวจสอบอาคารกำหนด",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // 2.3
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({ text: "2.3 ", font: FONT_TH, size: 32 }),
+                    new TextRun({
+                        text: "ในการดำเนินการตรวจสอบบำรุงรักษาให้ตรวจตามรายการต่าง ๆ ตามแบบรายละเอียดการตรวจที่ผู้ตรวจสอบอาคารจัดทำไว้",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // 2.4
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({ text: "2.4 ", font: FONT_TH, size: 32 }),
+                    new TextRun({
+                        text: "ช่วงเวลา และความถี่ของการตรวจบำรุงรักษา ฯ การทดสอบการทำงานของระบบและอุปกรณ์ให้เป็นไปตามแผนการตรวจสอบที่ผู้ตรวจสอบอาคารกำหนด",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // 2.5
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({ text: "2.5 ", font: FONT_TH, size: 32 }),
+                    new TextRun({
+                        text: "ให้เจ้าของป้าย หรือผู้ดูแลป้ายจะต้องจัดเตรียมแบบแปลนป้ายเพื่อการตรวจสอบ และมีผลการตรวจบำรุงรักษาป้ายและอุปกรณ์ประกอบต่าง ๆ ของป้ายไว้ให้ผู้ตรวจสอบป้ายสามารถใช้ประกอบ การตรวจสอบป้าย ได้ตลอดเวลาตามที่ผู้ตรวจสอบได้กำหนดไว้ตามแผน การตรวจสอบป้าย",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+        ];
+
+        const maintenancePart3Section = [
+            new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                borders: {
+                    top: { style: BorderStyle.SINGLE, size: 6 },
+                    bottom: { style: BorderStyle.SINGLE, size: 6 },
+                    left: { style: BorderStyle.SINGLE, size: 6 },
+                    right: { style: BorderStyle.SINGLE, size: 6 },
+                    insideHorizontal: { style: BorderStyle.NONE },
+                    insideVertical: { style: BorderStyle.NONE },
+                },
+                rows: [
+                    new TableRow({
+                        children: [
+                            new TableCell({
+                                margins: { left: 200, right: 200 },
+                                children: [
+                                    new Paragraph({
+                                        pageBreakBefore: true,
+                                        alignment: AlignmentType.LEFT,
+                                        children: [
+                                            new TextRun({
+                                                text: "ส่วนที่ 3 รายละเอียดที่ต้องตรวจบำรุงรักษาป้าย และอุปกรณ์ประกอบของป้าย",
+                                                font: FONT_TH,
+                                                bold: true,
+                                                size: 40, // 20pt
+                                            }),
+                                        ],
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            // เว้นวรรคหลังหัวข้อ
+            new Paragraph({ spacing: { before: 50 } }),
+
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({
+                        text: "เจ้าของป้าย หรือผู้ดูแลป้าย",
+                        font: FONT_TH,
+                        bold: true, // ตัวหนา
+                        size: 32,
+                    }),
+                    new TextRun({
+                        text: " ต้องทำการตรวจบำรุงรักษาป้าย หรืออุปกรณ์ประกอบต่าง ๆ ของป้าย ในเรื่องดังต่อไปนี้",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // (1)
+            new Paragraph({
+                indent: { left: 720, hanging: 720 }, // Indent for list item
+                children: [
+                    new TextRun({
+                        text: "(1)\t", // ใช้ Tab เพื่อจัดระยะ
+                        font: FONT_TH,
+                        bold: true,
+                        size: 32,
+                    }),
+                    new TextRun({
+                        text: "การตรวจสอบบำรุงรักษาตัวป้ายด้านความมั่นคงแข็งแรงของป้าย หรือสิ่งที่สร้างขึ้นสำหรับติดตั้งป้ายอย่างน้อยต้องทำการตรวจสอบ ดังต่อไปนี้",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // รายการย่อย (ก) - (ฌ) ของข้อ (1)
+            ...[
+                "การต่อเติม ดัดแปลง ปรับปรุงขนาดของป้ายหรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย",
+                "การเปลี่ยนแปลงน้ำหนักของแผ่นป้าย",
+                "การเปลี่ยนสภาพการใช้งานของป้ายหรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย",
+                "การเปลี่ยนแปลงวัสดุของป้ายหรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย",
+                "การชำรุดสึกหรอของป้ายหรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย",
+                "การวิบัติของป้ายหรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย",
+                "ความมั่นคงแข็งแรงของโครงสร้างและฐานรากของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย (กรณีป้ายที่ติดตั้งบนพื้นดิน)",
+                "ความมั่นคงแข็งแรงของอาคารที่ติดตั้งป้าย (กรณีป้ายบนหลังคา หรือบนดาดฟ้าอาคาร หรือบนส่วนหนึ่งส่วนใดของอาคาร)",
+                "การเชื่อมยึดระหว่างแผ่นป้ายกับสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย การเชื่อมยึดระหว่างชิ้นส่วนต่าง ๆ ของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย และการเชื่อมยึดระหว่างสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้ายกับฐานรากหรืออาคาร"
+            ].map((text, index) => {
+                const label = ["(ก)", "(ข)", "(ค)", "(ง)", "(จ)", "(ฉ)", "(ช)", "(ซ)", "(ฌ)"][index];
+                return new Paragraph({
+                    indent: { left: 1440, hanging: 720 }, // ย่อหน้าเข้าไปอีกระดับ (Double indent)
+                    children: [
+                        new TextRun({
+                            text: `${label}\t`,
+                            font: FONT_TH,
+                            bold: true, // ตัวหนา
+                            size: 32,
+                        }),
+                        new TextRun({
+                            text: text,
+                            font: FONT_TH,
+                            size: 32,
+                        }),
+                    ],
+                });
+            }),
+
+            // (2)
+            new Paragraph({
+                indent: { left: 720, hanging: 720 },
+                children: [
+                    new TextRun({
+                        text: "(2)\t",
+                        font: FONT_TH,
+                        bold: true,
+                        size: 32,
+                    }),
+                    new TextRun({
+                        text: "การตรวจบำรุงรักษาระบบและอุปกรณ์ประกอบของป้ายอย่างน้อยต้องตรวจสอบ ดังต่อไปนี้",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // รายการย่อย (ก) - (ค) ของข้อ (2)
+            ...[
+                "ระบบไฟฟ้าแสงสว่างและระบบไฟฟ้ากำลัง",
+                "ระบบป้องกันฟ้าผ่า (ถ้ามี)",
+                "ระบบและอุปกรณ์ประกอบอื่น ๆ (ถ้ามี)"
+            ].map((text, index) => {
+                const label = ["(ก)", "(ข)", "(ค)"][index];
+                return new Paragraph({
+                    indent: { left: 1440, hanging: 720 },
+                    children: [
+                        new TextRun({
+                            text: `${label}\t`,
+                            font: FONT_TH,
+                            bold: true,
+                            size: 32,
+                        }),
+                        new TextRun({
+                            text: text,
+                            font: FONT_TH,
+                            size: 32,
+                        }),
+                    ],
+                });
+            }),
+        ];
+
+        const maintenancePart4Section = [
+            new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                borders: {
+                    top: { style: BorderStyle.SINGLE, size: 6 },
+                    bottom: { style: BorderStyle.SINGLE, size: 6 },
+                    left: { style: BorderStyle.SINGLE, size: 6 },
+                    right: { style: BorderStyle.SINGLE, size: 6 },
+                    insideHorizontal: { style: BorderStyle.NONE },
+                    insideVertical: { style: BorderStyle.NONE },
+                },
+                rows: [
+                    new TableRow({
+                        children: [
+                            new TableCell({
+                                margins: { left: 200, right: 200 },
+                                children: [
+                                    new Paragraph({
+                                        pageBreakBefore: true,
+                                        alignment: AlignmentType.LEFT,
+                                        children: [
+                                            new TextRun({
+                                                text: "ส่วนที่ 4 แนวทางการตรวจบำรุงรักษาป้าย และอุปกรณ์ประกอบของป้ายประจำปี",
+                                                font: FONT_TH,
+                                                bold: true,
+                                                size: 40, // 20pt
+                                            }),
+                                        ],
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            // เว้นวรรคหลังหัวข้อ
+            new Paragraph({ spacing: { before: 50 } }),
+
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({
+                        text: "ตรวจสอบอาคาร", // ✅ ตัวหนา
+                        font: FONT_TH,
+                        bold: true,
+                        size: 32,
+                    }),
+                    new TextRun({
+                        text: " กำหนดแนวทางการตรวจบำรุงรักษาป้าย และอุปกรณ์ประกอบของป้ายประจำปีให้ แก่เจ้าของป้าย เพื่อเป็นแนวทางการตรวจบำรุงรักษาและการบันทึกข้อมูลการตรวจบำรุงรักษาป้าย ดังนี้",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // ข้อ 1
+            new Paragraph({
+                indent: { left: 720, hanging: 360 }, // จัดย่อหน้าแบบแขวน (ให้เลขลอย)
+                children: [
+                    new TextRun({ text: "1  ", font: FONT_TH, bold: true, size: 32 }), // ตัวหนาแค่เลข
+                    new TextRun({
+                        text: "เจ้าของป้ายต้องจัดหา หรือจัดทำแบบแปลนป้ายเพื่อใช้สำหรับการตรวจสอบจัดเก็บไว้ เพื่อให้ผู้ตรวจสอบ สามารถใช้ประกอบการตรวจสอบได้",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // ข้อ 2
+            new Paragraph({
+                indent: { left: 720, hanging: 360 },
+                children: [
+                    new TextRun({ text: "2  ", font: FONT_TH, bold: true, size: 32 }),
+                    new TextRun({
+                        text: "เจ้าของป้ายต้องจัดให้มีการตรวจบำรุงรักษาป้าย และอุปกรณ์ประกอบของป้ายตามคู่มือปฏิบัติของผู้ผลิต หรือผู้ติดตั้งระบบและอุปกรณ์ของป้าย และตามแผนปฏิบัติการการตรวจบำรุงรักษาฉบับนี้และจัดให้มี การบันทึกข้อมูลการตรวจบำรุงรักษาป้ายตามช่วงระยะเวลาที่ผู้ตรวจสอบกำหนดให้ผู้ตรวจสอบใช้ประกอบ ในการตรวจสอบป้าย",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // ข้อ 3
+            new Paragraph({
+                indent: { left: 720, hanging: 360 },
+                children: [
+                    new TextRun({ text: "3  ", font: FONT_TH, bold: true, size: 32 }),
+                    new TextRun({
+                        text: "เจ้าของป้ายต้องนำรายงานผลการตรวจสอบสภาพป้ายหรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้ายและ อุปกรณ์ประกอบของป้าย ที่ผู้ตรวจสอบจัดทำแจ้งต่อเจ้าพนักงานท้องถิ่นเพื่อให้ออกหนังสือรับรอง การตรวจสอบป้ายเป็นประจำทุกสามปี โดยจะต้องเสนอภายในสามสิบวันก่อนวันที่ใบรับรอง การตรวจอาคารฉบับเดิมจะมีอายุครบสามปี",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // ข้อ 4
+            new Paragraph({
+                indent: { left: 720, hanging: 360 },
+                children: [
+                    new TextRun({ text: "4  ", font: FONT_TH, bold: true, size: 32 }),
+                    new TextRun({
+                        text: "กรณีที่เจ้าของป้าย หรือผู้ดูแลป้ายพบว่าสภาพของป้ายหรืออุปกรณ์ประกอบต่าง ๆ ของป้าย มีการชำรุดเสียหาย ต้องแก้ไข มีสิ่งที่ผิดปกติ หรือใช้งานไม่ได้ เจ้าของป้าย หรือผู้ดูแลป้ายจะต้องบันทึก รายละเอียดแต่ละรายการให้ชัดเจน และแจ้งผลให้ผู้ตรวจสอบทราบโดยเร็ว",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // ข้อ 5
+            new Paragraph({
+                indent: { left: 720, hanging: 360 },
+                children: [
+                    new TextRun({ text: "5  ", font: FONT_TH, bold: true, size: 32 }),
+                    new TextRun({
+                        text: "กรณีที่ป้ายมีการชำรุดเสียหาย ต้องแก้ไข มีสิ่งที่ผิดปกติ หรือ ใช้งานไม่ได้ เจ้าของป้ายจะต้องดำเนินการแก้ไขให้มีสภาพปลอดภัยโดยเร็ว พร้อมทั้งแจ้งให้ผู้ตรวจสอบทราบด้วย",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+
+            // ข้อ 6
+            new Paragraph({
+                indent: { left: 720, hanging: 360 },
+                children: [
+                    new TextRun({ text: "6  ", font: FONT_TH, bold: true, size: 32 }),
+                    new TextRun({
+                        text: "เมื่อเจ้าของป้ายได้แก้ไขให้ป้ายมีสภาพปลอดภัยแล้ว หรือเป็นกรณีที่เจ้าของป้ายไม่สามารถที่จะดำเนินการแก้ไขได้เองให้เจ้าของป้ายแจ้งให้ผู้ตรวจสอบทราบโดยเร็ว",
+                        font: FONT_TH,
+                        size: 32,
+                    }),
+                ],
+            }),
+        ];
+
+        const maintenancePart5Section = [
+            new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                borders: {
+                    top: { style: BorderStyle.SINGLE, size: 6 },
+                    bottom: { style: BorderStyle.SINGLE, size: 6 },
+                    left: { style: BorderStyle.SINGLE, size: 6 },
+                    right: { style: BorderStyle.SINGLE, size: 6 },
+                    insideHorizontal: { style: BorderStyle.NONE },
+                    insideVertical: { style: BorderStyle.NONE },
+                },
+                rows: [
+                    new TableRow({
+                        children: [
+                            new TableCell({
+                                margins: { left: 200, right: 200 },
+                                children: [
+                                    new Paragraph({
+                                        pageBreakBefore: true,
+                                        alignment: AlignmentType.LEFT,
+                                        children: [
+                                            new TextRun({
+                                                text: "ส่วนที่ 5 ช่วงเวลา และความถี่ในการตรวจบำรุงรักษาป้าย และอุปกรณ์ประกอบของป้าย",
+                                                font: FONT_TH,
+                                                bold: true,
+                                                size: 40, // 20pt
+                                            }),
+                                        ],
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            // เว้นวรรคหลังหัวข้อ
+            new Paragraph({ spacing: { before: 50 } }),
+
+            new Paragraph({
+                indent: { firstLine: 720 },
+                children: [
+                    new TextRun({
+                        text: "1. ความถี่ในการตรวจบำรุงรักษาป้ายด้านความมั่นคงแข็งแรงของป้ายหรือสิ่งที่สร้างขึ้นสำหรับติด หรือตั้งป้าย",
+                        font: FONT_TH,
+                        bold: true,
+                        size: 32,
+                    }),
+                ],
+            }),
+        ];
         const doc = new Document({
             styles: {
                 default: {
@@ -3471,7 +4292,7 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
                 },
             },
             sections: [
-                // ✅ หน้าปก
+                // ✅หน้าปก
                 {
                     properties: {
                         page: {
@@ -3491,7 +4312,7 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
                     },
                     children: coverChildren,
                 },
-
+                // ✅รองปก
                 {
                     properties: {
                         page: {
@@ -3576,7 +4397,7 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
                         }),
                     ],
                 },
-
+                // ✅เนื้อหารายงาน
                 {
                     properties: {
                         page: {
@@ -3598,7 +4419,38 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
                         default: reportFooter,
                     },
                     children: [...section1, ...section2, ...section3, ...section4],
-                }
+                },
+                // ✅แผน
+                {
+                    properties: {
+                        page: {
+                            size: { width: A4.width, height: A4.height },
+                            margin: {
+                                ...MARGIN,
+                                header: cmToTwip(0.5),
+                                footer: cmToTwip(0.5),
+                            },
+                            pageNumbers: {
+                                start: 1, // ✅ เริ่มนับจากหน้า 1
+                            },
+                        },
+                    },
+                    headers: {
+                        default: reportHeader,
+                    },
+                    footers: {
+                        default: reportFooter,
+                    },
+                    children: [
+                        ...planCover,
+                        ...maintenancePart1Section,
+                        ...maintenancePart2Section,
+                        ...maintenancePart3Section,
+                        ...maintenancePart4Section,
+                        ...maintenancePart5Section,
+                    ],
+                },
+
             ],
         });
 
