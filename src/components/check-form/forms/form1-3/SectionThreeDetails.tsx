@@ -1,7 +1,25 @@
 import * as React from "react";
 
+import Select from "react-select";
+import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import { PencilIcon } from "@heroicons/react/24/outline";
+import { showLoading } from "@/lib/loading";
+
+import { ProblemRow, DefectRow } from "@/interfaces/master";
 /* ========================== TYPES ========================== */
 export type UseStatus = "ok" | "ng" | ""; // ใช้ได้ / ใช้ไม่ได้
+
+type PhotoItem = { src?: string; filename: string };
+export type Defect = {
+    problem_id?: string;
+    problem_name: string;
+    photos?: PhotoItem[];
+    isOther?: boolean;
+    note?: string;
+    illegal_suggestion?: string;
+    defect?: string | number | null;
+    defect_name?: string;
+};
 
 export type SectionThreeRow = {
     // 2 checkbox ด้านบน (เลือกได้อย่างเดียว)
@@ -21,6 +39,7 @@ export type SectionThreeRow = {
     otherChecked?: boolean;
     other1?: string;
     other2?: string;
+    defect_by_visit?: Record<string, Defect[]>;
 };
 
 export type YesNo = "yes" | "no" | "";
@@ -56,6 +75,56 @@ export type SectionThreeForm = {
 type Props = {
     value?: Partial<SectionThreeForm>;
     onChange?: (patch: Partial<SectionThreeForm>) => void;
+};
+
+const VISIT_KEY = "v1"; // สมมติว่าเป็น visit 1
+const VISIT_LABEL: Record<string, string> = { v1: "รอบที่ 1" };
+
+const selectStyles = {
+    control: (base: any, state: any) => ({
+        ...base,
+        backgroundColor: "#fff",
+        borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
+        boxShadow: "none",
+        color: "#111827",
+        "&:hover": { borderColor: state.isFocused ? "#3b82f6" : "#9ca3af" },
+    }),
+
+    menuPortal: (base: any) => ({ ...base, zIndex: 2100 }),
+
+    menu: (base: any) => ({
+        ...base,
+        backgroundColor: "#fff",
+        color: "#111827",
+        boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+        border: "1px solid #e5e7eb",
+    }),
+
+    menuList: (base: any) => ({
+        ...base,
+        backgroundColor: "#fff",
+        color: "#111827",
+    }),
+
+    option: (base: any, state: any) => ({
+        ...base,
+        color: "#111827",               // ✅ ตัวหนังสือใน option เป็นสีดำ
+        backgroundColor: state.isSelected
+            ? "#2563eb"                    // selected
+            : state.isFocused
+                ? "#eff6ff"                    // hover
+                : "#ffffff",
+        cursor: "pointer",
+    }),
+
+    placeholder: (base: any) => ({ ...base, color: "#111827", opacity: 0.7 }),
+    singleValue: (base: any) => ({ ...base, color: "#111827" }),
+    input: (base: any) => ({ ...base, color: "#111827" }),
+
+    // ✅ กรณี isMulti
+    multiValue: (base: any) => ({ ...base, backgroundColor: "#e5e7eb" }),
+    multiValueLabel: (base: any) => ({ ...base, color: "#111827" }),
+    multiValueRemove: (base: any) => ({ ...base, color: "#111827", ":hover": { backgroundColor: "#d1d5db" } }),
 };
 
 /* ========================== HELPERS ========================== */
@@ -154,13 +223,219 @@ const ITEMS_1_7: TopChoiceText[] = [
     },
 ];
 
-export default function SectionThreeDetails({ value, onChange }: Props) {
+export default function SectionThreeDetails({ value,
+    onChange,
+}: Props) {
+    const [viewTarget, setViewTarget] = React.useState<{ defectIndex: number; photoIndex: number } | null>(null);
+    const [camTarget, setCamTarget] = React.useState<{ defectIndex: number } | null>(null);
+    const [problems, setProblems] = React.useState<ProblemRow[]>([]);
+    const [defects, setDefects] = React.useState<DefectRow[]>([]);
+
+    // Popup State
+    const [photoPopup, setPhotoPopup] = React.useState<{ id: string; visit: string } | null>(null);
+    const [selectedProblems, setSelectedProblems] = React.useState<Defect[]>([]);
+    const [error, setError] = React.useState(false);
+
+    // Camera/Overlay State
+    const [camOpen, setCamOpen] = React.useState(false);
+    const [overlayMode, setOverlayMode] = React.useState<"camera" | "viewer">("camera");
+    const [captured, setCaptured] = React.useState<string | null>(null); // base64
+    const [capturedName, setCapturedName] = React.useState<string | null>(null);
+    const [activeDefectIndex, setActiveDefectIndex] = React.useState<number | null>(null); // index ของ defect ที่กำลังจัดการรูป
+    const [viewingPhotoIndex, setViewingPhotoIndex] = React.useState<number | null>(null); // index ของรูปที่กำลังดู
+
+    const videoRef = React.useRef<HTMLVideoElement>(null);
+    const canvasRef = React.useRef<HTMLCanvasElement>(null);
+    const streamRef = React.useRef<MediaStream | null>(null);
+
+    const openViewer = (defectIndex: number, photoIndex: number) => {
+        const photo = selectedProblems[defectIndex]?.photos?.[photoIndex];
+        if (!photo) return;
+
+        setViewTarget({ defectIndex, photoIndex });
+        setCaptured(photo.src ?? null);
+        setCapturedName(photo.filename);
+        setOverlayMode("viewer");
+        setCamOpen(true);
+    };
+
+    const deleteViewedPhoto = () => {
+        if (!viewTarget) return;
+        const { defectIndex, photoIndex } = viewTarget;
+
+        setSelectedProblems(prev => prev.map((p, idx) => {
+            if (idx !== defectIndex) return p;
+            const newPhotos = [...(p.photos ?? [])];
+            newPhotos.splice(photoIndex, 1);
+            return { ...p, photos: newPhotos };
+        }));
+
+        closeCamera();
+    };
+
+    /* -------------------- Popup Logic -------------------- */
+    const openDefectPopup = (id: string) => {
+        const row = items[id] ?? {};
+        const currentDefects = row.defect_by_visit?.[VISIT_KEY] ?? [];
+        setSelectedProblems(currentDefects); // โหลดข้อมูลเดิมมาใส่ State
+        setPhotoPopup({ id, visit: VISIT_KEY });
+        setError(false);
+    };
+
+    const saveDefectPopup = () => {
+        if (!photoPopup) return;
+
+        // Validate "Other" input
+        const other = selectedProblems.find((p) => p.isOther);
+        if (other) {
+            const isMissing = !other.problem_name?.trim() || !other.illegal_suggestion?.trim();
+            if (isMissing) {
+                setError(true);
+                return;
+            }
+        }
+
+        const { id, visit } = photoPopup;
+        // สร้าง defect map ใหม่
+        const row = items[id] ?? {};
+        const nextMap = {
+            ...(row.defect_by_visit ?? {}),
+            [visit]: [...selectedProblems],
+        };
+
+        // บันทึกกลับลง items
+        emit(id, { defect_by_visit: nextMap });
+        setPhotoPopup(null);
+    };
+
+    const startCamera = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                audio: false,
+            });
+            streamRef.current = stream;
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                try { await videoRef.current.play(); } catch { }
+            }
+        } catch (err) {
+            console.error("Camera error:", err);
+            alert("ไม่สามารถเปิดกล้องได้");
+        }
+    };
+
+    const stopStream = () => {
+        streamRef.current?.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+    };
+
+    const openCamera = (defectIndex: number) => {
+        setActiveDefectIndex(defectIndex);
+        setOverlayMode("camera");
+        setCaptured(null);
+        setCamOpen(true);
+        startCamera();
+    };
+
+    const capturePhoto = () => {
+        if (!videoRef.current || !canvasRef.current) return;
+        const v = videoRef.current;
+        const c = canvasRef.current;
+        const ctx = c.getContext("2d");
+        if (!ctx) return;
+
+        c.width = v.videoWidth;
+        c.height = v.videoHeight;
+        ctx.drawImage(v, 0, 0, c.width, c.height);
+
+        setCaptured(c.toDataURL("image/jpeg", 0.8));
+        setCapturedName(makeDefectName());
+        stopStream();
+    };
+
+    const confirmPhoto = () => {
+        if (activeDefectIndex === null || !captured) return;
+
+        const newPhoto: PhotoItem = {
+            filename: capturedName ?? makeDefectName(),
+            src: captured
+        };
+
+        setSelectedProblems(prev => prev.map((p, idx) => {
+            if (idx !== activeDefectIndex) return p;
+            // Limit 2 photos per defect? (Logic เดิมมี slice(0,2))
+            const nextPhotos = [...(p.photos ?? []), newPhoto].slice(0, 2);
+            return { ...p, photos: nextPhotos };
+        }));
+
+        closeCamera();
+    };
+
+    const retakePhoto = async () => {
+        setCaptured(null);
+        setCapturedName(null);
+        await startCamera();
+    };
+
+    const makeDefectName = (ext: string = "png") => {
+        const d = new Date();
+        const pad = (n: number) => String(n).padStart(2, "0");
+        return `defect_${pad(d.getDate())}${pad(d.getMonth() + 1)}${d.getFullYear()}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.${ext}`;
+    };
+
+    const closeCamera = () => {
+        stopStream();
+        setCamOpen(false);
+        setCaptured(null);
+        setCapturedName(null);
+        setViewTarget(null);
+        setCamTarget(null);
+        setOverlayMode("camera");
+    };
+
     /* -------------------- 1-7 -------------------- */
     const [items, setItems] = React.useState<Record<string, SectionThreeRow>>({});
 
     React.useEffect(() => {
         setItems(value?.items ?? {});
     }, [value?.items]);
+
+    const fecthProblem = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/legal-regulations/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "problem" }),
+            });
+            const data = await res.json();
+            if (data.success) setProblems(data.data);
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    const fecthDefect = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/legal-regulations/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "defect" }),
+            });
+            const data = await res.json();
+            if (data.success) setDefects(data.data);
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    React.useEffect(() => {
+        fecthProblem();
+        fecthDefect();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const emit = React.useCallback(
         (id: string, delta: Partial<SectionThreeRow>) => {
@@ -276,6 +551,7 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                 const no = idx + 1;
                 const id = `s3-${no}`;
                 const row = items[id] ?? {};
+                const isNG = row.status === "ng";
 
                 return (
                     <div key={id} className="border border-gray-400 bg-white">
@@ -327,21 +603,35 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                                             <input
                                                 type="checkbox"
                                                 className="h-4 w-4"
-                                                checked={(row.status ?? "") === "ok"}
+                                                checked={row.status === "ok"}
                                                 onChange={(e) => setStatus(id, "ok", e.target.checked)}
                                             />
                                             <span>ใช้ได้</span>
                                         </label>
 
-                                        <label className="flex items-center gap-2 text-sm select-none">
-                                            <input
-                                                type="checkbox"
-                                                className="h-4 w-4"
-                                                checked={(row.status ?? "") === "ng"}
-                                                onChange={(e) => setStatus(id, "ng", e.target.checked)}
-                                            />
-                                            <span>ใช้ไม่ได้</span>
-                                        </label>
+                                        <div className="flex items-center gap-2">
+                                            <label className="flex items-center gap-2 text-sm select-none">
+                                                <input
+                                                    type="checkbox"
+                                                    className="h-4 w-4"
+                                                    checked={row.status === "ng"}
+                                                    onChange={(e) => setStatus(id, "ng", e.target.checked)}
+                                                />
+                                                <span>ใช้ไม่ได้</span>
+                                            </label>
+
+                                            {/* ✅ Icon ดินสอ */}
+                                            {isNG && (
+                                                <button
+                                                    onClick={() => openDefectPopup(id)}
+                                                    className="ml-4 p-1 text-gray-500 hover:text-blue-600 transition-colors border border-transparent hover:border-gray-300 rounded cursor-pointer"
+                                                    title="ระบุปัญหา (Defect)"
+                                                    type="button"
+                                                >
+                                                    <PencilIcon className="w-5 h-5" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <TwoLines
@@ -861,6 +1151,239 @@ export default function SectionThreeDetails({ value, onChange }: Props) {
                     </div>
                 );
             })()}
+
+            {photoPopup && (
+                <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg w-[1000px] shadow-lg max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-lg font-bold mb-4">Defect ({VISIT_LABEL[photoPopup.visit]})</h3>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">เลือกปัญหา</label>
+                            <Select
+                                isMulti
+                                options={problems.map((p) => ({ value: p.problem_id, label: p.problem_name }))}
+                                value={selectedProblems
+                                    .filter((p) => !p.isOther)
+                                    .map((p) => ({ value: p.problem_id, label: p.problem_name }))}
+                                onChange={(selected) => {
+                                    const newDefects: Defect[] = (selected ?? []).map((s) => {
+                                        const existing = selectedProblems.find(
+                                            (p) => p.problem_id === s.value && !p.isOther
+                                        );
+                                        if (existing) return existing;
+
+                                        const fromMaster = problems.find((p) => p.problem_id === s.value);
+                                        return {
+                                            problem_id: s.value,
+                                            problem_name: s.label,
+                                            photos: [],
+                                            illegal_suggestion: fromMaster?.illegal_suggestion ?? "",
+                                        };
+                                    });
+
+                                    // คง "Other" ที่ user เพิ่มเองไว้
+                                    const otherDefect = selectedProblems.find((p) => p.isOther);
+                                    if (otherDefect) newDefects.push(otherDefect);
+
+                                    setSelectedProblems(newDefects);
+                                }}
+                                placeholder="-- เลือกหลายปัญหา --"
+                                menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+                                styles={selectStyles}
+                            />
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="inline-flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedProblems.some((p) => p.isOther)}
+                                    onChange={(e) => {
+                                        if (e.target.checked) {
+                                            setSelectedProblems([
+                                                ...selectedProblems,
+                                                {
+                                                    problem_id: "other",
+                                                    problem_name: "",
+                                                    isOther: true,
+                                                    photos: [],
+                                                    defect: null,
+                                                    defect_name: undefined,
+                                                    illegal_suggestion: "",
+                                                },
+                                            ]);
+                                        } else {
+                                            setSelectedProblems(selectedProblems.filter((p) => !p.isOther));
+                                        }
+                                    }}
+                                />
+                                ปัญหาอื่น
+                            </label>
+
+                            {selectedProblems.some((p) => p.isOther) && (
+                                <input
+                                    type="text"
+                                    className={"mt-2 block w-full rounded p-2 border " + (error && !selectedProblems.find(p => p.isOther)?.problem_name ? "border-red-500" : "border-gray-300")}
+                                    placeholder="กรอกชื่อปัญหาอื่น"
+                                    value={selectedProblems.find((p) => p.isOther)?.problem_name || ""}
+                                    onChange={(e) => {
+                                        const vv = e.target.value;
+                                        setSelectedProblems(selectedProblems.map((p) => (p.isOther ? { ...p, problem_name: vv } : p)));
+                                    }}
+                                />
+                            )}
+                        </div>
+
+                        {selectedProblems.map((d, defectIndex) => (
+                            <div key={(d.problem_id ?? "other") + defectIndex} className="mb-4 bg-gray-50 p-4 rounded border">
+                                <div className="text-sm font-medium mb-2">
+                                    {defectIndex + 1}. {d.isOther ? `อื่นๆ (ระบุ) ${d.problem_name || ""}` : d.problem_name}
+                                </div>
+
+                                {d.isOther && (
+                                    <div className="mb-2">
+                                        <label className="block text-xs font-medium mb-1">ข้อกฎหมายที่เกี่ยวข้อง</label>
+                                        <Select
+                                            menuPlacement="auto"
+                                            options={defects.map((p) => ({ value: p.id, label: p.defect }))}
+                                            value={
+                                                d.defect
+                                                    ? defects.map((p) => ({ value: p.id, label: p.defect })).find((opt) => opt.value === d.defect) || null
+                                                    : null
+                                            }
+                                            onChange={(selected) =>
+                                                setSelectedProblems((prev) =>
+                                                    prev.map((p, idx) =>
+                                                        idx === defectIndex
+                                                            ? {
+                                                                ...p,
+                                                                defect: selected?.value ?? null,
+                                                                defect_name: selected?.label ?? undefined,
+                                                            }
+                                                            : p
+                                                    )
+                                                )
+                                            }
+                                            placeholder="-- เลือกข้อกฎหมาย --"
+                                            isClearable
+                                            menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                            styles={selectStyles as any}
+                                        />
+                                    </div>
+                                )}
+
+                                <textarea
+                                    className={"w-full border rounded p-2 mb-2 " + (error && !d.illegal_suggestion ? "border-red-500" : "border-gray-300")}
+                                    rows={3}
+                                    placeholder="กรอกข้อเสนอแนะเพิ่มเติม"
+                                    value={d.illegal_suggestion || ""}
+                                    onChange={(e) =>
+                                        setSelectedProblems((prev) =>
+                                            prev.map((p, idx) => (idx === defectIndex ? { ...p, illegal_suggestion: e.target.value } : p))
+                                        )
+                                    }
+                                />
+
+                                <div className="flex flex-wrap gap-2">
+                                    {(d.photos ?? []).map((p, idx) => (
+                                        <img
+                                            key={idx}
+                                            src={p.src} // ใช้ src ที่ถ่ายมา
+                                            alt={p.filename}
+                                            title={p.filename}
+                                            className="w-16 h-16 object-cover border rounded cursor-pointer"
+                                            onClick={() => openViewer(defectIndex, idx)}
+                                        />
+                                    ))}
+
+                                    {(d.photos?.length ?? 0) < 2 && (
+                                        <button
+                                            className="w-16 h-16 flex items-center justify-center border rounded text-gray-500 hover:text-blue-600 hover:border-blue-500 bg-white"
+                                            onClick={() => openCamera(defectIndex)}
+                                            title="ถ่าย/แนบรูป"
+                                        >
+                                            <PhotoCameraIcon className="w-6 h-6" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+
+                        <div className="flex justify-end gap-2 mt-6">
+                            <button className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300" onClick={() => setPhotoPopup(null)}>
+                                ปิด
+                            </button>
+
+                            <button
+                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                onClick={saveDefectPopup}
+                            >
+                                บันทึก
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== Camera / Viewer Overlay ===== */}
+            {camOpen && (
+                <div className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4">
+                    <div className="relative w-full max-w-4xl">
+                        <button
+                            onClick={closeCamera}
+                            className="absolute -top-4 -right-4 bg-white text-rose-600 border border-rose-300 rounded-full w-9 h-9 shadow flex items-center justify-center hover:bg-rose-50 cursor-pointer"
+                            aria-label="ปิด"
+                            title="ปิด"
+                        >
+                            ✕
+                        </button>
+
+                        <div className="rounded-xl overflow-hidden border-2 border-white shadow-xl bg-black">
+                            {overlayMode === "camera" && !captured ? (
+                                <video ref={videoRef} autoPlay playsInline muted className="w-full max-h-[75vh] object-contain" />
+                            ) : (
+                                <img src={captured ?? ""} alt={capturedName ?? "preview"} className="w-full max-h-[75vh] object-contain bg-black" />
+                            )}
+                        </div>
+
+                        <div className="mt-4 flex items-center justify-center gap-3">
+                            {overlayMode === "camera" ? (
+                                !captured ? (
+                                    <button
+                                        onClick={capturePhoto}
+                                        className="inline-flex items-center gap-2 rounded-full bg-emerald-600 text-white px-6 py-3 font-medium shadow hover:bg-emerald-700 cursor-pointer"
+                                    >
+                                        📸 ถ่ายภาพ
+                                    </button>
+                                ) : (
+                                    <>
+                                        <button
+                                            onClick={confirmPhoto}
+                                            className="inline-flex items-center gap-2 rounded-full bg-emerald-600 text-white px-6 py-3 font-medium shadow hover:bg-emerald-700 cursor-pointer"
+                                        >
+                                            ✅ ยืนยัน
+                                        </button>
+                                        <button
+                                            onClick={retakePhoto}
+                                            className="inline-flex items-center gap-2 rounded-full bg-gray-200 text-gray-800 px-6 py-3 font-medium shadow hover:bg-gray-300 cursor-pointer"
+                                        >
+                                            🔄 ถ่ายใหม่
+                                        </button>
+                                    </>
+                                )
+                            ) : (
+                                <button
+                                    onClick={deleteViewedPhoto}
+                                    className="inline-flex items-center gap-2 rounded-full bg-rose-600 text-white px-6 py-3 font-medium shadow hover:bg-rose-700 cursor-pointer"
+                                >
+                                    🗑️ ลบรูป
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    <canvas ref={canvasRef} className="hidden" />
+                </div>
+            )}
         </section>
     );
 }
