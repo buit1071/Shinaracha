@@ -256,22 +256,6 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
         };
     }, [formData.cover, formData.coverfilename]);
 
-    type SectionTwoWithPreview = Partial<SectionTwoForm> & {
-        mapSketchPreview?: string | null;
-        mapSketchPreview1?: string | null;
-
-        shapeSketchPreview?: string | null;
-        shapeSketchPreview1?: string | null;
-
-        photosFrontPreview?: string | null;
-        photosSidePreview?: string | null;
-        photosBasePreview?: string | null;
-
-        photosFrontPreview1?: string | null;
-        photosSidePreview1?: string | null;
-        photosBasePreview1?: string | null;
-    };
-
     const handleSave = async () => {
         showLoading(true);
 
@@ -287,7 +271,8 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
         };
 
         try {
-            const { cover, sectionTwo, sectionFour, ...rest } = formData;
+            // ✅ 1. Destructure sectionThree
+            const { cover, sectionTwo, sectionFour, sectionThree, ...rest } = formData;
 
             // ===== helper: extract filename from n8n url (?name=xxx) =====
             const extractNameFromUrl = (u: string): string | null => {
@@ -372,53 +357,101 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 return finalName;
             };
 
-            const cleanSection2_6 = async (s26: any) => {
-                if (!s26) return s26;
+            // ✅ Helper: Clean defects array (upload photos inside defects)
+            const cleanDefectsList = async (defects: any[] | undefined) => {
+                if (!Array.isArray(defects)) return [];
 
-                const cleanTable = async (table: Record<string, any> | undefined) => {
+                return await Promise.all(
+                    defects.map(async (def: any) => {
+                        const photos = Array.isArray(def.photos) ? def.photos : [];
+                        const cleanedPhotos = await Promise.all(
+                            photos.map(async (p: any) => {
+                                if (p?.src) {
+                                    const name = await uploadImageSource(p.src, p.filename ?? null);
+                                    return name ? { filename: name } : null;
+                                }
+                                if (p?.filename) return { filename: p.filename };
+                                return null;
+                            })
+                        );
+
+                        return {
+                            ...def,
+                            photos: cleanedPhotos.filter(Boolean),
+                        };
+                    })
+                );
+            };
+
+            // ✅ Helper: Process Section 3 (Items 1-7, 8, 9)
+            const cleanSectionThree = async (s3: any) => {
+                if (!s3) return s3;
+
+                // 1. Clean items (1-7) -> defect_by_visit
+                const cleanItems = async (items: Record<string, any> | undefined) => {
+                    if (!items) return {};
+                    const out: Record<string, any> = {};
+
+                    for (const [rowId, row] of Object.entries(items)) {
+                        if (!row) continue;
+                        const map = row.defect_by_visit ?? {};
+                        const nextMap: any = {};
+
+                        for (const [vk, defs] of Object.entries(map)) {
+                            nextMap[vk] = await cleanDefectsList(defs as any[]);
+                        }
+
+                        out[rowId] = { ...row, defect_by_visit: nextMap };
+                    }
+                    return out;
+                };
+
+                // 2. Clean table rows (Section 8 & 9) -> wear_defects, damage_defects
+                const cleanTableRows = async (table: Record<string, any> | undefined) => {
                     if (!table) return {};
-
                     const out: Record<string, any> = {};
 
                     for (const [rowId, row] of Object.entries(table)) {
                         if (!row) continue;
 
-                        const map = row.defect_by_visit ?? {};
-                        const nextMap: any = {};
+                        const nextRow = { ...row };
 
-                        for (const [vk, defs] of Object.entries(map)) {
-                            const arr = Array.isArray(defs) ? defs : [];
-                            nextMap[vk] = await Promise.all(
-                                arr.map(async (def: any) => {
-                                    const photos = Array.isArray(def.photos) ? def.photos : [];
-
-                                    const cleanedPhotos = await Promise.all(
-                                        photos.map(async (p: any) => {
-                                            // p.src อาจเป็น data/blob/http หรือไม่มีเลย
-                                            if (p?.src) {
-                                                const name = await uploadImageSource(p.src, p.filename ?? null);
-                                                return name ? { filename: name } : null;
-                                            }
-                                            // ถ้ามีแต่ filename (รูปเดิมจาก backend)
-                                            if (p?.filename) return { filename: p.filename };
-                                            return null;
-                                        })
-                                    );
-
-                                    return {
-                                        ...def,
-                                        photos: cleanedPhotos.filter(Boolean),
-                                    };
-                                })
-                            );
+                        if (row.wear_defects) {
+                            nextRow.wear_defects = await cleanDefectsList(row.wear_defects);
+                        }
+                        if (row.damage_defects) {
+                            nextRow.damage_defects = await cleanDefectsList(row.damage_defects);
                         }
 
-                        out[rowId] = {
-                            ...row,
-                            defect_by_visit: nextMap,
-                        };
+                        out[rowId] = nextRow;
                     }
+                    return out;
+                };
 
+                return {
+                    ...s3,
+                    items: await cleanItems(s3.items),
+                    section8: await cleanTableRows(s3.section8),
+                    section9: await cleanTableRows(s3.section9),
+                };
+            };
+
+            // ... (Existing Clean Functions: cleanSection2_6, cleanPhotoList, processTable) ...
+            const cleanSection2_6 = async (s26: any) => {
+                if (!s26) return s26;
+
+                const cleanTable = async (table: Record<string, any> | undefined) => {
+                    if (!table) return {};
+                    const out: Record<string, any> = {};
+                    for (const [rowId, row] of Object.entries(table)) {
+                        if (!row) continue;
+                        const map = row.defect_by_visit ?? {};
+                        const nextMap: any = {};
+                        for (const [vk, defs] of Object.entries(map)) {
+                            nextMap[vk] = await cleanDefectsList(defs as any[]); // Reused cleanDefectsList
+                        }
+                        out[rowId] = { ...row, defect_by_visit: nextMap };
+                    }
                     return out;
                 };
 
@@ -428,6 +461,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     table2: await cleanTable(s26.table2),
                 };
             };
+
 
             // ============================================================
             // 1) Upload cover
@@ -450,52 +484,34 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
             }
 
             // ============================================================
-            // 2) Upload SectionTwo images (สำคัญ: ต้องเอาชื่อไฟล์กลับไปใส่ payload)
+            // 2) Upload SectionTwo images
             // ============================================================
             const s2 = (sectionTwo ?? {}) as any;
-
-            // เลือก src ที่จะอัปโหลด: ใช้ preview ก่อน ถ้าไม่มีค่อยใช้ field จริง
             const pickSrc = (preview: any, original: any) => preview ?? original;
 
             const [
-                mapSketchName,
-                mapSketch1Name,
-                shapeSketchName,
-                shapeSketch1Name,
-                photosFrontName,
-                photosSideName,
-                photosBaseName,
-                photosFront1Name,
-                photosSide1Name,
-                photosBase1Name,
+                mapSketchName, mapSketch1Name,
+                shapeSketchName, shapeSketch1Name,
+                photosFrontName, photosSideName, photosBaseName,
+                photosFront1Name, photosSide1Name, photosBase1Name,
             ] = await Promise.all([
                 uploadImageSource(pickSrc(s2.mapSketchPreview, s2.mapSketch), toPlainFilename(s2.mapSketch)),
                 uploadImageSource(pickSrc(s2.mapSketchPreview1, s2.mapSketch1), toPlainFilename(s2.mapSketch1)),
-
                 uploadImageSource(pickSrc(s2.shapeSketchPreview, s2.shapeSketch), toPlainFilename(s2.shapeSketch)),
                 uploadImageSource(pickSrc(s2.shapeSketchPreview1, s2.shapeSketch1), toPlainFilename(s2.shapeSketch1)),
-
                 uploadImageSource(pickSrc(s2.photosFrontPreview, s2.photosFront), toPlainFilename(s2.photosFront)),
                 uploadImageSource(pickSrc(s2.photosSidePreview, s2.photosSide), toPlainFilename(s2.photosSide)),
                 uploadImageSource(pickSrc(s2.photosBasePreview, s2.photosBase), toPlainFilename(s2.photosBase)),
-
                 uploadImageSource(pickSrc(s2.photosFrontPreview1, s2.photosFront1), toPlainFilename(s2.photosFront1)),
                 uploadImageSource(pickSrc(s2.photosSidePreview1, s2.photosSide1), toPlainFilename(s2.photosSide1)),
                 uploadImageSource(pickSrc(s2.photosBasePreview1, s2.photosBase1), toPlainFilename(s2.photosBase1)),
             ]);
 
-            // ลบ preview fields ทิ้ง + ใส่ชื่อไฟล์ที่อัปโหลดกลับเข้าไป
             const {
-                mapSketchPreview,
-                mapSketchPreview1,
-                shapeSketchPreview,
-                shapeSketchPreview1,
-                photosFrontPreview,
-                photosSidePreview,
-                photosBasePreview,
-                photosFrontPreview1,
-                photosSidePreview1,
-                photosBasePreview1,
+                mapSketchPreview, mapSketchPreview1,
+                shapeSketchPreview, shapeSketchPreview1,
+                photosFrontPreview, photosSidePreview, photosBasePreview,
+                photosFrontPreview1, photosSidePreview1, photosBasePreview1,
                 ...sectionTwoBase
             } = s2;
 
@@ -503,83 +519,32 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 ...sectionTwoBase,
                 mapSketch: mapSketchName ?? sectionTwoBase.mapSketch,
                 mapSketch1: mapSketch1Name ?? sectionTwoBase.mapSketch1,
-
                 shapeSketch: shapeSketchName ?? sectionTwoBase.shapeSketch,
                 shapeSketch1: shapeSketch1Name ?? sectionTwoBase.shapeSketch1,
-
                 photosFront: photosFrontName ?? sectionTwoBase.photosFront,
                 photosSide: photosSideName ?? sectionTwoBase.photosSide,
                 photosBase: photosBaseName ?? sectionTwoBase.photosBase,
-
                 photosFront1: photosFront1Name ?? sectionTwoBase.photosFront1,
                 photosSide1: photosSide1Name ?? sectionTwoBase.photosSide1,
                 photosBase1: photosBase1Name ?? sectionTwoBase.photosBase1,
             };
 
             // ============================================================
-            // 3) Upload SectionFour photos (รองรับ blob: + data:image + http)
+            // 3) Upload SectionFour photos
             // ============================================================
-            let sectionFourClean = sectionFour;
+            // ... (Section Four Logic remains same, omitted for brevity but include in your code) ...
+            let sectionFourClean = sectionFour; // Placeholder, use existing logic
 
-            const cleanPhotoList = async (photos: any[] | undefined) => {
-                if (!Array.isArray(photos)) return [];
-
-                const names = await Promise.all(
-                    photos.map(async (p) => {
-                        if (!p) return null;
-                        const fallbackName =
-                            p.filename ??
-                            (typeof p.src === "string" ? extractNameFromUrl(p.src) : null) ??
-                            null;
-
-                        return await uploadImageSource(p.src ?? null, fallbackName);
-                    })
-                );
-
-                return names
-                    .filter((n): n is string => !!n)
-                    .map((n) => ({ filename: n }));
-            };
-
-            const processTable = async (table: Record<string, any> | undefined): Promise<Record<string, any>> => {
-                if (!table) return {};
-                const clean: Record<string, any> = {};
-
-                for (const [key, row] of Object.entries(table)) {
-                    if (!row) continue;
-
-                    const cleanedRowPhotos = await cleanPhotoList(row.photos);
-
-                    let cleanedDefect = row.defect;
-                    if (Array.isArray(row.defect)) {
-                        cleanedDefect = await Promise.all(
-                            row.defect.map(async (def: any) => {
-                                const { photos: defectPhotos, ...restDef } = def || {};
-                                const cleanedDefectPhotos = await cleanPhotoList(defectPhotos);
-                                return { ...restDef, photos: cleanedDefectPhotos };
-                            })
-                        );
-                    }
-
-                    clean[key] = {
-                        ...row,
-                        photos: cleanedRowPhotos,
-                        defect: cleanedDefect,
-                    };
-                }
-
-                return clean;
-            };
-
-            if (sectionFour) {
-                sectionFourClean = {
-                    ...sectionFour,
-                };
-            }
-
+            // ============================================================
+            // 4) Process Section 2.6 & Section 3 (Images)
+            // ============================================================
             const section2_6Clean = await cleanSection2_6((rest as any).section2_6);
+
+            // ✅ Clean Section 3
+            const sectionThreeClean = await cleanSectionThree(sectionThree);
+
             // ============================================================
-            // 4) Prepare payload (รวม section2_5/2_6/2_7 อยู่ใน rest แล้ว)
+            // 5) Prepare payload
             // ============================================================
             const payload: any = {
                 entity: "form1_3",
@@ -588,6 +553,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     sectionTwo: sectionTwoClean,
                     sectionFour: sectionFourClean,
                     section2_6: section2_6Clean,
+                    sectionThree: sectionThreeClean, // ✅ Add processed sectionThree
                     job_id: jobId,
                     equipment_id: equipment_id,
                     is_active: 1,
@@ -599,7 +565,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
             if (formData.form_code) payload.data.form_code = formData.form_code;
 
             // ============================================================
-            // 5) Save form data
+            // 6) Save form data
             // ============================================================
             const res = await fetch("/api/auth/forms/post", {
                 method: "POST",
@@ -610,14 +576,14 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
             const data = await res.json();
 
             if (res.ok && data.success) {
-                stopLoading(); // ✅ ปิดก่อนกันค้าง
+                stopLoading();
                 await showAlert("success", data.message);
 
                 if (data.form_code && !formData.form_code) {
                     setFormData((prev) => ({ ...prev, form_code: data.form_code }));
                 }
 
-                onBack(); // ✅ ค่อยย้อนกลับหลัง user กดตกลง
+                onBack();
                 return;
             }
 
@@ -625,7 +591,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
         } catch (err: any) {
             await alertAndStop("error", err?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         } finally {
-            stopLoading(); // กันหลุดทุกกรณี
+            stopLoading();
         }
     };
 

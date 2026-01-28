@@ -48,7 +48,9 @@ export type OkNg = "ok" | "ng" | "";
 export type Section8Row = {
     exist?: YesNo; // มี / ไม่มี
     wear?: YesNo; // การชำรุดสึกหรอ มี / ไม่มี
+    wear_defects?: Defect[]; // ✨ ลูกคนที่ 3: เก็บข้อมูล Defect ของการชำรุด
     damage?: YesNo; // ความเสียหาย มี / ไม่มี
+    damage_defects?: Defect[];
     stability?: OkNg; // ความมั่นคงผู้ตรวจสอบ ใช้ได้ / ใช้ไม่ได้
     note?: string; // หมายเหตุ
     labelExtra?: string; // สำหรับ "อื่น ๆ (โปรดระบุ)"
@@ -57,7 +59,9 @@ export type Section8Row = {
 export type Section9Row = {
     exist?: YesNo;
     wear?: YesNo;
+    wear_defects?: Defect[];
     damage?: YesNo;
+    damage_defects?: Defect[];
     stability?: OkNg;
     note?: string;
     labelExtra?: string;
@@ -226,13 +230,20 @@ const ITEMS_1_7: TopChoiceText[] = [
 export default function SectionThreeDetails({ value,
     onChange,
 }: Props) {
+    const buildRemoteCoverUrl = (name: string) =>
+        `${process.env.NEXT_PUBLIC_N8N_UPLOAD_FILE}?name=${encodeURIComponent(name)}`;
     const [viewTarget, setViewTarget] = React.useState<{ defectIndex: number; photoIndex: number } | null>(null);
     const [camTarget, setCamTarget] = React.useState<{ defectIndex: number } | null>(null);
     const [problems, setProblems] = React.useState<ProblemRow[]>([]);
     const [defects, setDefects] = React.useState<DefectRow[]>([]);
 
     // Popup State
-    const [photoPopup, setPhotoPopup] = React.useState<{ id: string; visit: string } | null>(null);
+    const [photoPopup, setPhotoPopup] = React.useState<{
+        id: string;
+        visit: string;
+        section: "items" | "section8" | "section9"; // บอกว่ามาจากส่วนไหน
+        defectType?: "wear" | "damage"; // เฉพาะ 8-9 บอกว่าเป็น defect ของช่องไหน
+    } | null>(null);
     const [selectedProblems, setSelectedProblems] = React.useState<Defect[]>([]);
     const [error, setError] = React.useState(false);
 
@@ -251,9 +262,12 @@ export default function SectionThreeDetails({ value,
     const openViewer = (defectIndex: number, photoIndex: number) => {
         const photo = selectedProblems[defectIndex]?.photos?.[photoIndex];
         if (!photo) return;
-
         setViewTarget({ defectIndex, photoIndex });
-        setCaptured(photo.src ?? null);
+
+        // ✅ แก้ไข: เช็ค src ก่อน ถ้าไม่มีให้สร้าง URL จาก filename
+        const imgUrl = photo.src || (photo.filename ? buildRemoteCoverUrl(photo.filename) : null);
+
+        setCaptured(imgUrl);
         setCapturedName(photo.filename);
         setOverlayMode("viewer");
         setCamOpen(true);
@@ -274,37 +288,65 @@ export default function SectionThreeDetails({ value,
     };
 
     /* -------------------- Popup Logic -------------------- */
-    const openDefectPopup = (id: string) => {
-        const row = items[id] ?? {};
-        const currentDefects = row.defect_by_visit?.[VISIT_KEY] ?? [];
-        setSelectedProblems(currentDefects); // โหลดข้อมูลเดิมมาใส่ State
-        setPhotoPopup({ id, visit: VISIT_KEY });
+    const openDefectPopup = (
+        id: string,
+        section: "items" | "section8" | "section9",
+        defectType?: "wear" | "damage"
+    ) => {
+        let currentDefects: Defect[] = [];
+
+        // 1. ดึงข้อมูลเก่ามาแสดง (ถ้ามี)
+        if (section === "items") {
+            // Logic เดิมของข้อ 1-7
+            const row = items[id] ?? {};
+            currentDefects = row.defect_by_visit?.[VISIT_KEY] ?? [];
+        } else if (section === "section8") {
+            // Logic ของข้อ 8
+            const row = section8State[id] ?? {};
+            if (defectType === "wear") currentDefects = row.wear_defects ?? [];
+            else if (defectType === "damage") currentDefects = row.damage_defects ?? [];
+        } else if (section === "section9") {
+            // Logic ของข้อ 9
+            const row = section9State[id] ?? {};
+            if (defectType === "wear") currentDefects = row.wear_defects ?? [];
+            else if (defectType === "damage") currentDefects = row.damage_defects ?? [];
+        }
+
+        setSelectedProblems(currentDefects);
+        setPhotoPopup({ id, visit: VISIT_KEY, section, defectType });
         setError(false);
     };
 
     const saveDefectPopup = () => {
         if (!photoPopup) return;
 
-        // Validate "Other" input
+        // Validation (เหมือนเดิม)
         const other = selectedProblems.find((p) => p.isOther);
         if (other) {
             const isMissing = !other.problem_name?.trim() || !other.illegal_suggestion?.trim();
-            if (isMissing) {
-                setError(true);
-                return;
-            }
+            if (isMissing) { setError(true); return; }
         }
 
-        const { id, visit } = photoPopup;
-        // สร้าง defect map ใหม่
-        const row = items[id] ?? {};
-        const nextMap = {
-            ...(row.defect_by_visit ?? {}),
-            [visit]: [...selectedProblems],
-        };
+        const { id, visit, section, defectType } = photoPopup;
 
-        // บันทึกกลับลง items
-        emit(id, { defect_by_visit: nextMap });
+        // บันทึกตาม Section
+        if (section === "items") {
+            // Save 1-7
+            const row = items[id] ?? {};
+            const nextMap = { ...(row.defect_by_visit ?? {}), [visit]: [...selectedProblems] };
+            emit(id, { defect_by_visit: nextMap });
+
+        } else if (section === "section8" && defectType) {
+            // Save 8
+            if (defectType === "wear") emit8(id, { wear_defects: [...selectedProblems] });
+            else if (defectType === "damage") emit8(id, { damage_defects: [...selectedProblems] });
+
+        } else if (section === "section9" && defectType) {
+            // Save 9
+            if (defectType === "wear") emit9(id, { wear_defects: [...selectedProblems] });
+            else if (defectType === "damage") emit9(id, { damage_defects: [...selectedProblems] });
+        }
+
         setPhotoPopup(null);
     };
 
@@ -550,11 +592,27 @@ export default function SectionThreeDetails({ value,
             {ITEMS_1_7.map((cfg, idx) => {
                 const no = idx + 1;
                 const id = `s3-${no}`;
-                const row = items[id] ?? {};
+
+                // Logic: Set defaults if row data is missing/empty
+                const existingRow = items[id];
+
+                // Default warning text
+                const defaultTextPart1 = "หากมีการต่อเติม ดัดแปลง ปรับปรุงขนาด ให้แจ้งผู้ตรวจสอบป้าย";
+                const defaultTextPart2 = "และต้องจัดหาวิศวกรที่รับรองความมั่นคงแข็งแรงโครงป้าย เพื่อตรวจสอบความปลอดภัยในการรับน้ำหนักของโครงป้าย";
+
+                // Merge defaults with existing state
+                const row: SectionThreeRow = {
+                    ...existingRow,
+                    otherChecked: existingRow?.otherChecked ?? true, // Default checked
+                    other1: existingRow?.other1 ?? defaultTextPart1, // Default text line 1
+                    other2: existingRow?.other2 ?? defaultTextPart2, // Default text line 2
+                };
+
                 const isNG = row.status === "ng";
 
                 return (
                     <div key={id} className="border border-gray-400 bg-white">
+                        {/* ... Header and other inputs remain the same ... */}
                         <div className="border-b border-gray-400 bg-gray-200 px-3 py-2">
                             <div className="text-sm font-semibold leading-snug">
                                 {no}. {cfg.title}
@@ -562,6 +620,7 @@ export default function SectionThreeDetails({ value,
                         </div>
 
                         <div className="bg-gray-50 px-3 py-3 space-y-3">
+                            {/* ... Checkboxes ... */}
                             <label className="flex items-start gap-2 text-sm leading-snug">
                                 <input
                                     type="checkbox"
@@ -598,6 +657,7 @@ export default function SectionThreeDetails({ value,
                                 <div className="text-sm font-medium">ความเห็นของผู้ตรวจสอบ</div>
 
                                 <div className="space-y-2">
+                                    {/* ... Status Selection ... */}
                                     <div className="flex items-center gap-10">
                                         <label className="flex items-center gap-2 text-sm select-none">
                                             <input
@@ -620,10 +680,9 @@ export default function SectionThreeDetails({ value,
                                                 <span>ใช้ไม่ได้</span>
                                             </label>
 
-                                            {/* ✅ Icon ดินสอ */}
                                             {isNG && (
                                                 <button
-                                                    onClick={() => openDefectPopup(id)}
+                                                    onClick={() => openDefectPopup(id, "items")}
                                                     className="ml-4 p-1 text-gray-500 hover:text-blue-600 transition-colors border border-transparent hover:border-gray-300 rounded cursor-pointer"
                                                     title="ระบุปัญหา (Defect)"
                                                     type="button"
@@ -650,13 +709,14 @@ export default function SectionThreeDetails({ value,
                                     <input
                                         type="checkbox"
                                         className="h-4 w-4"
-                                        checked={!!row.otherChecked}
+                                        checked={!!row.otherChecked} // Defaulted to true above
                                         onChange={(e) => {
                                             const v = e.target.checked;
                                             emit(id, {
                                                 otherChecked: v,
-                                                other1: v ? row.other1 ?? "" : "",
-                                                other2: v ? row.other2 ?? "" : "",
+                                                // Keep existing text if unchecking/checking, or reset to empty if you prefer
+                                                other1: v ? (row.other1 || defaultTextPart1) : "",
+                                                other2: v ? (row.other2 || defaultTextPart2) : "",
                                             });
                                         }}
                                     />
@@ -683,23 +743,25 @@ export default function SectionThreeDetails({ value,
                 );
             })}
 
-            {/* ========================== ข้อ 8 ========================== */}
+            {/* ========================== ข้อ 8 (ปรับขนาดให้กระชับ) ========================== */}
             {(() => {
-                const td = "border border-gray-400 px-2 py-2 align-middle";
-                const thBase = "border border-gray-400 px-2 py-2 font-semibold text-center";
+                // ลด padding ของ cell ลงเพื่อให้ตารางแน่นขึ้น
+                const td = "border border-gray-400 px-1 py-1 align-middle text-center";
+                const thBase = "border border-gray-400 px-1 py-2 font-semibold text-center text-xs"; // หัวข้อตัวเล็กหน่อย
                 const thNoBottom = `${thBase} border-b-0`;
                 const thNoTop = `${thBase} border-t-0`;
 
+                // ฟังก์ชัน render input สำหรับ "อื่นๆ"
                 const renderItemLabel = (rowId: string, text: string) => {
                     const isOther = text.includes("อื่น ๆ (โปรดระบุ)");
-                    if (!isOther) return <span>{text}</span>;
+                    if (!isOther) return <span className="text-sm pl-1 text-left block">{text}</span>;
 
                     const v = section8State[rowId] ?? {};
                     return (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 min-w-[120px] text-sm pl-1">
                             <span>- อื่น ๆ (โปรดระบุ)</span>
                             <input
-                                className="flex-1 bg-transparent border-0 border-b border-dashed border-black/40 focus:outline-none focus:ring-0 px-1"
+                                className="flex-1 bg-transparent border-0 border-b border-dashed border-gray-400 focus:outline-none focus:border-blue-600 px-1 w-full text-xs"
                                 value={v.labelExtra ?? ""}
                                 onChange={(e) => emit8(rowId, { labelExtra: e.currentTarget.value })}
                             />
@@ -707,32 +769,22 @@ export default function SectionThreeDetails({ value,
                     );
                 };
 
-                type RowCfg =
-                    | { type: "group"; groupNo: "(1)" | "(2)"; label: string }
-                    | { type: "subgroup"; label: string }
-                    | { type: "item"; id: string; label: string };
-
+                // Type & Data ROWS (เหมือนเดิม)
+                type RowCfg = | { type: "group"; groupNo: string; label: string } | { type: "subgroup"; label: string } | { type: "item"; id: string; label: string };
                 const ROWS: RowCfg[] = [
                     { type: "group", groupNo: "(1)", label: "สิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย" },
                     { type: "item", id: "s8-1-foundation", label: "- ฐานราก" },
-                    {
-                        type: "item",
-                        id: "s8-1-anchor",
-                        label: "- การเชื่อมยึดของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้ายกับฐานรากหรืออาคาร",
-                    },
+                    { type: "item", id: "s8-1-anchor", label: "- การเชื่อมยึดของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้ายกับฐานรากหรืออาคาร" },
                     { type: "item", id: "s8-1-part", label: "- ชิ้นส่วน" },
-
                     { type: "subgroup", label: "- รอยต่อ" },
                     { type: "item", id: "s8-1-bolt", label: "- สลักเกลียว" },
                     { type: "item", id: "s8-1-weld", label: "- การเชื่อม" },
                     { type: "item", id: "s8-1-joint-other", label: "- อื่น ๆ (โปรดระบุ)" },
-
                     { type: "item", id: "s8-1-sling", label: "- สลิง หรือสายยึด" },
                     { type: "item", id: "s8-1-ladder", label: "- บันไดขึ้นลง" },
                     { type: "item", id: "s8-1-rail", label: "- ราวจับ หรือราวกันตก" },
                     { type: "item", id: "s8-1-catwalk", label: "- CATWALK" },
                     { type: "item", id: "s8-1-other", label: "- อื่น ๆ (โปรดระบุ)" },
-
                     { type: "group", groupNo: "(2)", label: "แผ่นป้าย" },
                     { type: "item", id: "s8-2-panel", label: "- สภาพของแผ่นป้าย" },
                     { type: "item", id: "s8-2-fix", label: "- สภาพการยึดติดกับโครงสร้างป้าย" },
@@ -740,186 +792,153 @@ export default function SectionThreeDetails({ value,
                 ];
 
                 return (
-                    <div className="mt-4 border border-gray-400">
-                        <div className="bg-blue-700 text-white font-semibold px-3 py-2 text-sm">
-                            8. การตรวจสอบการเชื่อมยึดระหว่างแผ่นป้ายกับสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย การเชื่อมยึดระหว่างชิ้นส่วนต่าง ๆ ของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย
-                            และการเชื่อมยึดระหว่างสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้ายกับฐานรากหรืออาคาร
+                    <div className="mt-4 border border-gray-400 bg-white shadow-sm rounded-lg overflow-hidden">
+                        <div className="bg-gradient-to-r from-blue-700 to-indigo-700 text-white font-semibold px-4 py-2 text-sm shadow-md">
+                            8. การตรวจสอบการเชื่อมยึดระหว่างแผ่นป้าย...
                         </div>
 
-                        <table className="w-full text-sm border-collapse">
-                            <thead>
-                                {/* ✅ แถวบน: ไม่มีหัวข้อ "มี" อันแรก + ปิดเส้น row เฉพาะคู่ มี/ไม่มี (exist) */}
-                                <tr className="bg-gray-200">
-                                    <th rowSpan={2} className={`${thBase} w-[70px]`}>
-                                        ลำดับที่
-                                    </th>
-                                    <th rowSpan={2} className={`${thBase} text-left`}>
-                                        รายการ
-                                    </th>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm border-collapse table-fixed min-w-[900px]">
+                                <colgroup>
+                                    <col className="w-[40px]" /> {/* ลำดับ */}
+                                    <col className="w-[200px]" /> {/* รายการ (กว้างหน่อย) */}
+                                    <col className="w-[35px]" /> {/* มี */}
+                                    <col className="w-[35px]" /> {/* ไม่มี */}
 
-                                    {/* ✅ ช่องบนของ "มี/ไม่มี" (exist) แยก 2 ช่อง เพื่อให้เส้นตั้ง (col) ต่อเนื่อง แต่ปิดเส้นล่าง */}
-                                    <th className={`${thNoBottom} w-[55px]`}></th>
-                                    <th className={`${thNoBottom} w-[65px]`}></th>
+                                    <col className="w-[35px]" /> {/* Wear: มี */}
+                                    <col className="w-[35px]" /> {/* Wear: ไม่มี */}
+                                    <col className="w-[35px]" /> {/* Wear: Defect */}
 
-                                    <th colSpan={2} className={thBase}>
-                                        การชำรุดสึกหรอ
-                                    </th>
-                                    <th colSpan={2} className={thBase}>
-                                        ความเสียหาย
-                                    </th>
-                                    <th colSpan={2} className={thBase}>
-                                        ความมั่นคงผู้ตรวจสอบ
-                                    </th>
+                                    <col className="w-[35px]" /> {/* Damage: มี */}
+                                    <col className="w-[35px]" /> {/* Damage: ไม่มี */}
+                                    <col className="w-[35px]" /> {/* Damage: Defect */}
 
-                                    <th rowSpan={2} className={`${thBase} w-[180px]`}>
-                                        หมายเหตุ
-                                    </th>
-                                </tr>
+                                    <col className="w-[40px]" /> {/* Stable: ใช้ได้ */}
+                                    <col className="w-[40px]" /> {/* Stable: ไม่ได้ */}
 
-                                {/* ✅ แถวล่าง: "มี/ไม่มี" exist ไม่มีเส้นบน (border-t-0) ตามรูปที่ 2 */}
-                                <tr className="bg-gray-200">
-                                    <th className={`${thNoTop} w-[55px]`}>มี</th>
-                                    <th className={`${thNoTop} w-[65px]`}>ไม่มี</th>
+                                    <col className="w-[100px]" /> {/* หมายเหตุ */}
+                                </colgroup>
 
-                                    <th className={`${thBase} w-[55px]`}>มี</th>
-                                    <th className={`${thBase} w-[65px]`}>ไม่มี</th>
+                                <thead>
+                                    <tr className="bg-gray-200 text-gray-700">
+                                        <th rowSpan={2} className={thBase}>ลำดับ</th>
+                                        <th rowSpan={2} className={`${thBase} text-left pl-2`}>รายการ</th>
 
-                                    <th className={`${thBase} w-[55px]`}>มี</th>
-                                    <th className={`${thBase} w-[65px]`}>ไม่มี</th>
+                                        <th className={thNoBottom}></th>
+                                        <th className={thNoBottom}></th>
 
-                                    <th className={`${thBase} w-[70px]`}>ใช้ได้</th>
-                                    <th className={`${thBase} w-[80px]`}>ใช้ไม่ได้</th>
-                                </tr>
-                            </thead>
+                                        <th colSpan={3} className={`${thBase} bg-orange-100/50`}>การชำรุดสึกหรอ</th>
+                                        <th colSpan={3} className={`${thBase} bg-red-100/50`}>ความเสียหาย</th>
+                                        <th colSpan={2} className={thBase}>ความมั่นคงผู้ตรวจสอบ</th>
+                                        <th rowSpan={2} className={thBase}>หมายเหตุ</th>
+                                    </tr>
 
-                            <tbody>
-                                {ROWS.map((r, idx) => {
-                                    if (r.type === "group") {
+                                    <tr className="bg-gray-200 text-gray-700">
+                                        <th className={`${thNoTop}`}>มี</th>
+                                        <th className={`${thNoTop}`}>ไม่มี</th>
+
+                                        <th className={`${thBase} bg-orange-100/50`}>มี</th>
+                                        <th className={`${thBase} bg-orange-100/50`}>ไม่มี</th>
+                                        <th className={`${thBase} text-[10px] bg-orange-200 text-orange-900 px-0`}>Defect</th>
+
+                                        <th className={`${thBase} bg-red-100/50`}>มี</th>
+                                        <th className={`${thBase} bg-red-100/50`}>ไม่มี</th>
+                                        <th className={`${thBase} text-[10px] bg-red-200 text-red-900 px-0`}>Defect</th>
+
+                                        <th className={thBase}>ใช้ได้</th>
+                                        <th className={thBase}>ไม่ได้</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {ROWS.map((r, idx) => {
+                                        if (r.type === "group" || r.type === "subgroup") {
+                                            return (
+                                                <tr key={idx} className={r.type === "group" ? "bg-blue-50/80" : "bg-gray-50"}>
+                                                    <td className={`${td} font-bold text-gray-700`}>{r.type === "group" ? r.groupNo : ""}</td>
+                                                    <td className={`${td} font-semibold text-gray-800 text-left pl-2`} colSpan={12}>{r.label}</td>
+                                                </tr>
+                                            );
+                                        }
+
+                                        const v = section8State[r.id] ?? {};
+
                                         return (
-                                            <tr key={`g8-${idx}`} className="bg-gray-100">
-                                                <td className={`${td} text-center font-semibold`}>{r.groupNo}</td>
-                                                <td className={`${td} font-semibold`} colSpan={9}>
-                                                    {r.label}
-                                                </td>
+                                            <tr key={r.id} className="odd:bg-white even:bg-gray-50 hover:bg-blue-50 transition-colors">
                                                 <td className={td}></td>
+                                                <td className={`${td} text-left pl-2`}>{renderItemLabel(r.id, r.label)}</td>
+
+                                                {/* Exist */}
+                                                <td className={td}><input type="checkbox" className="h-3.5 w-3.5" checked={v.exist === "yes"} onChange={(e) => setYesNo8(r.id, "exist", "yes", e.target.checked)} /></td>
+                                                <td className={td}><input type="checkbox" className="h-3.5 w-3.5" checked={v.exist === "no"} onChange={(e) => setYesNo8(r.id, "exist", "no", e.target.checked)} /></td>
+
+                                                {/* Wear */}
+                                                <td className={`${td} bg-orange-50/30`}><input type="checkbox" className="h-3.5 w-3.5 accent-orange-600" checked={v.wear === "yes"} onChange={(e) => setYesNo8(r.id, "wear", "yes", e.target.checked)} /></td>
+                                                <td className={`${td} bg-orange-50/30`}><input type="checkbox" className="h-3.5 w-3.5 accent-orange-600" checked={v.wear === "no"} onChange={(e) => setYesNo8(r.id, "wear", "no", e.target.checked)} /></td>
+                                                <td className={`${td} bg-orange-50/30 px-0`}>
+                                                    {v.wear === "yes" && (
+                                                        <button className="p-0.5 bg-orange-100 text-orange-600 rounded hover:bg-orange-500 hover:text-white transition-all shadow-sm mx-auto flex items-center justify-center w-6 h-6" title="Defect การชำรุด"
+                                                            onClick={() => openDefectPopup(r.id, "section8", "wear")}>
+                                                            <PencilIcon className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+                                                </td>
+
+                                                {/* Damage */}
+                                                <td className={`${td} bg-red-50/30`}><input type="checkbox" className="h-3.5 w-3.5 accent-red-600" checked={v.damage === "yes"} onChange={(e) => setYesNo8(r.id, "damage", "yes", e.target.checked)} /></td>
+                                                <td className={`${td} bg-red-50/30`}><input type="checkbox" className="h-3.5 w-3.5 accent-red-600" checked={v.damage === "no"} onChange={(e) => setYesNo8(r.id, "damage", "no", e.target.checked)} /></td>
+                                                <td className={`${td} bg-red-50/30 px-0`}>
+                                                    {v.damage === "yes" && (
+                                                        <button className="p-0.5 bg-red-100 text-red-600 rounded hover:bg-red-500 hover:text-white transition-all shadow-sm mx-auto flex items-center justify-center w-6 h-6" title="Defect ความเสียหาย"
+                                                            onClick={() => openDefectPopup(r.id, "section8", "damage")}
+                                                        >
+                                                            <PencilIcon className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+                                                </td>
+
+                                                {/* Stability */}
+                                                <td className={td}><input type="checkbox" className="h-3.5 w-3.5 accent-emerald-600" checked={v.stability === "ok"} onChange={(e) => setOkNg8(r.id, "ok", e.target.checked)} /></td>
+                                                <td className={td}><input type="checkbox" className="h-3.5 w-3.5 accent-rose-600" checked={v.stability === "ng"} onChange={(e) => setOkNg8(r.id, "ng", e.target.checked)} /></td>
+
+                                                {/* Note */}
+                                                <td className={`${td} px-1`}>
+                                                    <input className="w-full bg-transparent border-b border-dashed border-gray-300 focus:border-blue-500 outline-none text-[10px] py-0.5" value={v.note ?? ""} onChange={(e) => emit8(r.id, { note: e.currentTarget.value })} />
+                                                </td>
                                             </tr>
                                         );
-                                    }
-
-                                    if (r.type === "subgroup") {
-                                        return (
-                                            <tr key={`sg8-${idx}`} className="bg-gray-50">
-                                                <td className={td}></td>
-                                                <td className={`${td} font-semibold`} colSpan={9}>
-                                                    {r.label}
-                                                </td>
-                                                <td className={td}></td>
-                                            </tr>
-                                        );
-                                    }
-
-                                    const v = section8State[r.id] ?? {};
-
-                                    return (
-                                        <tr key={r.id} className="odd:bg-white even:bg-gray-50">
-                                            <td className={`${td} text-center`}></td>
-                                            <td className={td}>{renderItemLabel(r.id, r.label)}</td>
-
-                                            {/* exist */}
-                                            <td className={`${td} text-center`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-4 w-4"
-                                                    checked={(v.exist ?? "") === "yes"}
-                                                    onChange={(e) => setYesNo8(r.id, "exist", "yes", e.target.checked)}
-                                                />
-                                            </td>
-                                            <td className={`${td} text-center`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-4 w-4"
-                                                    checked={(v.exist ?? "") === "no"}
-                                                    onChange={(e) => setYesNo8(r.id, "exist", "no", e.target.checked)}
-                                                />
-                                            </td>
-
-                                            {/* wear */}
-                                            <td className={`${td} text-center`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-4 w-4"
-                                                    checked={(v.wear ?? "") === "yes"}
-                                                    onChange={(e) => setYesNo8(r.id, "wear", "yes", e.target.checked)}
-                                                />
-                                            </td>
-                                            <td className={`${td} text-center`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-4 w-4"
-                                                    checked={(v.wear ?? "") === "no"}
-                                                    onChange={(e) => setYesNo8(r.id, "wear", "no", e.target.checked)}
-                                                />
-                                            </td>
-
-                                            {/* damage */}
-                                            <td className={`${td} text-center`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-4 w-4"
-                                                    checked={(v.damage ?? "") === "yes"}
-                                                    onChange={(e) => setYesNo8(r.id, "damage", "yes", e.target.checked)}
-                                                />
-                                            </td>
-                                            <td className={`${td} text-center`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-4 w-4"
-                                                    checked={(v.damage ?? "") === "no"}
-                                                    onChange={(e) => setYesNo8(r.id, "damage", "no", e.target.checked)}
-                                                />
-                                            </td>
-
-                                            {/* stability */}
-                                            <td className={`${td} text-center`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-4 w-4"
-                                                    checked={(v.stability ?? "") === "ok"}
-                                                    onChange={(e) => setOkNg8(r.id, "ok", e.target.checked)}
-                                                />
-                                            </td>
-                                            <td className={`${td} text-center`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-4 w-4"
-                                                    checked={(v.stability ?? "") === "ng"}
-                                                    onChange={(e) => setOkNg8(r.id, "ng", e.target.checked)}
-                                                />
-                                            </td>
-
-                                            {/* note */}
-                                            <td className={td}>
-                                                <input
-                                                    className="w-full bg-transparent border-0 border-b border-dashed border-black/40 focus:outline-none focus:ring-0"
-                                                    value={v.note ?? ""}
-                                                    onChange={(e) => emit8(r.id, { note: e.currentTarget.value })}
-                                                />
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 );
             })()}
 
-            {/* ========================== ข้อ 9 ========================== */}
+            {/* ========================== ข้อ 9 (ปรับปรุง: 3 ช่อง + Theme สีใหม่) ========================== */}
             {(() => {
-                const td = "border border-gray-400 px-2 py-2 align-middle";
-                const thBase = "border border-gray-400 px-2 py-2 font-semibold text-center";
+                const td = "border border-gray-400 px-1 py-1 align-middle text-center";
+                const thBase = "border border-gray-400 px-1 py-2 font-semibold text-center text-xs";
                 const thNoBottom = `${thBase} border-b-0`;
                 const thNoTop = `${thBase} border-t-0`;
+
+                // ฟังก์ชัน render input สำหรับ "อื่นๆ"
+                const renderItemLabel9 = (rowId: string, text: string) => {
+                    const isOther = text.includes("อื่น ๆ (โปรดระบุ)");
+                    if (!isOther) return <span className="text-sm pl-1 text-left block">{text}</span>;
+
+                    const v = section9State[rowId] ?? {};
+                    return (
+                        <div className="flex items-center gap-1 min-w-[120px] text-sm pl-1">
+                            <span>- อื่น ๆ (โปรดระบุ)</span>
+                            <input
+                                className="flex-1 bg-transparent border-0 border-b border-dashed border-gray-400 focus:outline-none focus:border-blue-600 px-1 w-full text-xs"
+                                value={v.labelExtra ?? ""}
+                                onChange={(e) => emit9(rowId, { labelExtra: e.currentTarget.value })}
+                            />
+                        </div>
+                    );
+                };
 
                 type RowCfg9 =
                     | { type: "group"; groupNo: "(1)" | "(2)" | "(3)"; label: string }
@@ -933,7 +952,6 @@ export default function SectionThreeDetails({ value,
                     { type: "item", id: "s9-1-ground", label: "- การต่อลงดิน" },
                     { type: "item", id: "s9-1-maint", label: "- ตรวจบันทึกการบำรุงรักษา พาหนะบำรุงรักษาตามเวลาที่กำหนด" },
                     { type: "item", id: "s9-1-other", label: "- อื่น ๆ (โปรดระบุ)" },
-
                     { type: "group", groupNo: "(2)", label: "ระบบป้องกันฟ้าผ่า (ถ้ามี)" },
                     { type: "item", id: "s9-2-air", label: "- ตัวนำล่อฟ้า" },
                     { type: "item", id: "s9-2-down", label: "- ตัวนำต่อลงดิน" },
@@ -941,7 +959,6 @@ export default function SectionThreeDetails({ value,
                     { type: "item", id: "s9-2-bond", label: "- จุดต่อประสานศักย์" },
                     { type: "item", id: "s9-2-maint", label: "- ตรวจบันทึกการบำรุงรักษา พาหนะบำรุงรักษาตามเวลาที่กำหนด" },
                     { type: "item", id: "s9-2-other", label: "- อื่น ๆ (โปรดระบุ)" },
-
                     { type: "group", groupNo: "(3)", label: "ระบบอุปกรณ์ประกอบอื่น ๆ (ถ้ามี)" },
                     { type: "item", id: "s9-3-sling", label: "- สลิง หรือสายยึด" },
                     { type: "item", id: "s9-3-ladder", label: "- บันไดขึ้นลง" },
@@ -950,186 +967,128 @@ export default function SectionThreeDetails({ value,
                     { type: "item", id: "s9-3-other", label: "- อื่น ๆ (โปรดระบุ)" },
                 ];
 
-                const renderItemLabel9 = (rowId: string, text: string) => {
-                    const isOther = text.includes("อื่น ๆ (โปรดระบุ)");
-                    if (!isOther) return <span>{text}</span>;
-
-                    const v = section9State[rowId] ?? {};
-                    return (
-                        <div className="flex items-center gap-2">
-                            <span>- อื่น ๆ (โปรดระบุ)</span>
-                            <input
-                                className="flex-1 bg-transparent border-0 border-b border-dashed border-black/40 focus:outline-none focus:ring-0 px-1"
-                                value={v.labelExtra ?? ""}
-                                onChange={(e) => emit9(rowId, { labelExtra: e.currentTarget.value })}
-                            />
-                        </div>
-                    );
-                };
-
                 return (
-                    <div className="mt-4 border border-gray-400">
-                        <div className="bg-blue-700 text-white font-semibold px-3 py-2 text-sm">
+                    <div className="mt-4 border border-gray-400 bg-white shadow-sm rounded-lg overflow-hidden">
+                        <div className="bg-gradient-to-r from-blue-700 to-indigo-700 text-white font-semibold px-4 py-2 text-sm shadow-md">
                             9. การตรวจสอบอุปกรณ์ประกอบต่าง ๆ ของป้าย
                         </div>
 
-                        <table className="w-full text-sm border-collapse">
-                            <thead>
-                                <tr className="bg-gray-200">
-                                    <th rowSpan={2} className={`${thBase} w-[70px]`}>
-                                        ลำดับที่
-                                    </th>
-                                    <th rowSpan={2} className={`${thBase} text-left`}>
-                                        รายการ
-                                    </th>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm border-collapse table-fixed min-w-[900px]">
+                                <colgroup>
+                                    <col className="w-[40px]" />
+                                    <col className="w-[200px]" />
+                                    <col className="w-[35px]" /> <col className="w-[35px]" />
+                                    <col className="w-[35px]" /> <col className="w-[35px]" /> <col className="w-[35px]" />
+                                    <col className="w-[35px]" /> <col className="w-[35px]" /> <col className="w-[35px]" />
+                                    <col className="w-[40px]" /> <col className="w-[40px]" />
+                                    <col className="w-[100px]" />
+                                </colgroup>
 
-                                    {/* ✅ ปิดเส้น row เฉพาะคู่ "มี/ไม่มี" แรก (exist) เหมือนข้อ 8 */}
-                                    <th className={`${thNoBottom} w-[55px]`}></th>
-                                    <th className={`${thNoBottom} w-[65px]`}></th>
+                                <thead>
+                                    <tr className="bg-gray-200 text-gray-700">
+                                        <th rowSpan={2} className={thBase}>ลำดับ</th>
+                                        <th rowSpan={2} className={`${thBase} text-left pl-2`}>รายการ</th>
 
-                                    <th colSpan={2} className={thBase}>
-                                        การชำรุดสึกหรอ
-                                    </th>
-                                    <th colSpan={2} className={thBase}>
-                                        ความเสียหาย
-                                    </th>
-                                    <th colSpan={2} className={thBase}>
-                                        ความมั่นคงผู้ตรวจสอบ
-                                    </th>
+                                        <th className={thNoBottom}></th>
+                                        <th className={thNoBottom}></th>
 
-                                    <th rowSpan={2} className={`${thBase} w-[180px]`}>
-                                        หมายเหตุ
-                                    </th>
-                                </tr>
+                                        <th colSpan={3} className={`${thBase} bg-orange-100/50`}>การชำรุดสึกหรอ</th>
+                                        <th colSpan={3} className={`${thBase} bg-red-100/50`}>ความเสียหาย</th>
+                                        <th colSpan={2} className={thBase}>ความมั่นคงผู้ตรวจสอบ</th>
+                                        <th rowSpan={2} className={thBase}>หมายเหตุ</th>
+                                    </tr>
 
-                                <tr className="bg-gray-200">
-                                    <th className={`${thNoTop} w-[55px]`}>มี</th>
-                                    <th className={`${thNoTop} w-[65px]`}>ไม่มี</th>
+                                    <tr className="bg-gray-200 text-gray-700">
+                                        <th className={`${thNoTop}`}>มี</th>
+                                        <th className={`${thNoTop}`}>ไม่มี</th>
 
-                                    <th className={`${thBase} w-[55px]`}>มี</th>
-                                    <th className={`${thBase} w-[65px]`}>ไม่มี</th>
+                                        <th className={`${thBase} bg-orange-100/50`}>มี</th>
+                                        <th className={`${thBase} bg-orange-100/50`}>ไม่มี</th>
+                                        <th className={`${thBase} text-[10px] bg-orange-200 text-orange-900 px-0`}>Defect</th>
 
-                                    <th className={`${thBase} w-[55px]`}>มี</th>
-                                    <th className={`${thBase} w-[65px]`}>ไม่มี</th>
+                                        <th className={`${thBase} bg-red-100/50`}>มี</th>
+                                        <th className={`${thBase} bg-red-100/50`}>ไม่มี</th>
+                                        <th className={`${thBase} text-[10px] bg-red-200 text-red-900 px-0`}>Defect</th>
 
-                                    <th className={`${thBase} w-[70px]`}>ใช้ได้</th>
-                                    <th className={`${thBase} w-[80px]`}>ใช้ไม่ได้</th>
-                                </tr>
-                            </thead>
+                                        <th className={thBase}>ใช้ได้</th>
+                                        <th className={thBase}>ไม่ได้</th>
+                                    </tr>
+                                </thead>
 
-                            <tbody>
-                                {ROWS9.map((r, idx) => {
-                                    if (r.type === "group") {
+                                <tbody>
+                                    {ROWS9.map((r, idx) => {
+                                        if (r.type === "group") {
+                                            return (
+                                                <tr key={idx} className="bg-blue-50/80">
+                                                    <td className={`${td} font-bold text-gray-700`}>{r.groupNo}</td>
+                                                    <td className={`${td} font-semibold text-gray-800 text-left pl-2`} colSpan={12}>{r.label}</td>
+                                                </tr>
+                                            );
+                                        }
+
+                                        const v = section9State[r.id] ?? {};
+
                                         return (
-                                            <tr key={`g9-${idx}`} className="bg-gray-100">
-                                                <td className={`${td} text-center font-semibold`}>{r.groupNo}</td>
-                                                <td className={`${td} font-semibold`} colSpan={9}>
-                                                    {r.label}
-                                                </td>
+                                            <tr key={r.id} className="odd:bg-white even:bg-gray-50 hover:bg-blue-50 transition-colors">
                                                 <td className={td}></td>
+                                                <td className={`${td} text-left pl-2`}>{renderItemLabel9(r.id, r.label)}</td>
+
+                                                {/* Exist */}
+                                                <td className={td}><input type="checkbox" className="h-3.5 w-3.5" checked={v.exist === "yes"} onChange={(e) => setYesNo9(r.id, "exist", "yes", e.target.checked)} /></td>
+                                                <td className={td}><input type="checkbox" className="h-3.5 w-3.5" checked={v.exist === "no"} onChange={(e) => setYesNo9(r.id, "exist", "no", e.target.checked)} /></td>
+
+                                                {/* Wear (3 ช่อง) */}
+                                                <td className={`${td} bg-orange-50/30`}><input type="checkbox" className="h-3.5 w-3.5 accent-orange-600" checked={v.wear === "yes"} onChange={(e) => setYesNo9(r.id, "wear", "yes", e.target.checked)} /></td>
+                                                <td className={`${td} bg-orange-50/30`}><input type="checkbox" className="h-3.5 w-3.5 accent-orange-600" checked={v.wear === "no"} onChange={(e) => setYesNo9(r.id, "wear", "no", e.target.checked)} /></td>
+                                                <td className={`${td} bg-orange-50/30 px-0`}>
+                                                    {v.wear === "yes" && (
+                                                        <button
+                                                            className="p-0.5 bg-orange-100 text-orange-600 rounded hover:bg-orange-500 hover:text-white transition-all shadow-sm mx-auto flex items-center justify-center w-6 h-6"
+                                                            title="Defect"
+                                                            onClick={() => openDefectPopup(r.id, "section9", "wear")}
+                                                        >
+                                                            <PencilIcon className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+                                                </td>
+
+                                                {/* Damage (3 ช่อง) */}
+                                                <td className={`${td} bg-red-50/30`}><input type="checkbox" className="h-3.5 w-3.5 accent-red-600" checked={v.damage === "yes"} onChange={(e) => setYesNo9(r.id, "damage", "yes", e.target.checked)} /></td>
+                                                <td className={`${td} bg-red-50/30`}><input type="checkbox" className="h-3.5 w-3.5 accent-red-600" checked={v.damage === "no"} onChange={(e) => setYesNo9(r.id, "damage", "no", e.target.checked)} /></td>
+                                                <td className={`${td} bg-red-50/30 px-0`}>
+                                                    {v.damage === "yes" && (
+                                                        <button
+                                                            className="p-0.5 bg-red-100 text-red-600 rounded hover:bg-red-500 hover:text-white transition-all shadow-sm mx-auto flex items-center justify-center w-6 h-6"
+                                                            title="Defect"
+                                                            onClick={() => openDefectPopup(r.id, "section9", "damage")}
+                                                        >
+                                                            <PencilIcon className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+                                                </td>
+
+                                                {/* Stability */}
+                                                <td className={td}><input type="checkbox" className="h-3.5 w-3.5 accent-emerald-600" checked={v.stability === "ok"} onChange={(e) => setOkNg9(r.id, "ok", e.target.checked)} /></td>
+                                                <td className={td}><input type="checkbox" className="h-3.5 w-3.5 accent-rose-600" checked={v.stability === "ng"} onChange={(e) => setOkNg9(r.id, "ng", e.target.checked)} /></td>
+
+                                                {/* Note */}
+                                                <td className={`${td} px-1`}>
+                                                    <input className="w-full bg-transparent border-b border-dashed border-gray-300 focus:border-blue-500 outline-none text-[10px] py-0.5" value={v.note ?? ""} onChange={(e) => emit9(r.id, { note: e.currentTarget.value })} />
+                                                </td>
                                             </tr>
                                         );
-                                    }
-
-                                    const v = section9State[r.id] ?? {};
-
-                                    return (
-                                        <tr key={r.id} className="odd:bg-white even:bg-gray-50">
-                                            <td className={`${td} text-center`}></td>
-                                            <td className={td}>{renderItemLabel9(r.id, r.label)}</td>
-
-                                            {/* exist */}
-                                            <td className={`${td} text-center`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-4 w-4"
-                                                    checked={(v.exist ?? "") === "yes"}
-                                                    onChange={(e) => setYesNo9(r.id, "exist", "yes", e.target.checked)}
-                                                />
-                                            </td>
-                                            <td className={`${td} text-center`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-4 w-4"
-                                                    checked={(v.exist ?? "") === "no"}
-                                                    onChange={(e) => setYesNo9(r.id, "exist", "no", e.target.checked)}
-                                                />
-                                            </td>
-
-                                            {/* wear */}
-                                            <td className={`${td} text-center`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-4 w-4"
-                                                    checked={(v.wear ?? "") === "yes"}
-                                                    onChange={(e) => setYesNo9(r.id, "wear", "yes", e.target.checked)}
-                                                />
-                                            </td>
-                                            <td className={`${td} text-center`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-4 w-4"
-                                                    checked={(v.wear ?? "") === "no"}
-                                                    onChange={(e) => setYesNo9(r.id, "wear", "no", e.target.checked)}
-                                                />
-                                            </td>
-
-                                            {/* damage */}
-                                            <td className={`${td} text-center`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-4 w-4"
-                                                    checked={(v.damage ?? "") === "yes"}
-                                                    onChange={(e) => setYesNo9(r.id, "damage", "yes", e.target.checked)}
-                                                />
-                                            </td>
-                                            <td className={`${td} text-center`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-4 w-4"
-                                                    checked={(v.damage ?? "") === "no"}
-                                                    onChange={(e) => setYesNo9(r.id, "damage", "no", e.target.checked)}
-                                                />
-                                            </td>
-
-                                            {/* stability */}
-                                            <td className={`${td} text-center`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-4 w-4"
-                                                    checked={(v.stability ?? "") === "ok"}
-                                                    onChange={(e) => setOkNg9(r.id, "ok", e.target.checked)}
-                                                />
-                                            </td>
-                                            <td className={`${td} text-center`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-4 w-4"
-                                                    checked={(v.stability ?? "") === "ng"}
-                                                    onChange={(e) => setOkNg9(r.id, "ng", e.target.checked)}
-                                                />
-                                            </td>
-
-                                            {/* note */}
-                                            <td className={td}>
-                                                <input
-                                                    className="w-full bg-transparent border-0 border-b border-dashed border-black/40 focus:outline-none focus:ring-0"
-                                                    value={v.note ?? ""}
-                                                    onChange={(e) => emit9(r.id, { note: e.currentTarget.value })}
-                                                />
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
 
                         {/* รายละเอียดเพิ่มเติม */}
-                        <div className="px-3 py-3 bg-white border-t border-gray-300">
-                            <div className="text-sm font-semibold mb-2">รายละเอียดเพิ่มเติม</div>
+                        <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                            <div className="text-sm font-bold text-gray-700 mb-2">📝 รายละเอียดเพิ่มเติม</div>
                             <div className="space-y-2">
                                 <DottedInput
-                                    className="w-full"
+                                    className="w-full text-sm"
                                     value={section9Extra1}
                                     onChange={(e) => {
                                         const v = e.currentTarget.value;
@@ -1138,7 +1097,7 @@ export default function SectionThreeDetails({ value,
                                     }}
                                 />
                                 <DottedInput
-                                    className="w-full"
+                                    className="w-full text-sm"
                                     value={section9Extra2}
                                     onChange={(e) => {
                                         const v = e.currentTarget.value;
@@ -1288,7 +1247,7 @@ export default function SectionThreeDetails({ value,
                                     {(d.photos ?? []).map((p, idx) => (
                                         <img
                                             key={idx}
-                                            src={p.src} // ใช้ src ที่ถ่ายมา
+                                            src={p.src || (p.filename ? buildRemoteCoverUrl(p.filename) : "")}
                                             alt={p.filename}
                                             title={p.filename}
                                             className="w-16 h-16 object-cover border rounded cursor-pointer"
