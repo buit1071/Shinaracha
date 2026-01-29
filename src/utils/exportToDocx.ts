@@ -192,7 +192,7 @@ function buildReportHeader(isShinaracha: boolean) {
         : PROFIRE_LOGO_BYTES;
 
     const companyName = isShinaracha
-        ? "Shinaracha Protector Co., Ltd."
+        ? "Shinaracha Frotector Co., Ltd."
         : "Profire Inspector Co., Ltd.";
 
     return new Header({

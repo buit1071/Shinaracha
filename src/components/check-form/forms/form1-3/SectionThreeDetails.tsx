@@ -794,7 +794,7 @@ export default function SectionThreeDetails({ value,
                 return (
                     <div className="mt-4 border border-gray-400 bg-white shadow-sm rounded-lg overflow-hidden">
                         <div className="bg-gradient-to-r from-blue-700 to-indigo-700 text-white font-semibold px-4 py-2 text-sm shadow-md">
-                            8. การตรวจสอบการเชื่อมยึดระหว่างแผ่นป้าย...
+                            8. การตรวจสอบการเชื่อมยึดระหว่างแผ่นป้ายกับสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย  การเชื่อมยึดระหว่างชิ้นส่วนต่าง ๆ ของสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย และการเชื่อมยึดระหว่างสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้ายกับฐานรากหรืออาคาร
                         </div>
 
                         <div className="overflow-x-auto">

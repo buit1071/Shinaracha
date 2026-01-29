@@ -625,8 +625,8 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
 
                 {/* หัวกระดาษ: โลโก้ + ชื่อบริษัท */}
                 <CompanyHeader
-                    companyTh={isShinaracha ? "บริษัท ชินรัช โพรเทคเตอร์ จำกัด" : "บริษัท โปรไฟร์ อินสเปคเตอร์ จำกัด"}
-                    companyEn={isShinaracha ? "Shinaracha Protector Co., Ltd." : "Profire Inspector Co., Ltd."}
+                    companyTh={isShinaracha ? "บริษัท ชินรัช โฟร์เทคเตอร์ จำกัด" : "บริษัท โปรไฟร์ อินสเปคเตอร์ จำกัด"}
+                    companyEn={isShinaracha ? "Shinaracha Frotector Co., Ltd." : "Profire Inspector Co., Ltd."}
                     logoUrl={isShinaracha ? "/images/Logo_Shinaracha.webp" : "/images/Logo_Profire.png"}
                 />;
 
@@ -1086,7 +1086,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         <div className="overflow-hidden">
                             <div className="pt-2"> {/* เผื่อระยะห่างเล็กน้อยตอนกาง */}
                                 <Section2_6Details
-                                    form_code={formData.form_code}
+                                    eq_id={equipment_id}
                                     value={formData.section2_6}
                                     onChange={(patch) =>
                                         setFormData((prev) => ({
@@ -1177,9 +1177,9 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         Save
                     </button>
                 </div>
-                <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
-                    {JSON.stringify(formData.sectionThree, null, 2)}
-                </pre>
+                {/* <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
+                    {JSON.stringify(formData.section2_6, null, 2)}
+                </pre> */}
             </div>
         </>
     )

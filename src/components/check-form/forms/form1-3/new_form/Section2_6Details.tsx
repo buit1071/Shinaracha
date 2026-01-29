@@ -2,24 +2,33 @@ import * as React from "react";
 import Select from "react-select";
 import { showLoading } from "@/lib/loading";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
-import { PencilIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import IconButton from "@mui/material/IconButton";
 import { ProblemRow, DefectRow } from "@/interfaces/master";
 
 /* ========= CONFIG ========= */
-export type VisitKey = "v1" | "v2" | "v3";
-
-const FORM_TO_VISIT: Record<string, VisitKey> = {
-    "FORM-53242768": "v1",
-    "FORM-35898338": "v2",
-    "FORM-11057862": "v3",
+const ZONE_IDS = {
+    ROUND_1: "FORM-53242768", // 1 รอบ
+    ROUND_2: "FORM-35898338", // 2 รอบ
+    ROUND_3: "FORM-11057862", // 3 รอบ
 };
 
-const VISIT_LABEL: Record<VisitKey, string> = {
-    v1: "รอบ 1",
-    v2: "รอบ 2",
-    v3: "รอบ 3",
+const getRoundCount = (zoneId: string | number | null): number => {
+    if (!zoneId) return 0;
+    const idStr = String(zoneId);
+    if (idStr === ZONE_IDS.ROUND_1) return 1;
+    if (idStr === ZONE_IDS.ROUND_2) return 2;
+    if (idStr === ZONE_IDS.ROUND_3) return 3;
+    return 0;
+};
+
+export type VisitKey = "v1" | "v2" | "v3";
+
+const VISIT_LABEL: Record<string, string> = {
+    v1: "รอบที่ 1",
+    v2: "รอบที่ 2",
+    v3: "รอบที่ 3",
 };
 
 const VISIT_ORDER: VisitKey[] = ["v1", "v2", "v3"];
@@ -141,20 +150,51 @@ export type SectionSixForm = {
 };
 
 type Props = {
-    form_code?: string; // ✅ กัน undefined
+    eq_id?: string;
     value?: Partial<SectionSixForm>;
     onChange?: (patch: Partial<SectionSixForm>) => void;
 };
 
-export default function Section2_6Details({ form_code, value, onChange }: Props) {
-    const safeFormCode = form_code ?? "FORM-53242768";
-    const currentVisit: VisitKey = FORM_TO_VISIT[safeFormCode] ?? "v1";
-    const currentIndex = Math.max(0, VISIT_ORDER.indexOf(currentVisit));
+export default function Section2_6Details({ eq_id, value, onChange }: Props) {
+    const [roundCount, setRoundCount] = React.useState<number>(0);
 
-    const visitsToShow = React.useMemo(
-        () => VISIT_ORDER.slice(0, currentIndex + 1).map((k) => ({ key: k, label: VISIT_LABEL[k] })),
-        [currentIndex]
-    );
+    const CheckFormType = async () => {
+        if (!eq_id) return;
+
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/equipment/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "CheckFormType", equipment_id: eq_id }),
+            });
+
+            const resData = await res.json();
+
+            if (resData.success) {
+                const zoneId = resData.data;
+                const rounds = getRoundCount(zoneId);
+                setRoundCount(rounds);
+                console.log(`Section2_6: Zone ID: ${zoneId}, Rounds: ${rounds}`);
+                // setRoundCount(1); // ไม่ต้อง fallback เป็น 1 แล้ว เพราะ getRoundCount จัดการแล้ว หรือถ้าจะ fallback ควรเช็คดีๆ
+            } else {
+                setRoundCount(1); // Fallback กรณี Error ให้แสดงอย่างน้อย 1 รอบ
+            }
+        } catch (err) {
+            setRoundCount(1); // Fallback
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    React.useEffect(() => {
+        CheckFormType();
+    }, [eq_id]);
+
+    const visitsToShow = React.useMemo(() => {
+        const count = Math.max(1, roundCount);
+        return VISIT_ORDER.slice(0, count).map((k) => ({ key: k, label: VISIT_LABEL[k] }));
+    }, [roundCount]);
 
     const buildRemoteImgUrl = (name: string) =>
         `${process.env.NEXT_PUBLIC_N8N_UPLOAD_FILE}?name=${encodeURIComponent(name)}`;
@@ -304,9 +344,10 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
         <>
             {visitsToShow.map((v) => (
                 <React.Fragment key={`sub-${v.key}`}>
-                    <th className={`${th} text-center w-24`}>ใช้ได้</th>
-                    <th className={`${th} text-center w-24`}>ใช้ไม่ได้</th>
-                    <th className={`${th} text-center w-24`}>Defect</th>
+                    {/* ✅ ปรับ Class: px-0 text-[10px] */}
+                    <th className={`${th} text-center px-0 text-[12px] bg-white`}>ใช้ได้</th>
+                    <th className={`${th} text-center px-0 text-[12px] bg-white`}>ใช้ไม่ได้</th>
+                    <th className={`${th} text-center px-0 text-[12px] bg-white`}>Defect</th>
                 </React.Fragment>
             ))}
         </>
@@ -321,29 +362,31 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
 
         return (
             <>
-                <td className={`${td} text-center align-middle`}>
+                {/* ✅ ปรับ Class: px-0 py-1 (ลด padding) */}
+                <td className="border border-gray-300 px-0 py-1 text-center align-middle">
                     <div className="flex items-center justify-center">
                         <CheckTick checked={cur === "ok"} onChange={() => toggle(group, id, visit, "ok")} />
                     </div>
                 </td>
 
-                <td className={`${td} text-center align-middle`}>
+                <td className="border border-gray-300 px-0 py-1 text-center align-middle">
                     <div className="flex items-center justify-center">
                         <CheckTick checked={cur === "ng"} onChange={() => toggle(group, id, visit, "ng")} />
                     </div>
                 </td>
 
-                <td className={`${td} text-center align-middle`}>
+                <td className="border border-gray-300 px-0 py-1 text-center align-middle">
                     {hasNG ? (
                         <button
                             onClick={() => openDefectPopup(group, id, visit)}
-                            title="แนบรูป / Defect"
-                            className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-blue-600"
+                            title="Defect"
+                            // ✅ ปรับปุ่มให้เล็ก: w-6 h-6
+                            className="inline-flex items-center justify-center w-6 h-6 text-gray-500 hover:text-blue-600 bg-gray-100 rounded-md hover:bg-blue-50 transition-colors"
                         >
-                            <PencilIcon className="w-5 h-5" />
+                            <PencilIcon className="w-3.5 h-3.5" />
                         </button>
                     ) : (
-                        <span className="text-gray-300">-</span>
+                        <span className="text-gray-200 text-xs">-</span>
                     )}
                 </td>
             </>
@@ -394,7 +437,6 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
         streamRef.current = null;
     };
 
-    const pad = (n: number) => String(n).padStart(2, "0");
     const makeDefectName = (ext: string = "png") => {
         const d = new Date();
         const pad = (n: number) => String(n).padStart(2, "0");
@@ -662,97 +704,81 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
     const roundCols = visitsToShow.length * 3;
 
     return (
-        <section className="space-y-6 text-gray-900 p-2">
-            <table className="w-full text-sm border border-gray-300 bg-white">
-                <thead className="bg-gray-100">
-                    <tr><VisitHeader /></tr>
-                    <tr><SubHeader /></tr>
-                </thead>
+        <section className="space-y-6 text-gray-900 p-2 sm:p-4">
+            {/* Wrapper สำหรับทำ Responsive Table */}
+            <div className="w-full overflow-hidden rounded-lg border border-gray-300 shadow-sm">
+                <div className="overflow-x-auto"> {/* Scroll แนวนอน */}
+                    <table className="w-full text-sm bg-white table-fixed min-w-[1000px]">
 
-                <tbody>
-                    {/* =================== ข้อ 1 (ลำดับที่ = 1 แค่ครั้งเดียว) =================== */}
-                    <tr className="bg-gray-200">
-                        <td rowSpan={section1RowSpan} className={`${td} text-center align-top font-semibold`}>1</td>
-                        <td className={`${td} font-semibold`}>{section1Title}</td>
-                        <td className={`${td} bg-gray-200`} colSpan={roundCols} />
-                        <td className={`${td} bg-gray-200`} />
-                    </tr>
+                        {/* ✅ กำหนดความกว้างคอลัมน์ */}
+                        <colgroup>
+                            <col className="w-[50px]" />  {/* ลำดับ */}
+                            <col className="w-[250px]" /> {/* รายการตรวจสอบ */}
 
-                    {table1Rows.map((row, idx) => {
-                        const id = `t1-${idx + 1}`;
-                        const text = typeof row === "string" ? row : row.label;
-                        const r = v1[id] ?? {};
-                        return (
-                            <tr key={id} className="odd:bg-white even:bg-gray-50">
-                                {/* ✅ ไม่มีคอลัมน์ลำดับที่แล้ว (ใช้ rowSpan ไปแล้ว) */}
-                                <td className={td}>
-                                    <div className="flex items-start gap-3">
-                                        <span className="inline-block w-12 text-right font-medium">{`1.${idx + 1}`}</span>
-                                        <div className="flex-1">
-                                            <span>{text}</span>
-                                            {typeof row !== "string" && row.inlineInput && (
-                                                <DottedInput
-                                                    className="ml-2 min-w-[220px]"
-                                                    placeholder="โปรดระบุ"
-                                                    value={r.extra ?? ""}
-                                                    onChange={(e) => emit("table1", id, { extra: e.target.value })}
-                                                />
-                                            )}
-                                        </div>
-                                    </div>
-                                </td>
+                            {/* วนลูปสร้าง col ตามจำนวนรอบ */}
+                            {visitsToShow.map((v) => (
+                                <React.Fragment key={`col-${v.key}`}>
+                                    <col className="w-[45px]" /> {/* ใช้ได้ */}
+                                    <col className="w-[45px]" /> {/* ไม่ได้ */}
+                                    <col className="w-[45px]" /> {/* Defect */}
+                                </React.Fragment>
+                            ))}
 
+                            <col className="w-[180px]" /> {/* หมายเหตุ */}
+                        </colgroup>
+
+                        <thead className="bg-gray-100 text-gray-700 border-b border-gray-200">
+                            <tr>
+                                <th rowSpan={2} className={`${th} text-center align-middle bg-gray-50 sticky left-0 z-10 md:static`}>ลำดับ</th>
+                                <th rowSpan={2} className={`${th} text-left align-middle pl-2 bg-gray-50 sticky left-[50px] z-10 md:static`}>รายการตรวจสอบ</th>
+
+                                {/* Header รอบ */}
                                 {visitsToShow.map((v) => (
-                                    <RoundCells key={`${id}-${v.key}`} group="table1" id={id} visit={v.key} />
+                                    <th key={v.key} colSpan={3} className={`${th} text-center text-xs px-1 bg-blue-50/50 border-l border-gray-200`}>
+                                        {v.label}
+                                    </th>
                                 ))}
 
-                                <NoteCell group="table1" id={id} />
+                                <th rowSpan={2} className={`${th} text-center align-middle bg-gray-50 border-l border-gray-200`}>หมายเหตุ</th>
                             </tr>
-                        );
-                    })}
+                            <tr>
+                                {/* SubHeader (ใช้ได้/ไม่ได้/Defect) */}
+                                {visitsToShow.map((v) => (
+                                    <React.Fragment key={`sub-${v.key}`}>
+                                        <th className={`${th} text-center px-0 text-[10px] bg-white border-l border-gray-200 font-normal text-gray-500`}>ใช้ได้</th>
+                                        <th className={`${th} text-center px-0 text-[10px] bg-white font-normal text-gray-500`}>ไม่ได้</th>
+                                        <th className={`${th} text-center px-0 text-[10px] bg-white font-normal text-gray-500`}>Defect</th>
+                                    </React.Fragment>
+                                ))}
+                            </tr>
+                        </thead>
 
-                    {/* =================== ข้อ 2 (ลำดับที่ = 2 แค่ครั้งเดียว) =================== */}
-                    <tr className="bg-gray-200">
-                        <td rowSpan={section2RowSpan} className={`${td} text-center align-top font-semibold`}>2</td>
-                        <td className={`${td} font-semibold`}>{section2Title}</td>
-                        <td className={`${td} bg-gray-200`} colSpan={roundCols} />
-                        <td className={`${td} bg-gray-200`} />
-                    </tr>
-
-                    {table2Groups.map((g, gi) => (
-                        <React.Fragment key={g.title}>
-                            {/* ✅ 2.1 / 2.2 / 2.3 อยู่ใน "รายการตรวจสอบ" */}
-                            <tr className="bg-gray-100">
-                                <td className={`${td} font-semibold`}>
-                                    <div className="flex items-start gap-3">
-                                        <span className="inline-block w-12 text-right font-semibold">{`2.${gi + 1}`}</span>
-                                        <span className="font-semibold">{g.title}</span>
-                                    </div>
-                                </td>
-                                <td className={`${td} bg-gray-100`} colSpan={roundCols} />
-                                <td className={`${td} bg-gray-100`} />
+                        <tbody className="divide-y divide-gray-200">
+                            {/* =================== ข้อ 1 (ลำดับที่ = 1 แค่ครั้งเดียว) =================== */}
+                            <tr className="bg-gray-50">
+                                <td rowSpan={section1RowSpan} className={`${td} text-center align-top font-semibold bg-gray-50 sticky left-0 z-10 md:static`}>1</td>
+                                <td className={`${td} font-semibold bg-gray-50 sticky left-[50px] z-10 md:static`}>{section1Title}</td>
+                                <td className={`${td} bg-gray-50`} colSpan={roundCols} />
+                                <td className={`${td} bg-gray-50`} />
                             </tr>
 
-                            {/* ✅ (1)(2)(3) ย่อหน้าเข้ามาอีกชั้น */}
-                            {g.rows.map((row, ri) => {
-                                const id = `t2-${gi + 1}-${ri + 1}`;
+                            {table1Rows.map((row, idx) => {
+                                const id = `t1-${idx + 1}`;
                                 const text = typeof row === "string" ? row : row.label;
-                                const inline = typeof row !== "string" && row.inlineInput;
-                                const r = v2[id] ?? {};
-
+                                const r = v1[id] ?? {};
                                 return (
-                                    <tr key={id} className="odd:bg-white even:bg-gray-50">
-                                        <td className={td}>
-                                            <div className="flex items-start gap-3 pl-8">
-                                                <span className="inline-block w-12 text-right font-medium">{`(${ri + 1})`}</span>
-                                                <div className="flex-1">
-                                                    <span>{text}</span>
-                                                    {inline && (
+                                    <tr key={id} className="odd:bg-white even:bg-slate-50 hover:bg-blue-50/30 transition-colors">
+                                        <td className={`${td} bg-white md:bg-transparent sticky left-0 z-10 md:static`}>
+                                            <div className="flex items-start gap-2">
+                                                <span className="inline-block w-8 text-right font-medium text-gray-500 text-xs mt-0.5">{`1.${idx + 1}`}</span>
+                                                <div className="flex-1 min-w-0">
+                                                    <span className="block text-gray-800 leading-snug">{text}</span>
+                                                    {typeof row !== "string" && row.inlineInput && (
                                                         <DottedInput
-                                                            className="ml-2 min-w-[220px]"
-                                                            placeholder="โปรดระบุ"
+                                                            className="mt-1 w-full text-blue-700"
+                                                            placeholder="ระบุ..."
                                                             value={r.extra ?? ""}
-                                                            onChange={(e) => emit("table2", id, { extra: e.target.value })}
+                                                            onChange={(e) => emit("table1", id, { extra: e.target.value })}
                                                         />
                                                     )}
                                                 </div>
@@ -760,17 +786,76 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
                                         </td>
 
                                         {visitsToShow.map((v) => (
-                                            <RoundCells key={`${id}-${v.key}`} group="table2" id={id} visit={v.key} />
+                                            <RoundCells key={`${id}-${v.key}`} group="table1" id={id} visit={v.key} />
                                         ))}
 
-                                        <NoteCell group="table2" id={id} />
+                                        <NoteCell group="table1" id={id} />
                                     </tr>
                                 );
                             })}
-                        </React.Fragment>
-                    ))}
-                </tbody>
-            </table>
+
+                            {/* =================== ข้อ 2 (ลำดับที่ = 2 แค่ครั้งเดียว) =================== */}
+                            <tr className="bg-gray-50">
+                                <td rowSpan={section2RowSpan} className={`${td} text-center align-top font-semibold bg-gray-50 sticky left-0 z-10 md:static`}>2</td>
+                                <td className={`${td} font-semibold bg-gray-50 sticky left-[50px] z-10 md:static`}>{section2Title}</td>
+                                <td className={`${td} bg-gray-50`} colSpan={roundCols} />
+                                <td className={`${td} bg-gray-50`} />
+                            </tr>
+
+                            {table2Groups.map((g, gi) => (
+                                <React.Fragment key={g.title}>
+                                    {/* 2.1 / 2.2 / 2.3 */}
+                                    <tr className="bg-gray-50/50">
+                                        <td className={`${td} font-semibold bg-gray-50/50 sticky left-[50px] z-10 md:static`}>
+                                            <div className="flex items-start gap-2">
+                                                <span className="inline-block w-8 text-right font-semibold text-gray-600 text-xs mt-0.5">{`2.${gi + 1}`}</span>
+                                                <span className="font-semibold text-gray-800">{g.title}</span>
+                                            </div>
+                                        </td>
+                                        <td className={`${td} bg-gray-50/50`} colSpan={roundCols} />
+                                        <td className={`${td} bg-gray-50/50`} />
+                                    </tr>
+
+                                    {/* (1)(2)(3) */}
+                                    {g.rows.map((row, ri) => {
+                                        const id = `t2-${gi + 1}-${ri + 1}`;
+                                        const text = typeof row === "string" ? row : row.label;
+                                        const inline = typeof row !== "string" && row.inlineInput;
+                                        const r = v2[id] ?? {};
+
+                                        return (
+                                            <tr key={id} className="odd:bg-white even:bg-slate-50 hover:bg-blue-50/30 transition-colors">
+                                                <td className={`${td} bg-white md:bg-transparent sticky left-[50px] z-10 md:static pl-8`}>
+                                                    <div className="flex items-start gap-2">
+                                                        <span className="inline-block w-8 text-right font-medium text-gray-500 text-xs mt-0.5">{`(${ri + 1})`}</span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <span className="block text-gray-800 leading-snug">{text}</span>
+                                                            {inline && (
+                                                                <DottedInput
+                                                                    className="mt-1 w-full text-blue-700"
+                                                                    placeholder="ระบุ..."
+                                                                    value={r.extra ?? ""}
+                                                                    onChange={(e) => emit("table2", id, { extra: e.target.value })}
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                {visitsToShow.map((v) => (
+                                                    <RoundCells key={`${id}-${v.key}`} group="table2" id={id} visit={v.key} />
+                                                ))}
+
+                                                <NoteCell group="table2" id={id} />
+                                            </tr>
+                                        );
+                                    })}
+                                </React.Fragment>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
             <input
                 ref={fileRef}
@@ -905,7 +990,6 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
                                         };
                                     });
 
-                                    // ✅ คง "Other" ที่ user เพิ่มเองไว้
                                     const otherDefect = selectedProblems.find((p) => p.isOther);
                                     if (otherDefect) newDefects.push(otherDefect);
 
@@ -959,8 +1043,8 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
                         </div>
 
                         {selectedProblems.map((d, defectIndex) => (
-                            <div key={(d.problem_id ?? "other") + defectIndex} className="mb-4">
-                                <div className="text-sm font-medium mb-1">
+                            <div key={(d.problem_id ?? "other") + defectIndex} className="mb-4 bg-gray-50 p-4 rounded border">
+                                <div className="text-sm font-medium mb-2">
                                     {defectIndex + 1}. {d.isOther ? `อื่นๆ (ระบุ) ${d.problem_name || ""}` : d.problem_name}
                                 </div>
 
@@ -997,7 +1081,7 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
                                 )}
 
                                 <textarea
-                                    className={"w-full border rounded p-2 mb-1 " + (error && !d.illegal_suggestion ? "border-red-500" : "border-gray-300")}
+                                    className={"w-full border rounded p-2 mb-2 " + (error && !d.illegal_suggestion ? "border-red-500" : "border-gray-300")}
                                     rows={3}
                                     placeholder="กรอกข้อเสนอแนะเพิ่มเติม"
                                     value={d.illegal_suggestion || ""}
@@ -1012,7 +1096,7 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
                                     {(d.photos ?? []).map((p, idx) => (
                                         <img
                                             key={idx}
-                                            src="/images/IconFile.png"
+                                            src={getPhotoSrc(p)}
                                             alt={p.filename}
                                             title={p.filename}
                                             className="w-16 h-16 object-cover border rounded cursor-pointer"
@@ -1022,7 +1106,7 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
 
                                     {(d.photos?.length ?? 0) < 2 && (
                                         <button
-                                            className="w-16 h-16 flex items-center justify-center border rounded text-gray-500 hover:text-blue-600 hover:border-blue-500"
+                                            className="w-16 h-16 flex items-center justify-center border rounded text-gray-500 hover:text-blue-600 hover:border-blue-500 bg-white"
                                             onClick={() => openCamera(defectIndex)}
                                             title="ถ่าย/แนบรูป"
                                         >
@@ -1033,13 +1117,13 @@ export default function Section2_6Details({ form_code, value, onChange }: Props)
                             </div>
                         ))}
 
-                        <div className="flex justify-end gap-2">
-                            <button className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" onClick={() => setPhotoPopup(null)}>
+                        <div className="flex justify-end gap-2 mt-6">
+                            <button className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300" onClick={() => setPhotoPopup(null)}>
                                 ปิด
                             </button>
 
                             <button
-                                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                                 onClick={() => {
                                     if (!photoPopup) return;
 

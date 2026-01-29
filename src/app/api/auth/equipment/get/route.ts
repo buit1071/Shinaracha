@@ -8,7 +8,7 @@ type GetBody =
     | { function: "SubDistrictOption" }
     | { function: "DistrictOptionByProvinceId", province_id: string }
     | { function: "SubDistrictOptionByDistrictId", district_id: string }
-    | { function: "ViewEquipment", job_id: string, equipment_id: string }
+    | { function: "CheckFormType", equipment_id: string }
     ;
 
 export async function POST(req: Request) {
@@ -72,15 +72,19 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, data: rows });
         }
 
-        if (fn === "ViewEquipment") {
+        if (fn === "CheckFormType") {
             const rows = await query(
-                `SELECT *
-     FROM view_data_form
-     WHERE job_id = ? AND equipment_id = ?
-     LIMIT 1`,
-                [body.job_id, body.equipment_id]
+                `SELECT zone_id
+         FROM master_equipments
+         WHERE equipment_id = ?
+         LIMIT 1`,
+                [body.equipment_id]
             );
-            return NextResponse.json({ success: true, data: rows[0] ?? null });
+
+            // แก้ตรงนี้: ดึงค่า .zone_id ออกมาจาก object แถวแรก
+            const zoneId = rows[0]?.zone_id ?? null;
+
+            return NextResponse.json({ success: true, data: zoneId });
         }
 
         // ไม่รู้จัก function
@@ -89,7 +93,7 @@ export async function POST(req: Request) {
             { status: 400 }
         );
     } catch (err: any) {
-        
+
         return NextResponse.json(
             { success: false, message: "Database error", error: err.message },
             { status: 500 }

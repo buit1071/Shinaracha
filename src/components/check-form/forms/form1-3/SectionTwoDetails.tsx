@@ -1,5 +1,5 @@
 import * as React from "react";
-
+import { showLoading } from "@/lib/loading";
 /* ---------- Reusable Image Upload (single) ---------- */
 function ImageField({
     label,
@@ -254,10 +254,22 @@ export type SectionTwoForm = {
     mapSketch1?: string | File | null;
 
     // --- วันที่ตรวจ/ผู้บันทึก + รูปแบบ ---
+    // รอบที่ 1 (เดิม)
     inspectDay3?: string;
     inspectMonth3?: string;
     inspectYear3?: string;
     recorder3?: string;
+
+    // ✅ เพิ่ม: รอบที่ 2
+    inspectDay4?: string;
+    inspectMonth4?: string;
+    inspectYear4?: string;
+
+    // ✅ เพิ่ม: รอบที่ 3 (เผื่อไว้)
+    inspectDay5?: string;
+    inspectMonth5?: string;
+    inspectYear5?: string;
+
     shapeSketch?: string | File | null;
     shapeSketch1?: string | File | null;
 
@@ -340,6 +352,26 @@ function makeFileName(prefix: string, ext = "jpg") {
 const isEmpty = (v: unknown) =>
     v == null || (typeof v === "string" && v.trim() === "");
 
+// ประกาศ Zone ID ที่ต้องเช็ค
+export const ZONE_IDS = {
+    ROUND_1: "FORM-53242768", // 1 รอบ
+    ROUND_2: "FORM-35898338", // 2 รอบ
+    ROUND_3: "FORM-11057862", // 3 รอบ
+};
+
+export const getRoundCount = (zoneId: string | number | null): number => {
+    if (!zoneId) return 0; // กันค่า null/undefined
+
+    // แปลงเป็น string ก่อนเทียบ (เผื่อ Database ส่งมาเป็น number หรือ string ต่างกัน)
+    const idStr = String(zoneId);
+
+    if (idStr === ZONE_IDS.ROUND_1) return 1;
+    if (idStr === ZONE_IDS.ROUND_2) return 2;
+    if (idStr === ZONE_IDS.ROUND_3) return 3;
+
+    return 0; // Default กรณีไม่ตรงสักอัน
+};
+
 export default function SectionTwoDetails({ eq_id, data, value, onChange }: Props) {
     const v = value ?? {};
     const patch = React.useCallback(
@@ -354,7 +386,41 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
             )}`,
         []
     );
+    const [roundCount, setRoundCount] = React.useState<number>(0);
 
+    const CheckFormType = async () => {
+        if (!eq_id) return; // ถ้าไม่มี eq_id ไม่ต้องทำ
+
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/equipment/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "CheckFormType", equipment_id: eq_id }),
+            });
+
+            const resData = await res.json();
+
+            if (resData.success) {
+                const zoneId = resData.data; // สมมติว่าส่งมาเป็น "FORM-xxxx" ตรงๆ
+
+                const rounds = getRoundCount(zoneId);
+                setRoundCount(rounds);
+
+                console.log(`Zone ID: ${zoneId}, Rounds: ${rounds}`);
+            } else {
+                console.warn("API Error:", resData.message);
+            }
+        } catch (err) {
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    React.useEffect(() => {
+        CheckFormType();
+    }, [eq_id]);
+    
     // ====== เติมค่าเริ่มต้นจาก data เข้า formData.sectionTwo (เติมเฉพาะช่องที่ยังว่าง) ======
     React.useEffect(() => {
         if (!data) return;
@@ -886,92 +952,164 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                     </div>
                 </div>
 
-                <ImageField
+                {/* <ImageField
                     label="แผนผังตำแหน่งที่ตั้งของป้ายโดยสังเขป"
                     value={mapPrev1}
                     onChange={(blob) => pickSingleImage(blob, "map1", "mapSketch1", setMapPrev1)}
                     hint="อัปโหลดภาพแผนผังโดยสังเขป"
-                />
+                /> */}
             </section>
 
             {/* ===================== วันที่ตรวจ + รูปแบบ/ขนาด ===================== */}
             <section className="space-y-4">
                 <div className="sm:grid-cols-2 gap-3 flex flex-col">
-                    <div className="flex items-center gap-2 text-sm">
-                        <span>วัน/เดือน/ปี ที่ตรวจสอบ</span>
+                    <div className="mt-4 space-y-2">
 
-                        <select
-                            className="w-10 bg-transparent border-0 border-b border-dashed border-gray-400
-                         focus:outline-none focus:ring-0 text-center cursor-pointer"
-                            value={v.inspectDay3 ?? ""}
-                            onChange={(e) => patch({ inspectDay3: e.target.value })}
-                        >
-                            <option value="" disabled />
-                            {Array.from(
-                                { length: getDaysInMonthThai(v.inspectYear3, v.inspectMonth3 as any) },
-                                (_, i) => {
-                                    const d = String(i + 1);
-                                    return (
-                                        <option key={d} value={d}>
-                                            {d}
-                                        </option>
-                                    );
-                                }
-                            )}
-                        </select>
+                        {/* -------------------- Helper Component: DateRow (ไม่มี Recorder) -------------------- */}
+                        {(() => {
+                            const DateRow = ({
+                                label,
+                                day, month, year,
+                                onChange
+                            }: {
+                                label: string,
+                                day?: string, month?: string, year?: string,
+                                onChange: (field: string, val: string) => void
+                            }) => (
+                                <div className="flex items-center gap-2 text-sm">
+                                    <span className="min-w-[180px]">{label}</span>
 
-                        <span>เดือน</span>
+                                    {/* Day */}
+                                    <select
+                                        className="w-12 bg-transparent border-0 border-b border-dashed border-gray-400 focus:outline-none focus:ring-0 text-center cursor-pointer"
+                                        value={day ?? ""}
+                                        onChange={(e) => onChange("day", e.target.value)}
+                                    >
+                                        <option value="" disabled />
+                                        {Array.from({ length: getDaysInMonthThai(year, month as any) }, (_, i) => {
+                                            const d = String(i + 1);
+                                            return <option key={d} value={d}>{d}</option>;
+                                        })}
+                                    </select>
 
-                        <select
-                            className="w-28 bg-transparent border-0 border-b border-dashed border-gray-400
-                         focus:outline-none focus:ring-0 text-center cursor-pointer"
-                            value={v.inspectMonth3 ?? ""}
-                            onChange={(e) => {
-                                const newMonth = e.target.value as ThaiMonth | "";
-                                const maxDay = getDaysInMonthThai(v.inspectYear3, newMonth);
-                                const next: Partial<SectionTwoForm> = { inspectMonth3: newMonth };
-                                if (v.inspectDay3 && Number(v.inspectDay3) > maxDay) next.inspectDay3 = String(maxDay);
-                                patch(next);
-                            }}
-                        >
-                            <option value="" disabled />
-                            {THAI_MONTHS.map((m) => (
-                                <option key={m} value={m}>
-                                    {m}
-                                </option>
-                            ))}
-                        </select>
+                                    <span>เดือน</span>
 
-                        <span>พ.ศ.</span>
+                                    {/* Month */}
+                                    <select
+                                        className="w-28 bg-transparent border-0 border-b border-dashed border-gray-400 focus:outline-none focus:ring-0 text-center cursor-pointer"
+                                        value={month ?? ""}
+                                        onChange={(e) => onChange("month", e.target.value)}
+                                    >
+                                        <option value="" disabled />
+                                        {THAI_MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
+                                    </select>
 
-                        <select
-                            className="w-16 bg-transparent border-0 border-b border-dashed border-gray-400
-                         focus:outline-none focus:ring-0 text-center cursor-pointer"
-                            value={v.inspectYear3 ?? ""}
-                            onChange={(e) => {
-                                const newYear = e.target.value;
-                                const maxDay = getDaysInMonthThai(newYear, v.inspectMonth3 as any);
-                                const next: Partial<SectionTwoForm> = { inspectYear3: newYear };
-                                if (v.inspectDay3 && Number(v.inspectDay3) > maxDay) next.inspectDay3 = String(maxDay);
-                                patch(next);
-                            }}
-                        >
-                            <option value="" disabled />
-                            {YEARS.map((y) => (
-                                <option key={y} value={y}>
-                                    {y}
-                                </option>
-                            ))}
-                        </select>
+                                    <span>พ.ศ.</span>
 
-                        <span>บันทึกโดย</span>
-                        <input
-                            type="text"
-                            className="flex-1 bg-transparent border-0 border-b border-dashed border-gray-400
-                         focus:outline-none focus:ring-0 px-2"
-                            value={v.recorder3 ?? ""}
-                            onChange={(e) => patch({ recorder3: e.target.value })}
-                        />
+                                    {/* Year */}
+                                    <select
+                                        className="w-20 bg-transparent border-0 border-b border-dashed border-gray-400 focus:outline-none focus:ring-0 text-center cursor-pointer"
+                                        value={year ?? ""}
+                                        onChange={(e) => onChange("year", e.target.value)}
+                                    >
+                                        <option value="" disabled />
+                                        {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+                                    </select>
+                                </div>
+                            );
+
+                            return (
+                                <>
+                                    {/* รอบที่ 1 (เสมอ) */}
+                                    <DateRow
+                                        label={`วัน/เดือน/ปี ที่ตรวจสอบ${roundCount > 1 ? " รอบที่ 1" : ""}`}
+                                        day={v.inspectDay3}
+                                        month={v.inspectMonth3}
+                                        year={v.inspectYear3}
+                                        onChange={(field, val) => {
+                                            const updates: Partial<SectionTwoForm> = {};
+                                            if (field === "day") updates.inspectDay3 = val;
+
+                                            // Logic ปรับวันอัตโนมัติ
+                                            if (field === "month") {
+                                                updates.inspectMonth3 = val;
+                                                const max = getDaysInMonthThai(v.inspectYear3, val as any);
+                                                if (Number(v.inspectDay3) > max) updates.inspectDay3 = String(max);
+                                            }
+                                            if (field === "year") {
+                                                updates.inspectYear3 = val;
+                                                const max = getDaysInMonthThai(val, v.inspectMonth3 as any);
+                                                if (Number(v.inspectDay3) > max) updates.inspectDay3 = String(max);
+                                            }
+                                            patch(updates);
+                                        }}
+                                    />
+
+                                    {/* รอบที่ 2 */}
+                                    {roundCount >= 2 && (
+                                        <DateRow
+                                            label="วัน/เดือน/ปี ที่ตรวจสอบ รอบที่ 2"
+                                            day={v.inspectDay4}
+                                            month={v.inspectMonth4}
+                                            year={v.inspectYear4}
+                                            onChange={(field, val) => {
+                                                const updates: Partial<SectionTwoForm> = {};
+                                                if (field === "day") updates.inspectDay4 = val;
+                                                if (field === "month") {
+                                                    updates.inspectMonth4 = val;
+                                                    const max = getDaysInMonthThai(v.inspectYear4, val as any);
+                                                    if (Number(v.inspectDay4) > max) updates.inspectDay4 = String(max);
+                                                }
+                                                if (field === "year") {
+                                                    updates.inspectYear4 = val;
+                                                    const max = getDaysInMonthThai(val, v.inspectMonth4 as any);
+                                                    if (Number(v.inspectDay4) > max) updates.inspectDay4 = String(max);
+                                                }
+                                                patch(updates);
+                                            }}
+                                        />
+                                    )}
+
+                                    {/* รอบที่ 3 */}
+                                    {roundCount >= 3 && (
+                                        <DateRow
+                                            label="วัน/เดือน/ปี ที่ตรวจสอบ รอบที่ 3"
+                                            day={v.inspectDay5}
+                                            month={v.inspectMonth5}
+                                            year={v.inspectYear5}
+                                            onChange={(field, val) => {
+                                                const updates: Partial<SectionTwoForm> = {};
+                                                if (field === "day") updates.inspectDay5 = val;
+                                                if (field === "month") {
+                                                    updates.inspectMonth5 = val;
+                                                    const max = getDaysInMonthThai(v.inspectYear5, val as any);
+                                                    if (Number(v.inspectDay5) > max) updates.inspectDay5 = String(max);
+                                                }
+                                                if (field === "year") {
+                                                    updates.inspectYear5 = val;
+                                                    const max = getDaysInMonthThai(val, v.inspectMonth5 as any);
+                                                    if (Number(v.inspectDay5) > max) updates.inspectDay5 = String(max);
+                                                }
+                                                patch(updates);
+                                            }}
+                                        />
+                                    )}
+                                </>
+                            );
+                        })()}
+
+                        {/* -------------------- Recorder (อันเดียว อยู่ล่างสุด) -------------------- */}
+                        <div className="flex items-center gap-2 text-sm pt-2">
+                            <span className="min-w-[180px]">บันทึกโดย</span> {/* min-w ให้ตรงกับ label ข้างบน */}
+                            <input
+                                type="text"
+                                className="flex-1 bg-transparent border-0 border-b border-dashed border-gray-400 focus:outline-none focus:ring-0 px-2 py-1"
+                                value={v.recorder3 ?? ""}
+                                onChange={(e) => patch({ recorder3: e.target.value })}
+                                placeholder="ระบุชื่อผู้บันทึก"
+                            />
+                        </div>
+
                     </div>
 
                     <ImageField
