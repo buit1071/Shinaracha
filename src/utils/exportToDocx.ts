@@ -31,7 +31,7 @@ import type { SectionTwoForm } from "@/components/check-form/forms/form1-3/Secti
 import type { SectionThreeForm, Section8Row, Section9Row, YesNo, OkNg } from "@/components/check-form/forms/form1-3/SectionThreeDetails";
 import type { SectionFourForm } from "@/components/check-form/forms/form1-3/SectionFourDetails";
 import type { Section2_5Form } from "@/components/check-form/forms/form1-3/new_form/Section2_5Details";
-import type { SectionSixForm } from "@/components/check-form/forms/form1-3/new_form/Section2_6Details";
+import type { SectionSixForm, VisitKey } from "@/components/check-form/forms/form1-3/new_form/Section2_6Details";
 import type { SectionSevenForm } from "@/components/check-form/forms/form1-3/new_form/Section2_7Details";
 
 /* ===================== PAGE (A4) ===================== */
@@ -750,7 +750,7 @@ export type FormDataLite = {
 };
 
 /* ===================== EXPORT ===================== */
-export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite) {
+export async function exportToDocx(roundCount: number, isShinaracha: boolean, formData: FormDataLite) {
     showLoading(true);
 
     try {
@@ -2038,14 +2038,173 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
                 pageBreakBefore: true,
             }),
 
-            new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                    new TextRun({
-                        text: `วัน/เดือน/ปี ที่ตรวจสอบ ${v(s2?.inspectDay3)} ${v(s2?.inspectMonth3)} ${v(s2?.inspectYear3)} ตรวจสอบโดย ${v(s2?.recorder3)}`,
-                    }),
-                ],
-            }),
+            (() => {
+                // Helper ดึงวันที่ (ลดโค้ดซ้ำ)
+                const getDateStr = (d?: string, m?: string, y?: string) => {
+                    if (!d && !m && !y) return "-";
+                    return `${v(d)} ${v(m)} ${v(y)}`;
+                };
+
+                // 🟢 กรณี 1 รอบ (แบบเดิม)
+                if (roundCount <= 1) {
+                    return new Paragraph({
+                        alignment: AlignmentType.CENTER,
+                        spacing: { before: 100, after: 100 },
+                        children: [
+                            new TextRun({
+                                text: `วัน/เดือน/ปี ที่ตรวจสอบ ${getDateStr(s2?.inspectDay3, s2?.inspectMonth3, s2?.inspectYear3)}`,
+                                font: FONT_TH,
+                                size: 28, // 14pt
+                            }),
+                            new TextRun({
+                                text: `   ตรวจสอบโดย ${v(s2?.recorder3)}`,
+                                font: FONT_TH,
+                                size: 28,
+                            }),
+                        ],
+                    });
+                }
+
+                // 🔵 กรณี 2-3 รอบ (สร้างตารางตามรูปภาพ)
+                const tableRows: TableRow[] = [];
+
+                // --- Row รอบที่ 1 (พื้นหลังสีน้ำเงินเข้ม) ---
+                tableRows.push(
+                    new TableRow({
+                        children: [
+                            new TableCell({
+                                shading: { fill: "4472C4", type: ShadingType.CLEAR, color: "auto" }, // สีน้ำเงิน
+                                verticalAlign: VerticalAlign.CENTER,
+                                borders: {
+                                    top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                                    bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                                    left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                                    right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                                },
+                                children: [
+                                    new Paragraph({
+                                        alignment: AlignmentType.CENTER,
+                                        spacing: { before: 120, after: 120 }, // เพิ่ม spacing ให้ดูหนาขึ้นเหมือนในรูป
+                                        children: [
+                                            new TextRun({
+                                                text: `วัน/เดือน/ปี ที่ตรวจสอบ รอบที่ 1      ${getDateStr(s2?.inspectDay3, s2?.inspectMonth3, s2?.inspectYear3)}`,
+                                                font: FONT_TH,
+                                                size: 28,
+                                                bold: true, // ตัวหนาตามรูป
+                                            }),
+                                        ],
+                                    }),
+                                ],
+                            }),
+                        ],
+                    })
+                );
+
+                // --- Row รอบที่ 2 (พื้นหลังสีฟ้าอ่อน/เทา) ---
+                if (roundCount >= 2) {
+                    tableRows.push(
+                        new TableRow({
+                            children: [
+                                new TableCell({
+                                    shading: { fill: "D9E2F3", type: ShadingType.CLEAR, color: "auto" }, // สีฟ้าอ่อน
+                                    verticalAlign: VerticalAlign.CENTER,
+                                    borders: {
+                                        top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                                        bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                                        left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                                        right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                                    },
+                                    children: [
+                                        new Paragraph({
+                                            alignment: AlignmentType.CENTER,
+                                            spacing: { before: 120, after: 120 },
+                                            children: [
+                                                new TextRun({
+                                                    text: `วัน/เดือน/ปี ที่ตรวจสอบ รอบที่ 2      ${getDateStr(s2?.inspectDay4, s2?.inspectMonth4, s2?.inspectYear4)}`,
+                                                    font: FONT_TH,
+                                                    size: 28,
+                                                    bold: true,
+                                                }),
+                                            ],
+                                        }),
+                                    ],
+                                }),
+                            ],
+                        })
+                    );
+                }
+
+                // --- Row รอบที่ 3 (พื้นหลังสีเทาจางๆ หรือสลับสี) ---
+                if (roundCount >= 3) {
+                    tableRows.push(
+                        new TableRow({
+                            children: [
+                                new TableCell({
+                                    shading: { fill: "EDEDED", type: ShadingType.CLEAR, color: "auto" }, // สีเทาอ่อน
+                                    verticalAlign: VerticalAlign.CENTER,
+                                    borders: {
+                                        top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                                        bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                                        left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                                        right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                                    },
+                                    children: [
+                                        new Paragraph({
+                                            alignment: AlignmentType.CENTER,
+                                            spacing: { before: 120, after: 120 },
+                                            children: [
+                                                new TextRun({
+                                                    text: `วัน/เดือน/ปี ที่ตรวจสอบ รอบที่ 3      ${getDateStr(s2?.inspectDay5, s2?.inspectMonth5, s2?.inspectYear5)}`,
+                                                    font: FONT_TH,
+                                                    size: 28,
+                                                    bold: true,
+                                                }),
+                                            ],
+                                        }),
+                                    ],
+                                }),
+                            ],
+                        })
+                    );
+                }
+
+                // --- Footer: ตรวจสอบโดย (พื้นหลังสีอ่อนสุด) ---
+                tableRows.push(
+                    new TableRow({
+                        children: [
+                            new TableCell({
+                                shading: { fill: "F2F2F2", type: ShadingType.CLEAR, color: "auto" }, // สีพื้นหลังจางๆ
+                                verticalAlign: VerticalAlign.CENTER,
+                                borders: {
+                                    top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                                    bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                                    left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                                    right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                                },
+                                children: [
+                                    new Paragraph({
+                                        alignment: AlignmentType.CENTER,
+                                        spacing: { before: 150, after: 150 },
+                                        children: [
+                                            new TextRun({
+                                                text: `ตรวจสอบโดย ${v(s2?.recorder3)}`, // ใช้ recorder3 เป็นหลัก (ตามที่คุยกันก่อนหน้า)
+                                                font: FONT_TH,
+                                                size: 28,
+                                            }),
+                                        ],
+                                    }),
+                                ],
+                            }),
+                        ],
+                    })
+                );
+
+                // Return Table Object
+                return new Table({
+                    width: { size: 100, type: WidthType.PERCENTAGE },
+                    rows: tableRows,
+                });
+            })(),
 
             new Paragraph({
                 alignment: AlignmentType.CENTER,
@@ -3644,7 +3803,7 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
                     alignment: AlignmentType.CENTER,
                     children: [
                         new TextRun({
-                            text: isCheck ? "✓" : "-", // ใช้ - หรือ "" ตามต้องการ
+                            text: isCheck ? "✓" : "-", // ใช้ ✓ หรือ -
                             font: isCheck ? "Angsana New" : FONT_TH,
                             size: 32,
                             bold: isCheck,
@@ -3655,20 +3814,30 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
         });
 
         // Helper 2: Row แบบแยก Column ชัดเจน (Index | Text | Check | Check | Note)
-        const createM6RowFinal = (index: string, text: string, rowKey: string) => {
-            const rowData = m6Table1Data[rowKey] || {};
-            const status = rowData.visits?.v1 || "none";
+        const createM6RowFinal = (index: string, text: string, rowId: string) => {
+            const rowData = s2_6?.table1?.[rowId] || {};
+            const note = rowData.note ?? "";
+            const label = rowData.extra ? `${text} ${rowData.extra}` : text;
 
-            // Logic Note: ถ้าไม่มี defect ให้ปล่อยว่าง ("")
-            let noteText = "";
-            if (status === 'ng' && rowData.defect_by_visit?.v1?.length > 0) {
-                const problems = rowData.defect_by_visit.v1.map((d: any) => d.problem_name).filter((n: any) => n && n !== "-").join(", ");
-                if (problems) noteText = problems;
+            // 🟢 สร้าง Cells สำหรับ Checkbox ตามจำนวนรอบ
+            const roundCells: TableCell[] = [];
+            const count = Math.max(1, roundCount);
+
+            for (let i = 1; i <= count; i++) {
+                // ✅ แก้ไขตรงนี้: cast type เป็น VisitKey เพื่อแก้ error ts(7053)
+                const visitKey = `v${i}` as VisitKey;
+
+                const status = rowData?.visits?.[visitKey]; // "ok" | "ng"
+
+                roundCells.push(
+                    checkResultCellFinal(status === 'ok'), // ช่อง "ใช้ได้"
+                    checkResultCellFinal(status === 'ng')  // ช่อง "ไม่ได้"
+                );
             }
 
             return new TableRow({
                 children: [
-                    // 1. ลำดับ (แยกออกมา)
+                    // 1. ลำดับ
                     new TableCell({
                         verticalAlign: VerticalAlign.TOP,
                         children: [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 40, after: 40 }, children: [new TextRun({ text: index, size: 32, font: FONT_TH })] })],
@@ -3676,70 +3845,140 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
                     // 2. รายการ
                     new TableCell({
                         verticalAlign: VerticalAlign.TOP,
-                        children: [new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: text, size: 32, font: FONT_TH })] })],
+                        children: [new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: label, size: 32, font: FONT_TH })] })],
                     }),
-                    // 3. ใช้ได้
-                    checkResultCellFinal(status === 'ok'),
-                    // 4. ใช้ไม่ได้
-                    checkResultCellFinal(status === 'ng'),
-                    // 5. หมายเหตุ
+                    // 3. Dynamic Checkboxes (Round 1..N) -> Spread เข้าไป
+                    ...roundCells,
+                    // 4. หมายเหตุ
                     new TableCell({
                         verticalAlign: VerticalAlign.TOP,
-                        children: [new Paragraph({ alignment: AlignmentType.LEFT, spacing: { before: 40, after: 40 }, children: [new TextRun({ text: noteText, size: 32, font: FONT_TH })] })],
+                        children: [new Paragraph({ alignment: AlignmentType.LEFT, spacing: { before: 40, after: 40 }, children: [new TextRun({ text: note, size: 32, font: FONT_TH })] })],
                     }),
                 ],
             });
         };
 
         // Helper: สร้าง Row ข้อย่อย (เหมือนตาราง 1 แต่มี Indent ชื่อรายการ)
-        const createM6SubRow = (index: string, text: string, rowKey: string, isCustom: boolean = false) => {
-            const rowData = m6Table2Data[rowKey] || {};
-            const status = rowData.visits?.v1 || "none";
+        const createM6SubRow = (index: string, text: string, rowId: string, isCustom = false) => {
+            if (!rowId) {
+                // หัวข้อกลุ่ม: สร้างช่องว่างให้ครบตามจำนวนคอลัมน์
+                const count = Math.max(1, roundCount);
+                const totalEmpty = (count * 2) + 1; // (รอบ * 2) + หมายเหตุ
+                const emptyCells = Array(totalEmpty).fill(new TableCell({ children: [new Paragraph("")] }));
 
-            // Logic Note
-            let noteText = "";
-            if (status === 'ng' && rowData.defect_by_visit?.v1?.length > 0) {
-                const problems = rowData.defect_by_visit.v1.map((d: any) => d.problem_name).filter((n: any) => n && n !== "-").join(", ");
-                if (problems) noteText = problems;
+                return new TableRow({
+                    children: [
+                        new TableCell({ verticalAlign: VerticalAlign.TOP, children: [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 40, after: 40 }, children: [new TextRun({ text: index, size: 32, font: FONT_TH })] })] }),
+                        new TableCell({ verticalAlign: VerticalAlign.TOP, children: [new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: text, bold: true, size: 32, font: FONT_TH })] })] }),
+                        ...emptyCells
+                    ]
+                });
             }
 
-            // จัดการ Text กรณี "อื่นๆ"
+            const rowData = s2_6?.table2?.[rowId] || {};
+            const note = rowData.note ?? "";
+
             let displayText = text;
-            if (isCustom && rowData.extra && rowData.extra !== "-") {
-                displayText = `${text} ${rowData.extra}`;
-            } else if (isCustom) {
-                displayText = `${text} .......................................................`;
+            if (isCustom && rowData.extra) displayText = `- อื่น ๆ (${rowData.extra})`;
+            else if (rowData.extra) displayText = `${text} ${rowData.extra}`;
+
+            // 🟢 สร้าง Cells สำหรับ Checkbox ตามจำนวนรอบ
+            const roundCells: TableCell[] = [];
+            const count = Math.max(1, roundCount);
+
+            for (let i = 1; i <= count; i++) {
+                // ✅ แก้ไขตรงนี้: cast type เป็น VisitKey
+                const visitKey = `v${i}` as VisitKey;
+
+                const status = rowData?.visits?.[visitKey];
+
+                roundCells.push(
+                    checkResultCellFinal(status === 'ok'),
+                    checkResultCellFinal(status === 'ng')
+                );
             }
 
             return new TableRow({
                 children: [
-                    // 1. ลำดับ (ว่างไว้ หรือใส่ index ย่อยถ้าต้องการ)
                     new TableCell({
                         verticalAlign: VerticalAlign.TOP,
                         children: [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 40, after: 40 }, children: [new TextRun({ text: "", size: 32, font: FONT_TH })] })],
                     }),
-                    // 2. รายการ (มี Indent)
                     new TableCell({
                         verticalAlign: VerticalAlign.TOP,
                         children: [
                             new Paragraph({
-                                indent: { left: 360 }, // ย่อหน้าเข้าไปหน่อย
+                                indent: { left: 360 },
                                 spacing: { before: 40, after: 40 },
                                 children: [new TextRun({ text: displayText, size: 32, font: FONT_TH })]
                             })
                         ],
                     }),
-                    // 3. ใช้ได้
-                    checkResultCellFinal(status === 'ok'),
-                    // 4. ใช้ไม่ได้
-                    checkResultCellFinal(status === 'ng'),
-                    // 5. หมายเหตุ
+                    // ✅ Spread Cells
+                    ...roundCells,
                     new TableCell({
                         verticalAlign: VerticalAlign.TOP,
-                        children: [new Paragraph({ alignment: AlignmentType.LEFT, spacing: { before: 40, after: 40 }, children: [new TextRun({ text: noteText, size: 32, font: FONT_TH })] })],
+                        children: [new Paragraph({ alignment: AlignmentType.LEFT, spacing: { before: 40, after: 40 }, children: [new TextRun({ text: note, size: 32, font: FONT_TH })] })],
                     }),
                 ],
             });
+        };
+
+        const createRoundHeaderCells = () => {
+            const cells: TableCell[] = [];
+            const count = Math.max(1, roundCount); // อย่างน้อย 1 รอบ
+
+            for (let i = 1; i <= count; i++) {
+                cells.push(
+                    new TableCell({
+                        columnSpan: 2, // (ใช้ได้, ไม่ได้)
+                        width: { size: 10, type: WidthType.PERCENTAGE }, // ปรับ % ตามความเหมาะสม
+                        verticalAlign: VerticalAlign.CENTER,
+                        textDirection: TextDirection.BOTTOM_TO_TOP_LEFT_TO_RIGHT, // แนวตั้งเหมือนต้นฉบับ
+                        children: [
+                            new Paragraph({
+                                alignment: AlignmentType.CENTER,
+                                children: [new TextRun({ text: `รอบที่ ${i}`, bold: true, size: 32, font: FONT_TH })]
+                            })
+                        ],
+                    })
+                );
+            }
+            return cells;
+        };
+
+        const createSubHeaderCells = () => {
+            const cells: TableCell[] = [];
+            const count = Math.max(1, roundCount); // อย่างน้อย 1 รอบ
+
+            for (let i = 1; i <= count; i++) {
+                cells.push(
+                    // ช่อง "ใช้ได้"
+                    new TableCell({
+                        verticalAlign: VerticalAlign.CENTER,
+                        textDirection: TextDirection.BOTTOM_TO_TOP_LEFT_TO_RIGHT, // แนวตั้ง
+                        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "ใช้ได้", bold: true, size: 32, font: FONT_TH })] })],
+                    }),
+                    // ช่อง "ใช้ไม่ได้"
+                    new TableCell({
+                        verticalAlign: VerticalAlign.CENTER,
+                        textDirection: TextDirection.BOTTOM_TO_TOP_LEFT_TO_RIGHT, // แนวตั้ง
+                        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "ใช้ไม่ได้", bold: true, size: 32, font: FONT_TH })] })],
+                    })
+                );
+            }
+            return cells;
+        };
+
+        const createEmptyFillers = () => {
+            const cells: TableCell[] = [];
+            const count = Math.max(1, roundCount);
+            const totalEmpty = (count * 2) + 1;
+
+            for (let i = 0; i < totalEmpty; i++) {
+                cells.push(new TableCell({ children: [new Paragraph("")] }));
+            }
+            return cells;
         };
 
         const checkS7Cell = (isCheck: boolean) => new TableCell({
@@ -4817,6 +5056,8 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
                 children: [new TextRun({ text: "กรณีที่พบว่าสภาพของป้าย หรืออุปกรณ์ประกอบต่าง ๆ ของป้ายมีการชำรุด เสียหาย ต้องแก้ไขผิดปกติ หรือใช้งานไม่ได้เจ้าของป้าย หรือผู้ดูแลป้ายจะต้องบันทึกรายละเอียดแต่ละรายการให้ชัดเจนและแจ้งผลให้ ผู้ตรวจสอบทราบโดยเร็ว", font: FONT_TH, size: 32 })],
             }),
 
+            new Paragraph({ pageBreakBefore: true }),
+
             // --- ตารางที่ 1 ---
             new Table({
                 width: { size: 100, type: WidthType.PERCENTAGE },
@@ -4832,6 +5073,7 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
                     // Header Row
                     new TableRow({
                         children: [
+                            // 1. ลำดับที่
                             new TableCell({
                                 rowSpan: 2,
                                 width: { size: 8, type: WidthType.PERCENTAGE },
@@ -4839,52 +5081,49 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
                                 textDirection: TextDirection.BOTTOM_TO_TOP_LEFT_TO_RIGHT,
                                 children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "ลำดับที่", bold: true, size: 32, font: FONT_TH })] })],
                             }),
+                            // 2. รายการตรวจสอบ
                             new TableCell({
                                 rowSpan: 2,
-                                width: { size: 52, type: WidthType.PERCENTAGE },
+                                width: { size: 45, type: WidthType.PERCENTAGE }, // ลด Width ลงนิดนึงเผื่อที่ให้รอบอื่นๆ
                                 verticalAlign: VerticalAlign.CENTER,
                                 children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "รายการตรวจสอบ", bold: true, size: 32, font: FONT_TH })] })],
                             }),
-                            new TableCell({
-                                columnSpan: 2,
-                                width: { size: 10, type: WidthType.PERCENTAGE },
-                                verticalAlign: VerticalAlign.CENTER,
-                                textDirection: TextDirection.BOTTOM_TO_TOP_LEFT_TO_RIGHT,
-                                children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "รอบที่ 1", bold: true, size: 32, font: FONT_TH })] })],
-                            }),
+
+                            // ✅ 3. Dynamic Round Headers (รอบที่ 1, 2, 3)
+                            ...createRoundHeaderCells(),
+
+                            // 4. หมายเหตุ
                             new TableCell({
                                 rowSpan: 2,
-                                width: { size: 30, type: WidthType.PERCENTAGE },
+                                width: { size: 15, type: WidthType.PERCENTAGE },
                                 verticalAlign: VerticalAlign.CENTER,
                                 children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "หมายเหตุ", bold: true, size: 32, font: FONT_TH })] })],
                             }),
                         ],
                     }),
+
                     // Sub-Header Row
                     new TableRow({
                         children: [
-                            new TableCell({
-                                verticalAlign: VerticalAlign.CENTER,
-                                textDirection: TextDirection.BOTTOM_TO_TOP_LEFT_TO_RIGHT,
-                                children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "ใช้ได้", bold: true, size: 32, font: FONT_TH })] })],
-                            }),
-                            new TableCell({
-                                verticalAlign: VerticalAlign.CENTER,
-                                textDirection: TextDirection.BOTTOM_TO_TOP_LEFT_TO_RIGHT,
-                                children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "ใช้ไม่ได้", bold: true, size: 32, font: FONT_TH })] })],
-                            }),
+                            ...createSubHeaderCells(),
                         ],
                     }),
 
                     // Data Row 1 (หัวข้อใหญ่)
                     new TableRow({
                         children: [
-                            new TableCell({ verticalAlign: VerticalAlign.TOP, children: [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 100 }, children: [new TextRun({ text: "1", size: 32, font: FONT_TH })] })] }),
+                            // 1. ลำดับ
                             new TableCell({
-                                columnSpan: 4,
+                                verticalAlign: VerticalAlign.TOP,
+                                children: [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 100 }, children: [new TextRun({ text: "1", size: 32, font: FONT_TH })] })]
+                            }),
+                            // 2. ชื่อรายการ (ใส่ข้อความยาวๆ ที่นี่)
+                            new TableCell({
                                 verticalAlign: VerticalAlign.CENTER,
                                 children: [new Paragraph({ spacing: { before: 100, after: 100 }, children: [new TextRun({ text: "การตรวจสอบความมั่นคงแข็งแรงของป้าย หรือสิ่งที่สร้างขึ้นสำหรับติดหรือตั้งป้าย", bold: true, underline: {}, size: 32, font: FONT_TH })] })],
                             }),
+                            // 3. ✅ เติมช่องว่างให้ครบตามจำนวนคอลัมน์ (รอบ + หมายเหตุ)
+                            ...createEmptyFillers()
                         ],
                     }),
 
@@ -4904,6 +5143,7 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
 
             new Paragraph({ pageBreakBefore: true }),
 
+            // --- ตารางที่ 2 ---
             new Table({
                 width: { size: 100, type: WidthType.PERCENTAGE },
                 borders: {
@@ -4927,63 +5167,43 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
                             }),
                             new TableCell({
                                 rowSpan: 2,
-                                width: { size: 52, type: WidthType.PERCENTAGE },
+                                width: { size: 45, type: WidthType.PERCENTAGE }, // ใช้ความกว้างเท่าตาราง 1
                                 verticalAlign: VerticalAlign.CENTER,
                                 children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "รายการตรวจสอบ", bold: true, size: 32, font: FONT_TH })] })],
                             }),
-                            new TableCell({
-                                columnSpan: 2,
-                                width: { size: 10, type: WidthType.PERCENTAGE },
-                                verticalAlign: VerticalAlign.CENTER,
-                                textDirection: TextDirection.BOTTOM_TO_TOP_LEFT_TO_RIGHT,
-                                children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "รอบที่ 1", bold: true, size: 32, font: FONT_TH })] })],
-                            }),
+
+                            // ✅ Dynamic Round Headers (รอบที่ 1..N)
+                            ...createRoundHeaderCells(),
+
                             new TableCell({
                                 rowSpan: 2,
-                                width: { size: 30, type: WidthType.PERCENTAGE },
+                                width: { size: 15, type: WidthType.PERCENTAGE },
                                 verticalAlign: VerticalAlign.CENTER,
                                 children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "หมายเหตุ", bold: true, size: 32, font: FONT_TH })] })],
                             }),
                         ],
                     }),
+
                     // Sub-Header Row
                     new TableRow({
                         children: [
-                            new TableCell({
-                                verticalAlign: VerticalAlign.CENTER,
-                                textDirection: TextDirection.BOTTOM_TO_TOP_LEFT_TO_RIGHT,
-                                children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "ใช้ได้", bold: true, size: 32, font: FONT_TH })] })],
-                            }),
-                            new TableCell({
-                                verticalAlign: VerticalAlign.CENTER,
-                                textDirection: TextDirection.BOTTOM_TO_TOP_LEFT_TO_RIGHT,
-                                children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "ใช้ไม่ได้", bold: true, size: 32, font: FONT_TH })] })],
-                            }),
+                            ...createSubHeaderCells(),
                         ],
                     }),
 
                     // Data Row 2 (หัวข้อใหญ่ - 2)
                     new TableRow({
                         children: [
-                            new TableCell({ verticalAlign: VerticalAlign.TOP, children: [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 40 }, children: [new TextRun({ text: "2", size: 32, font: FONT_TH })] })] }),
                             new TableCell({
-                                columnSpan: 4,
-                                verticalAlign: VerticalAlign.CENTER,
-                                children: [
-                                    new Paragraph({
-                                        spacing: { before: 40, after: 40 },
-                                        children: [
-                                            new TextRun({
-                                                text: "การตรวจสอบบำรุงรักษาระบบและอุปกรณ์ประกอบต่าง ๆ ของป้าย",
-                                                bold: true,
-                                                underline: {},
-                                                size: 32,
-                                                font: FONT_TH
-                                            })
-                                        ]
-                                    })
-                                ],
+                                verticalAlign: VerticalAlign.TOP,
+                                children: [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 40 }, children: [new TextRun({ text: "2", size: 32, font: FONT_TH })] })]
                             }),
+                            new TableCell({
+                                verticalAlign: VerticalAlign.CENTER,
+                                children: [new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: "การตรวจสอบบำรุงรักษาระบบและอุปกรณ์ประกอบต่าง ๆ ของป้าย", bold: true, underline: {}, size: 32, font: FONT_TH })] })],
+                            }),
+                            // ✅ เติมช่องว่างให้ครบตามจำนวนคอลัมน์
+                            ...createEmptyFillers()
                         ],
                     }),
 
@@ -5167,7 +5387,7 @@ export async function exportToDocx(isShinaracha: boolean, formData: FormDataLite
                             }),
                         ],
                     }),
-                    
+
                     new TableRow({
                         children: [
                             // Cell ซ้าย: ว่างไว้ (40%)

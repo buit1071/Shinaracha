@@ -43,6 +43,21 @@ type FormData = {
     section2_7?: Partial<SectionSevenForm>
 };
 
+const ZONE_IDS = {
+    ROUND_1: "FORM-53242768", // 1 รอบ
+    ROUND_2: "FORM-35898338", // 2 รอบ
+    ROUND_3: "FORM-11057862", // 3 รอบ
+};
+
+const getRoundCount = (zoneId: string | number | null): number => {
+    if (!zoneId) return 0;
+    const idStr = String(zoneId);
+    if (idStr === ZONE_IDS.ROUND_1) return 1;
+    if (idStr === ZONE_IDS.ROUND_2) return 2;
+    if (idStr === ZONE_IDS.ROUND_3) return 3;
+    return 0;
+};
+
 export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
     const user = useCurrentUser();
     const username = React.useMemo(
@@ -52,6 +67,41 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
     const isShinaracha = user?.company_id === "COM-27162740";
     const buildRemoteCoverUrl = (name: string) =>
         `${process.env.NEXT_PUBLIC_N8N_UPLOAD_FILE}?name=${encodeURIComponent(name)}`;
+
+    const [roundCount, setRoundCount] = React.useState<number>(0);
+
+    const CheckFormType = async () => {
+        if (!equipment_id) return;
+
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/equipment/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "CheckFormType", equipment_id: equipment_id }),
+            });
+
+            const resData = await res.json();
+
+            if (resData.success) {
+                const zoneId = resData.data;
+                const rounds = getRoundCount(zoneId);
+                setRoundCount(rounds);
+                console.log(`Section2_6: Zone ID: ${zoneId}, Rounds: ${rounds}`);
+                // setRoundCount(1); // ไม่ต้อง fallback เป็น 1 แล้ว เพราะ getRoundCount จัดการแล้ว หรือถ้าจะ fallback ควรเช็คดีๆ
+            } else {
+                setRoundCount(1); // Fallback กรณี Error ให้แสดงอย่างน้อย 1 รอบ
+            }
+        } catch (err) {
+            setRoundCount(1); // Fallback
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    React.useEffect(() => {
+        CheckFormType();
+    }, [equipment_id]);
 
     const [formData, setFormData] = React.useState<FormData>({});
     const [coverSrc, setCoverSrc] = React.useState<string | null>(null);
@@ -610,7 +660,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     </button> */}
                     <button
                         type="button"
-                        onClick={() => exportToDocx(isShinaracha, formData)}
+                        onClick={() => exportToDocx(roundCount, isShinaracha, formData)}
                         className="w-[100px] h-10 bg-sky-600 hover:bg-sky-700 active:bg-sky-700 text-white rounded-[5px] inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
                     >
                         <img src="/images/IconWord.png" alt="Word" className="h-5 w-5 object-contain" />
