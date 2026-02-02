@@ -196,7 +196,7 @@ const THAI_MONTHS = [
 ] as const;
 
 const currentThaiYear = new Date().getFullYear() + 543;
-const YEAR_START = 2568;
+const YEAR_START = 2500;
 const YEAR_END = currentThaiYear + 20;
 const YEARS = Array.from(
     { length: YEAR_END - YEAR_START + 1 },

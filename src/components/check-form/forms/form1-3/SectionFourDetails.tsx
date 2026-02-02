@@ -163,8 +163,13 @@ export default function SectionFourDetails({ value, onChange }: Props) {
         "ธันวาคม",
     ];
 
-    const beNow = new Date().getFullYear() + 543;
-    const YEARS = React.useMemo(() => Array.from({ length: 50 }, (_, i) => String(beNow - i)), [beNow]);
+    const currentThaiYear = new Date().getFullYear() + 543;
+    const YEAR_START = 2500;
+    const YEAR_END = currentThaiYear + 20;
+    const YEARS = Array.from(
+        { length: YEAR_END - YEAR_START + 1 },
+        (_, i) => String(YEAR_START + i)
+    );
 
     return (
         <section className="p-2 text-gray-900">
