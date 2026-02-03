@@ -32,6 +32,8 @@ export async function POST(req: Request) {
                 is_active,
                 created_by,
                 updated_by,
+                is_submit_before,   // ✅ รับค่ามา
+                submit_before_days, // ✅ รับค่ามา
             } = data;
 
             if (!job_name) {
@@ -55,9 +57,10 @@ export async function POST(req: Request) {
     job_id, job_name, project_id, shift_next_jobs,
     job_start_date, job_end_date, job_start_time, job_end_time,
     team_id, status_id, customer_id, 
-    is_active, created_by, updated_by, created_date, updated_date
+    is_active, created_by, updated_by, created_date, updated_date,
+    is_submit_before, submit_before_days -- ✅ Added columns
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?) -- ✅ ADDED 2 "?" HERE
   ON DUPLICATE KEY UPDATE
     job_name = VALUES(job_name),
     project_id = VALUES(project_id),
@@ -71,23 +74,28 @@ export async function POST(req: Request) {
     customer_id = VALUES(customer_id),
     is_active = VALUES(is_active),
     updated_by = VALUES(updated_by),
-    updated_date = NOW()
+    updated_date = NOW(),
+    is_submit_before = VALUES(is_submit_before),     -- ✅ Update field
+    submit_before_days = VALUES(submit_before_days)  -- ✅ Update field
   `,
                 [
                     newJobId,
                     job_name,
                     project_id,
                     toNull(shift_next_jobs),
-                    toMysqlDate(job_start_date), // <-- แปลงเป็น YYYY-MM-DD
-                    toMysqlDate(job_end_date),   // <--
-                    toMysqlTime(job_start_time), // <-- แปลงเป็น HH:MM:SS
-                    toMysqlTime(job_end_time),   // <--
+                    toMysqlDate(job_start_date),
+                    toMysqlDate(job_end_date),
+                    toMysqlTime(job_start_time),
+                    toMysqlTime(job_end_time),
                     toNull(team_id),
                     toNull(status_id),
                     toNull(customer_id),
                     Number(is_active ?? 1),
                     toNull(created_by ?? "system"),
                     toNull(updated_by ?? "system"),
+                    // These correspond to the new ?, ? added above
+                    Number(is_submit_before ?? 0),
+                    toNull(submit_before_days),
                 ]
             );
 
@@ -104,7 +112,7 @@ export async function POST(req: Request) {
             { status: 400 }
         );
     } catch (err: any) {
-        
+
         return NextResponse.json(
             { success: false, message: "Database error", error: err.message },
             { status: 500 }

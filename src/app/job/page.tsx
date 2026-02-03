@@ -94,6 +94,9 @@ export default function JobPage() {
         is_active: 1,
         created_by: "",
         updated_by: "",
+
+        is_submit_before: 0,
+        submit_before_days: "",
     });
 
 
@@ -232,6 +235,9 @@ export default function JobPage() {
             is_active: 1,
             created_by: "",
             updated_by: "",
+
+            is_submit_before: 0,
+            submit_before_days: "",
         });
         setOpen(true);
     };
@@ -316,6 +322,8 @@ export default function JobPage() {
                     is_active: formData.is_active ?? 1,
                     created_by: formData.created_by || username,
                     updated_by: formData.updated_by || username,
+                    is_submit_before: formData.is_submit_before,
+                    submit_before_days: formData.submit_before_days,
                 },
             };
 
@@ -950,17 +958,53 @@ export default function JobPage() {
                         </Box>
                     </LocalizationProvider>
 
-                    <FormControlLabel
-                        control={
-                            <Checkbox
-                                checked={!!formData.shift_next_jobs}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, shift_next_jobs: e.target.checked ? 1 : 0 })
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Left Column: Shift Jobs Checkbox */}
+                        <Box display="flex" alignItems="center">
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={!!formData.shift_next_jobs}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, shift_next_jobs: e.target.checked ? 1 : 0 })
+                                        }
+                                    />
+                                }
+                                label="กรณีแก้ไขวันที่ของงาน ให้เลื่อนงานที่อยู่ถัดไปด้วย"
+                            />
+                        </Box>
+
+                        {/* Right Column: Submit Before Checkbox (Aligned with End Date) */}
+                        <Box display="flex" alignItems="center">
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={!!formData.is_submit_before}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, is_submit_before: e.target.checked ? 1 : 0 })
+                                        }
+                                    />
+                                }
+                                label={
+                                    <div className="flex items-center gap-1">
+                                        <span>กรุณาส่งภายใน</span>
+                                        <input
+                                            type="number"
+                                            className="w-16 border-0 border-b border-gray-400 text-center focus:outline-none focus:border-blue-500 bg-transparent"
+                                            placeholder="..."
+                                            value={formData.submit_before_days}
+                                            disabled={!formData.is_submit_before}
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, submit_before_days: e.target.value })
+                                            }
+                                        />
+                                        <span>วัน (นับจากวันที่สิ้นสุด)</span>
+                                    </div>
                                 }
                             />
-                        }
-                        label="กรณีแก้ไขวันที่ของงาน ให้เลื่อนงานที่อยู่ถัดไปด้วย"
-                    />
+                        </Box>
+                    </div>
+
                     <Box
                         sx={{
                             mt: 1,
