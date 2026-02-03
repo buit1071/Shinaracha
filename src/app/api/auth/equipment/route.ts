@@ -67,6 +67,20 @@ export async function POST(req: Request) {
             owner_fax = "",
             owner_email = "",
 
+            // ---------- เจ้าของอาคาร (เพิ่มใหม่) ----------
+            building_owner_name = "",
+            building_owner_address_no = "",
+            building_owner_moo = "",
+            building_owner_alley = "",
+            building_owner_road = "",
+            building_owner_province_id = "",
+            building_owner_district_id = "",
+            building_owner_sub_district_id = "",
+            building_owner_zipcode = "",
+            building_owner_phone = "",
+            building_owner_fax = "",
+            building_owner_email = "",
+
             // ---------- ผู้ออกแบบ ----------
             designer_name = "",
             designer_license_no = "",
@@ -122,6 +136,20 @@ export async function POST(req: Request) {
           owner_fax              = ?,
           owner_email            = ?,
 
+          -- เจ้าของอาคาร (เพิ่มใหม่)
+          building_owner_name             = ?,
+          building_owner_address_no       = ?,
+          building_owner_moo              = ?,
+          building_owner_alley            = ?,
+          building_owner_road             = ?,
+          building_owner_province_id      = ?,
+          building_owner_district_id      = ?,
+          building_owner_sub_district_id  = ?,
+          building_owner_zipcode          = ?,
+          building_owner_phone            = ?,
+          building_owner_fax              = ?,
+          building_owner_email            = ?,
+
           -- ผู้ออกแบบ
           designer_name       = ?,
           designer_license_no = ?,
@@ -168,6 +196,20 @@ export async function POST(req: Request) {
                     toNull(owner_fax),
                     toNull(owner_email),
 
+                    // เจ้าของอาคาร
+                    toNull(building_owner_name),
+                    toNull(building_owner_address_no),
+                    toNull(building_owner_moo),
+                    toNull(building_owner_alley),
+                    toNull(building_owner_road),
+                    toNull(building_owner_province_id),
+                    toNull(building_owner_district_id),
+                    toNull(building_owner_sub_district_id),
+                    toNull(building_owner_zipcode),
+                    toNull(building_owner_phone),
+                    toNull(building_owner_fax),
+                    toNull(building_owner_email),
+
                     // ผู้ออกแบบ
                     toNull(designer_name),
                     toNull(designer_license_no),
@@ -202,6 +244,11 @@ export async function POST(req: Request) {
           owner_province_id, owner_district_id, owner_sub_district_id, owner_zipcode,
           owner_phone, owner_fax, owner_email,
 
+          -- เจ้าของอาคาร (เพิ่มใหม่)
+          building_owner_name, building_owner_address_no, building_owner_moo, building_owner_alley, building_owner_road,
+          building_owner_province_id, building_owner_district_id, building_owner_sub_district_id, building_owner_zipcode,
+          building_owner_phone, building_owner_fax, building_owner_email,
+
           -- ผู้ออกแบบ
           designer_name, designer_license_no, building_id, floor_id, system_type_id, equipment_type_id,
 
@@ -213,6 +260,10 @@ export async function POST(req: Request) {
           ?, ?, ?,
 
           ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+
+          ?, ?, ?, ?, ?,
+          ?, ?, ?, ?,
+          ?, ?, ?,
 
           ?, ?, ?, ?, ?,
           ?, ?, ?, ?,
@@ -257,6 +308,20 @@ export async function POST(req: Request) {
                 toNull(owner_phone),
                 toNull(owner_fax),
                 toNull(owner_email),
+
+                // เจ้าของอาคาร
+                toNull(building_owner_name),
+                toNull(building_owner_address_no),
+                toNull(building_owner_moo),
+                toNull(building_owner_alley),
+                toNull(building_owner_road),
+                toNull(building_owner_province_id),
+                toNull(building_owner_district_id),
+                toNull(building_owner_sub_district_id),
+                toNull(building_owner_zipcode),
+                toNull(building_owner_phone),
+                toNull(building_owner_fax),
+                toNull(building_owner_email),
 
                 // ผู้ออกแบบ
                 toNull(designer_name),

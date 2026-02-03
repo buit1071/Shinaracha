@@ -167,6 +167,20 @@ export interface EquipmentRow {
     owner_phone: string;       // โทรศัพท์
     owner_fax: string;         // โทรสาร
     owner_email: string;       // อีเมล
+    // -------- เจ้าของหรือผู้ครอบครองอาคารที่ป้ายตั้งอยู่ (เจ้าของตึก/สถานที่) --------
+    building_owner_name: string;            // ชื่อ
+    building_owner_address_no: string;      // เลขที่
+    building_owner_moo: string;             // หมู่ที่
+    building_owner_alley: string;           // ตรอก/ซอย
+    building_owner_road: string;            // ถนน
+    building_owner_province_id: string;     // จังหวัด (id)
+    building_owner_district_id: string;     // อำเภอ/เขต (id)
+    building_owner_sub_district_id: string; // ตำบล/แขวง (id)
+    building_owner_zipcode: string;         // รหัสไปรษณีย์
+    // ข้อมูลติดต่อผู้ครอบครอง
+    building_owner_phone: string;       // โทรศัพท์
+    building_owner_fax: string;         // โทรสาร
+    building_owner_email: string;       // อีเมล
     // ผู้ออกแบบด้านวิศวกรรมโครงสร้าง
     designer_name: string;         // ชื่อผู้ออกแบบ
     designer_license_no: string;   // ใบอนุญาตทะเบียนเลขที่
