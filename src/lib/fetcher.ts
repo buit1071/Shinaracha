@@ -93,8 +93,8 @@ export const showConfirm = async (
     text: message,
     icon: "warning",
     showCancelButton: true,
-    confirmButtonColor: "#d33",
-    cancelButtonColor: "#3085d6",
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
     confirmButtonText: confirmText,
     cancelButtonText: cancelText,
   });

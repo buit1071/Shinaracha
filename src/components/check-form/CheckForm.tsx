@@ -27,7 +27,6 @@ type Option = { value: string; label: string };
 export default function CheckForm({ jobId, onBack }: Props) {
     const backToList = () => setView(null);
     const [jobName, setjobName] = React.useState<string>("");
-    const [selectedForm, setSelectedForm] = React.useState<Option | null>(null);
     const [rows, setRows] = React.useState<EquipmentRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
     const [view, setView] = React.useState<null | { type: "detail"; id: string; equipment_id: string; name: string }>(null);
@@ -115,6 +114,76 @@ export default function CheckForm({ jobId, onBack }: Props) {
             headerAlign: "center",
             align: "center",
             resizable: false,
+        },
+        {
+            field: "form_status",
+            headerName: "สถานะ",
+            flex: 1.0,
+            minWidth: 150,
+            headerAlign: "center",
+            align: "center",
+            resizable: false,
+            renderCell: (params: GridRenderCellParams<EquipmentRow>) => {
+                const status = params.value as string;
+                let label = "-";
+                // Default: สีเทา
+                let styleClass = "bg-gray-100 text-gray-600";
+
+                switch (status) {
+                    case "ASSIGNED": // รอยืนยัน -> สีเทา
+                        label = "รอยืนยัน";
+                        styleClass = "bg-gray-100 text-gray-600";
+                        break;
+                    case "ACCEPTED": // รับงาน -> สีฟ้า
+                        label = "รับงาน";
+                        styleClass = "bg-blue-100 text-blue-600";
+                        break;
+                    case "IN_PROGRESS": // กำลังตรวจ -> สีเหลือง
+                        label = "กำลังตรวจ";
+                        styleClass = "bg-yellow-100 text-yellow-700";
+                        break;
+                    case "APPROVED": // รอตรวจสอบ -> สีส้ม
+                        label = "รอตรวจสอบ";
+                        styleClass = "bg-orange-100 text-orange-600";
+                        break;
+                    case "REVISE": // แก้ไข -> สีแดง
+                        label = "แก้ไข";
+                        styleClass = "bg-red-100 text-red-600";
+                        break;
+                    case "COMPLETED": // เสร็จสิ้น -> สีเขียว
+                        label = "เสร็จสิ้น";
+                        styleClass = "bg-emerald-100 text-emerald-600";
+                        break;
+                    default:
+                        if (!status) {
+                            label = "ยังไม่เริ่ม";
+                            styleClass = "bg-gray-50 text-gray-400";
+                        } else {
+                            label = status;
+                        }
+                }
+
+                return (
+                    // เพิ่ม h-full เพื่อให้ container สูงเต็มพื้นที่ cell แล้วจัดกึ่งกลาง
+                    <div className="w-full h-full flex items-center justify-center">
+                        <span
+                            className={`
+                                min-w-[80px]       // ลดความกว้างขั้นต่ำลงนิดหน่อยให้กระชับ
+                                px-2 py-0.5        // ลด padding บนล่างให้บางลง (สำคัญ)
+                                rounded-full 
+                                text-[12px] 
+                                font-medium 
+                                leading-4          // จัดระยะบรรทัดให้พอดี
+                                shadow-sm 
+                                flex justify-center items-center
+                                ${styleClass}
+                            `}
+                        >
+                            {label}
+                        </span>
+                    </div>
+                );
+            },
         },
     ];
 

@@ -72,11 +72,21 @@ export async function POST(req: Request) {
       dje.updated_by,
       dje.created_date,
       dje.updated_date,
-      me.zone_id,                      -- zone_id จาก master_equipments
-      COALESCE(z.zone_name, '') AS zone_name
+      me.zone_id,
+      COALESCE(z.zone_name, '') AS zone_name,
+      
+      -- ✅ เพิ่ม field นี้เพื่อให้แสดงใน DataGrid
+      fsf.form_status
+
     FROM data_job_equipments AS dje
     LEFT JOIN master_equipments  AS me ON me.equipment_id = dje.equipment_id
-    LEFT JOIN data_service_form  AS z  ON z.zone_id      = me.zone_id
+    LEFT JOIN data_service_form  AS z  ON z.zone_id       = me.zone_id
+    
+    -- ✅ Join ตาราง formdata_sign_forms เพื่อดึงสถานะ
+    LEFT JOIN formdata_sign_forms AS fsf 
+        ON fsf.job_id = dje.job_id 
+        AND fsf.equipment_id = dje.equipment_id
+
     WHERE dje.job_id = ?
     ORDER BY dje.created_date DESC
     `,
@@ -98,7 +108,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ success: false, message: "ไม่รู้จัก function ที่ส่งมา" }, { status: 400 });
     } catch (err: any) {
-        
+
         return NextResponse.json(
             { success: false, message: "Database error", error: err.message },
             { status: 500 }

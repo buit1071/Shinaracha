@@ -17,7 +17,7 @@ import Section2_5Details, {
 import Section2_6Details, { SectionSixForm, SectionSixRow } from "@/components/check-form/forms/form1-3/new_form/Section2_6Details";
 import Section2_7Details, { SectionSevenForm, SectionSevenRow } from "@/components/check-form/forms/form1-3/new_form/Section2_7Details";
 import { showLoading } from "@/lib/loading";
-import { showAlert } from "@/lib/fetcher";
+import { showAlert, showConfirm } from "@/lib/fetcher";
 import { exportToDocx } from "@/utils/exportToDocx";
 import { exportToExcel } from "@/utils/exportToExcel";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -106,6 +106,8 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
     const [formData, setFormData] = React.useState<FormData>({});
     const [coverSrc, setCoverSrc] = React.useState<string | null>(null);
     const [openSections, setOpenSections] = React.useState<string[]>([]);
+    const [isApprovable, setIsApprovable] = React.useState(false);
+    const [isSaveable, setIsSaveable] = React.useState(false);
 
     const onSectionTwoChange = React.useCallback((patch: Partial<SectionTwoForm>) => {
         setFormData((prev) => ({
@@ -265,11 +267,6 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
             showLoading(false);
         }
     };
-
-    React.useEffect(() => {
-        if (!jobId) return;
-        fecthFormDetail();
-    }, [jobId, equipment_id]);
 
     React.useEffect(() => {
         let revokeUrl: string | null = null;
@@ -632,9 +629,9 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 if (data.form_code && !formData.form_code) {
                     setFormData((prev) => ({ ...prev, form_code: data.form_code }));
                 }
-
-                onBack();
-                return;
+                CheckApprove();
+                // onBack();
+                // return;
             }
 
             await alertAndStop("error", data.message || "บันทึกไม่สำเร็จ");
@@ -644,6 +641,139 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
             stopLoading();
         }
     };
+
+    const CheckSave = async () => {
+        try {
+            if (!jobId || !equipment_id) return false;
+
+            const payload = {
+                entity: "check_save",
+                data: {
+                    job_id: jobId,
+                    equipment_id: equipment_id,
+                }
+            };
+
+            const res = await fetch("/api/auth/forms/post", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            const result = await res.json();
+            return result.success; // ✅ API คืนค่า true/false ตาม Logic ใหม่แล้ว
+
+        } catch (err) {
+            console.error("CheckSave Error:", err);
+            return false;
+        }
+    };
+
+    const handleApprove = async () => {
+        // 1. ตรวจสอบข้อมูลก่อน
+        if (!formData.form_code) {
+            showAlert("error", "ไม่พบรหัสฟอร์ม กรุณาบันทึกข้อมูลก่อนอนุมัติ");
+            return;
+        }
+
+        // 2. ✅ เรียกใช้ showConfirm เพื่อยืนยัน
+        const isConfirmed = await showConfirm(
+            "เมื่ออนุมัติแล้วจะไม่สามารถแก้ไขข้อมูลได้อีก", // message (ข้อความเตือน)
+            "ยืนยันการอนุมัติ?", // title (หัวข้อ)
+            "ยืนยันอนุมัติ", // confirmText (ปุ่มยืนยัน)
+            "ยกเลิก" // cancelText (ปุ่มยกเลิก)
+        );
+
+        // 3. ถ้ากด "ยกเลิก" ให้หยุดทำงานทันที
+        if (!isConfirmed) return;
+
+        // 4. เริ่มกระบวนการส่งข้อมูล
+        showLoading(true);
+        try {
+            const payload = {
+                entity: "approve",
+                form_code: formData.form_code,
+                updated_by: username,
+            };
+
+            // ยิง API ไปที่ endpoint สำหรับ approve
+            const res = await fetch("/api/auth/forms/post", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            const result = await res.json();
+
+            showLoading(false); // ย้ายไป finally จะดีกว่าครับ
+
+            if (result.success) {
+                await showAlert("success", result.message || "อนุมัติรายการสำเร็จ");
+                onBack();
+                return;
+            } else {
+                showAlert("error", result.message || "การอนุมัติล้มเหลว");
+            }
+        } catch (err) {
+            showAlert("error", "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        } finally {
+            // showLoading(false); // ✅ ทำงานเสมอไม่ว่าจะสำเร็จหรือล้มเหลว
+        }
+    };
+
+    const CheckApprove = async () => {
+        try {
+            if (!jobId || !equipment_id) return false;
+
+            const payload = {
+                entity: "check_approve",
+                data: {
+                    job_id: jobId,
+                    equipment_id: equipment_id,
+                }
+            };
+
+            const res = await fetch("/api/auth/forms/post", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            const result = await res.json();
+            return result.success;
+
+        } catch (err) {
+            console.error("CheckApprove Error:", err);
+            return false;
+        }
+    };
+
+    React.useEffect(() => {
+        if (!jobId) return;
+
+        const initData = async () => {
+            showLoading(true); // ✅ เปิด Loading
+            try {
+                // 1. โหลดข้อมูลฟอร์ม
+                await fecthFormDetail();
+
+                // 2. เช็คสิทธิ์ Approve และ Set State
+                const canApprove = await CheckApprove();
+                setIsApprovable(canApprove);
+
+                // 3. ✅ เช็คสิทธิ์ Save และ Set State
+                const canSave = await CheckSave();
+                setIsSaveable(canSave);
+
+            } catch (err) {
+                console.error("Error init data:", err);
+            } finally {
+                showLoading(false); // ✅ ปิด Loading เมื่อเสร็จทุกอย่าง
+            }
+        };
+
+        initData();
+    }, [jobId, equipment_id]); // เช็คใหม่เมื่อ ID เปลี่ยน
 
     return (
         <>
@@ -1209,23 +1339,43 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     </div>
                 </section>
 
-                <div className="flex">
-                    <button
-                        type="button"
-                        onClick={handleSave}
-                        className="ml-auto inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 font-medium text-white shadow-sm transition-colors hover:bg-sky-500 active:bg-sky-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            className="h-5 w-5"
-                            fill="currentColor"
-                            aria-hidden="true"
+                <div className="flex gap-2 justify-end">
+                    {isApprovable && (
+                        <button
+                            type="button"
+                            onClick={handleApprove}
+                            // เอา ml-auto ออก เพราะเราจัดที่ div แม่แล้ว
+                            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white shadow-sm transition-colors hover:bg-emerald-500 active:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
                         >
-                            <path d="M3 4a2 2 0 0 1 2-2h7.586a2 2 0 0 1 1.414.586l2.414 2.414A2 2 0 0 1 17 6.414V17a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4Zm3 0h6v4H6V4Zm0 7a1 1 0 0 0-1 1v4h8v-4a1 1 0 0 0-1-1H6Z" />
-                        </svg>
-                        Save
-                    </button>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                                className="h-5 w-5"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    fillRule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clipRule="evenodd"
+                                />
+                            </svg>
+                            Approve
+                        </button>
+                    )}
+
+                    {isSaveable && (
+                        <button
+                            type="button"
+                            onClick={handleSave}
+                            className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 font-medium text-white shadow-sm transition-colors hover:bg-sky-500 active:bg-sky-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+                                <path d="M3 4a2 2 0 0 1 2-2h7.586a2 2 0 0 1 1.414.586l2.414 2.414A2 2 0 0 1 17 6.414V17a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4Zm3 0h6v4H6V4Zm0 7a1 1 0 0 0-1 1v4h8v-4a1 1 0 0 0-1-1H6Z" />
+                            </svg>
+                            Save
+                        </button>
+                    )}
                 </div>
                 {/* <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
                     {JSON.stringify(formData.section2_6, null, 2)}
