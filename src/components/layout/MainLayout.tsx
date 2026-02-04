@@ -79,8 +79,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             localStorage.removeItem("currentUser");
             sessionStorage.clear();
         } catch { }
-        showLoading(false);
         router.replace("/login");
+        showLoading(false);
     };
 
     const collapse = () => setIsCollapsed(true);

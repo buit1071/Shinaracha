@@ -39,7 +39,7 @@ export default function LoginForm() {
     } catch (e: any) {
       setErr(e.message);
     } finally {
-      showLoading(false);
+      // showLoading(false);
     }
   };
 
@@ -91,7 +91,7 @@ export default function LoginForm() {
         </button>
 
         <p className="mt-5 text-center text-xs text-gray-500">
-          © 2025 Nice Software. All rights reserved.
+          © 2026 Nice Software. All rights reserved.
         </p>
       </form>
     </div>
