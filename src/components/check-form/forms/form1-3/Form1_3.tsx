@@ -541,6 +541,8 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 shapeSketchName, shapeSketch1Name,
                 photosFrontName, photosSideName, photosBaseName,
                 photosFront1Name, photosSide1Name, photosBase1Name,
+                photosFront2Name, photosSide2Name, photosBase2Name,
+                photosFront3Name, photosSide3Name, photosBase3Name,
             ] = await Promise.all([
                 uploadImageSource(pickSrc(s2.mapSketchPreview, s2.mapSketch), toPlainFilename(s2.mapSketch)),
                 uploadImageSource(pickSrc(s2.mapSketchPreview1, s2.mapSketch1), toPlainFilename(s2.mapSketch1)),
@@ -552,6 +554,12 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 uploadImageSource(pickSrc(s2.photosFrontPreview1, s2.photosFront1), toPlainFilename(s2.photosFront1)),
                 uploadImageSource(pickSrc(s2.photosSidePreview1, s2.photosSide1), toPlainFilename(s2.photosSide1)),
                 uploadImageSource(pickSrc(s2.photosBasePreview1, s2.photosBase1), toPlainFilename(s2.photosBase1)),
+                uploadImageSource(pickSrc(s2.photosFrontPreview2, s2.photosFront2), toPlainFilename(s2.photosFront2)),
+                uploadImageSource(pickSrc(s2.photosSidePreview2, s2.photosSide2), toPlainFilename(s2.photosSide2)),
+                uploadImageSource(pickSrc(s2.photosBasePreview2, s2.photosBase2), toPlainFilename(s2.photosBase2)),
+                uploadImageSource(pickSrc(s2.photosFrontPreview3, s2.photosFront3), toPlainFilename(s2.photosFront3)),
+                uploadImageSource(pickSrc(s2.photosSidePreview3, s2.photosSide3), toPlainFilename(s2.photosSide3)),
+                uploadImageSource(pickSrc(s2.photosBasePreview3, s2.photosBase3), toPlainFilename(s2.photosBase3)),
             ]);
 
             const {
@@ -559,6 +567,8 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 shapeSketchPreview, shapeSketchPreview1,
                 photosFrontPreview, photosSidePreview, photosBasePreview,
                 photosFrontPreview1, photosSidePreview1, photosBasePreview1,
+                photosFrontPreview2, photosSidePreview2, photosBasePreview2,
+                photosFrontPreview3, photosSidePreview3, photosBasePreview3,
                 ...sectionTwoBase
             } = s2;
 
@@ -574,6 +584,12 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 photosFront1: photosFront1Name ?? sectionTwoBase.photosFront1,
                 photosSide1: photosSide1Name ?? sectionTwoBase.photosSide1,
                 photosBase1: photosBase1Name ?? sectionTwoBase.photosBase1,
+                photosFront2: photosFront2Name ?? sectionTwoBase.photosFront2,
+                photosSide2: photosSide2Name ?? sectionTwoBase.photosSide2,
+                photosBase2: photosBase2Name ?? sectionTwoBase.photosBase2,
+                photosFront3: photosFront3Name ?? sectionTwoBase.photosFront3,
+                photosSide3: photosSide3Name ?? sectionTwoBase.photosSide3,
+                photosBase3: photosBase3Name ?? sectionTwoBase.photosBase3,
             };
 
             // ============================================================
@@ -629,9 +645,8 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 if (data.form_code && !formData.form_code) {
                     setFormData((prev) => ({ ...prev, form_code: data.form_code }));
                 }
-                CheckApprove();
-                // onBack();
-                // return;
+                onBack();
+                return;
             }
 
             await alertAndStop("error", data.message || "บันทึกไม่สำเร็จ");
@@ -1377,9 +1392,9 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         </button>
                     )}
                 </div>
-                {/* <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
-                    {JSON.stringify(formData.section2_6, null, 2)}
-                </pre> */}
+                <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
+                    {JSON.stringify(formData.sectionTwo, null, 2)}
+                </pre>
             </div>
         </>
     )

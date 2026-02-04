@@ -286,6 +286,12 @@ export type SectionTwoForm = {
     photosFront1?: string | File | null;
     photosSide1?: string | File | null;
     photosBase1?: string | File | null;
+    photosFront2?: string | File | null;
+    photosSide2?: string | File | null;
+    photosBase2?: string | File | null;
+    photosFront3?: string | File | null;
+    photosSide3?: string | File | null;
+    photosBase3?: string | File | null;
 
     // --- 2) ประเภทป้าย ---
     typeGround?: boolean;
@@ -420,7 +426,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
     React.useEffect(() => {
         CheckFormType();
     }, [eq_id]);
-    
+
     // ====== เติมค่าเริ่มต้นจาก data เข้า formData.sectionTwo (เติมเฉพาะช่องที่ยังว่าง) ======
     React.useEffect(() => {
         if (!data) return;
@@ -479,6 +485,12 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
     const [p4, setP4] = React.useState<string | null>(null);
     const [p5, setP5] = React.useState<string | null>(null);
     const [p6, setP6] = React.useState<string | null>(null);
+    const [p7, setP7] = React.useState<string | null>(null);
+    const [p8, setP8] = React.useState<string | null>(null);
+    const [p9, setP9] = React.useState<string | null>(null);
+    const [p10, setP10] = React.useState<string | null>(null);
+    const [p11, setP11] = React.useState<string | null>(null);
+    const [p12, setP12] = React.useState<string | null>(null);
 
     const isBlobUrl = (u: string | null) => !!u && u.startsWith("blob:");
 
@@ -1250,6 +1262,54 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                         label="รูปที่ 6"
                         values={p6 ? [p6] : []}
                         onChange={(urls) => pickGalleryImage(urls, "base1", "photosBase1", setP6)}
+                        single
+                    />
+                </div>
+            </section>
+
+            {/* ===================== รูป 7-9 ===================== */}
+            <section className="space-y-4">
+                <div className="grid md:grid-cols-3 gap-6">
+                    <ImageGallery
+                        label="รูปที่ 7"
+                        values={p7 ? [p7] : []}
+                        onChange={(urls) => pickGalleryImage(urls, "front2", "photosFront2", setP7)}
+                        single
+                    />
+                    <ImageGallery
+                        label="รูปที่ 8"
+                        values={p8 ? [p8] : []}
+                        onChange={(urls) => pickGalleryImage(urls, "side2", "photosSide2", setP8)}
+                        single
+                    />
+                    <ImageGallery
+                        label="รูปที่ 9"
+                        values={p9 ? [p9] : []}
+                        onChange={(urls) => pickGalleryImage(urls, "base2", "photosBase2", setP9)}
+                        single
+                    />
+                </div>
+            </section>
+
+            {/* ===================== รูป 10-12 ===================== */}
+            <section className="space-y-4">
+                <div className="grid md:grid-cols-3 gap-6">
+                    <ImageGallery
+                        label="รูปที่ 10"
+                        values={p10 ? [p10] : []}
+                        onChange={(urls) => pickGalleryImage(urls, "front3", "photosFront3", setP10)}
+                        single
+                    />
+                    <ImageGallery
+                        label="รูปที่ 11"
+                        values={p11 ? [p11] : []}
+                        onChange={(urls) => pickGalleryImage(urls, "side3", "photosSide3", setP11)}
+                        single
+                    />
+                    <ImageGallery
+                        label="รูปที่ 12"
+                        values={p12 ? [p12] : []}
+                        onChange={(urls) => pickGalleryImage(urls, "base3", "photosBase3", setP12)}
                         single
                     />
                 </div>

@@ -130,10 +130,6 @@ export default function CheckForm({ jobId, onBack }: Props) {
                 let styleClass = "bg-gray-100 text-gray-600";
 
                 switch (status) {
-                    case "ASSIGNED": // รอยืนยัน -> สีเทา
-                        label = "รอยืนยัน";
-                        styleClass = "bg-gray-100 text-gray-600";
-                        break;
                     case "ACCEPTED": // รับงาน -> สีฟ้า
                         label = "รับงาน";
                         styleClass = "bg-blue-100 text-blue-600";
@@ -154,13 +150,18 @@ export default function CheckForm({ jobId, onBack }: Props) {
                         label = "เสร็จสิ้น";
                         styleClass = "bg-emerald-100 text-emerald-600";
                         break;
+
+                    // ✅ รวม ASSIGNED และ Default (ค่าว่าง) ให้เป็น "รอยืนยัน"
+                    case "ASSIGNED":
                     default:
-                        if (!status) {
-                            label = "ยังไม่เริ่ม";
-                            styleClass = "bg-gray-50 text-gray-400";
+                        if (!status || status === "ASSIGNED") {
+                            label = "รอยืนยัน";
+                            styleClass = "bg-gray-100 text-gray-600";
                         } else {
+                            // กรณีมีสถานะแปลกๆ ที่ไม่รู้จักหลุดมา ให้แสดง text นั้นๆ
                             label = status;
                         }
+                        break;
                 }
 
                 return (

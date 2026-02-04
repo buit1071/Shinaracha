@@ -24,7 +24,7 @@ export async function POST(req: Request) {
 
             // ✅ ดึงค่าหลักจาก frontend
             const job_id = data.job_id || "";
-            const form_status = data.form_status || "";
+            const form_status = data.form_status || "IN_PROGRESS";
             const equipment_id = data.equipment_id || "";
             const createdBy = data.created_by || "unknown";
             const updatedBy = data.updated_by || createdBy;
@@ -77,7 +77,7 @@ export async function POST(req: Request) {
                     isActive,
                     createdBy,
                     updatedBy,
-                    "ASSIGNED",
+                    form_status,
                     job_id,
                     equipment_id,
                 ]);
