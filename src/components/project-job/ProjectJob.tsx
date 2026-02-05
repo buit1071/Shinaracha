@@ -92,12 +92,16 @@ export default function ProjectJob({ projectId, onBack }: Props) {
         { field: "team_name", headerName: "ทีม", flex: 1, headerAlign: "center", align: "left" },
         { field: "branch_name", headerName: "สถานที่", flex: 1, headerAlign: "center", align: "left" },
         {
-            field: "status_name",
+            field: "equipment_count",
             headerName: "สถานะ",
             flex: 1,
             headerAlign: "center",
             align: "center",
-            renderCell: ({ value }) => (value && String(value).trim() ? value : "-"),
+            renderCell: (params) => {
+                const count = params.row.equipment_count || 0;
+                // ✅ แสดงข้อความตามที่ต้องการ
+                return `กำลังดำเนินการอยู่ ${count} รายงาน`;
+            },
         },
     ];
 

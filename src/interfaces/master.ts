@@ -270,6 +270,7 @@ export interface JobsRow {
     customer_name?: string;
     branch_name?: string;
     status_name?: string;
+    equipment_count?: number;
     is_active: number;
     created_by: string;
     updated_by: string;
