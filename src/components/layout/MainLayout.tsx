@@ -295,9 +295,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     />
                     {openMenus.includes("projects") && (!isCollapsed || isMobileMenuOpen) && (
                         <div className="ml-7 mt-1 space-y-1">
-                            <NavLink href="/job" currentPath={pathname} icon={BriefcaseIcon} collapsed={false} onClick={closeMobileMenu}>
-                                จัดการงาน
-                            </NavLink>
+                            {!isTaskOnly && (
+                                <NavLink href="/job" currentPath={pathname} icon={BriefcaseIcon} collapsed={false} onClick={closeMobileMenu}>
+                                    จัดการงาน
+                                </NavLink>
+                            )}
                             <NavLink href="/report" currentPath={pathname} icon={DocumentTextIcon} collapsed={false} onClick={closeMobileMenu}>
                                 ข้อมูลแบบฟอร์ม
                             </NavLink>

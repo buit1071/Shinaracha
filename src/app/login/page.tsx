@@ -31,7 +31,7 @@ export default function LoginForm() {
 
       // ✅ ถ้าเป็น permission นี้ ให้เข้า /job เลย
       if (user?.permission_id === "PER-93994499") {
-        router.replace("/job");
+        router.replace("/report");
       } else {
         router.replace("/dashboard");
       }

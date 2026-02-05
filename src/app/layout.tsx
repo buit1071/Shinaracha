@@ -3,7 +3,7 @@ import "./globals.css";
 import LayoutSwitch from "./LayoutSwitch";
 
 export const metadata: Metadata = {
-  title: "Shinaracha",
+  title: "BI&FP Reports",
   description: "",
   // icons: {
   //   icon: "/images/Logo_Shinaracha.webp",
