@@ -13,8 +13,10 @@ import { showLoading } from "@/lib/loading";
 import { ProjectRow } from "@/interfaces/master";
 import { formatDate } from "@/lib/fetcher";
 import ProjectJob from "@/components/project-job/ProjectJob";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function ReportPage() {
+    const user = useCurrentUser();
     const DATE_COL_WIDTH = 300; // ปรับได้ตามชอบ
     const [view, setView] = React.useState<null | { type: "detail"; id: string }>(null);
     const openDetail = (id: string) => setView({ type: "detail", id });
@@ -24,29 +26,34 @@ export default function ReportPage() {
 
     // โหลดข้อมูลและจัดเรียงใหม่
     const fetchProject = async () => {
+        if (!user) return;
         showLoading(true);
+
         try {
-            const res = await fetch("/api/auth/project-list");
+            const params = new URLSearchParams();
+
+            // ✅ ตรงนี้ user จะมีค่าแน่นอนแล้วเพราะ useEffect สั่งมาเมื่อ user พร้อม
+            if (user?.company_id) {
+                params.append("company_id", user.company_id);
+            }
+
+            const res = await fetch(`/api/auth/project-list?${params.toString()}`);
             const data = await res.json();
             if (data.success) {
                 setRows(data.data);
             }
         } catch (err) {
+            console.error(err);
         } finally {
             showLoading(false);
         }
     };
 
     React.useEffect(() => {
-        (async () => {
-            showLoading(true);
-            try {
-                await fetchProject();
-            } finally {
-                showLoading(false);
-            }
-        })();
-    }, []);
+        if (user) {
+            fetchProject();
+        }
+    }, [user]);
 
     const columns: GridColDef<ProjectRow>[] = [
         {

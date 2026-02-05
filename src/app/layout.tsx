@@ -5,11 +5,11 @@ import LayoutSwitch from "./LayoutSwitch";
 export const metadata: Metadata = {
   title: "Shinaracha",
   description: "",
-  icons: {
-    icon: "/images/Logo_Shinaracha.webp",
-    shortcut: "/images/Logo_Shinaracha.webp",
-    apple: "/images/Logo_Shinaracha.webp",
-  },
+  // icons: {
+  //   icon: "/images/Logo_Shinaracha.webp",
+  //   shortcut: "/images/Logo_Shinaracha.webp",
+  //   apple: "/images/Logo_Shinaracha.webp",
+  // },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

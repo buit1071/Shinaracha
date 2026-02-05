@@ -138,8 +138,8 @@ export default function CheckForm({ jobId, onBack }: Props) {
                         label = "กำลังตรวจ";
                         styleClass = "bg-yellow-100 text-yellow-700";
                         break;
-                    case "APPROVED": // รอตรวจสอบ -> สีส้ม
-                        label = "รอตรวจสอบ";
+                    case "APPROVED": // ส่งงานแล้ว -> สีส้ม
+                        label = "ส่งงานแล้ว";
                         styleClass = "bg-orange-100 text-orange-600";
                         break;
                     case "REVISE": // แก้ไข -> สีแดง

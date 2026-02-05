@@ -22,7 +22,7 @@ import {
     Switch,
 } from "@mui/material";
 import { showLoading } from "@/lib/loading";
-import { ProjectRow } from "@/interfaces/master";
+import { ProjectRow, CompanyRow } from "@/interfaces/master";
 import { showAlert, showConfirm, parseToInputDate, formatToThaiDate, formatDate } from "@/lib/fetcher";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
@@ -33,12 +33,14 @@ export default function ProjectListPage() {
         [user]
     );
     const [rows, setRows] = React.useState<ProjectRow[]>([]);
+    const [companys, setCompanys] = React.useState<CompanyRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
     const [open, setOpen] = React.useState(false);
     const [isEdit, setIsEdit] = React.useState(false);
     const [error, setError] = React.useState(false);
 
     const [formData, setFormData] = React.useState<ProjectRow>({
+        company_id: "",
         project_id: "",
         project_name: "",
         project_description: "",
@@ -64,11 +66,30 @@ export default function ProjectListPage() {
         }
     };
 
+    const fetchCompany = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/company/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "company" }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setCompanys(data.data);
+            }
+        } catch (err) {
+        } finally {
+            showLoading(false);
+        }
+    };
+
     React.useEffect(() => {
         (async () => {
             showLoading(true);
             try {
                 await fetchProject();
+                await fetchCompany();
             } finally {
                 showLoading(false);
             }
@@ -78,6 +99,7 @@ export default function ProjectListPage() {
     const handleOpenAdd = () => {
         setIsEdit(false);
         setFormData({
+            company_id: "",
             project_id: "",
             project_name: "",
             project_description: "",
@@ -106,7 +128,7 @@ export default function ProjectListPage() {
     const handleClose = () => setOpen(false);
 
     const handleSave = async () => {
-        if (!formData.project_name || !formData.start_date || !formData.end_date) {
+        if (!formData.company_id || !formData.project_name || !formData.start_date || !formData.end_date) {
             setError(true);
             return;
         }
@@ -120,7 +142,7 @@ export default function ProjectListPage() {
                 ...formData,
                 ...audit,
             };
-            
+
             const res = await fetch("/api/auth/project-list", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -304,7 +326,7 @@ export default function ProjectListPage() {
             <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" sx={{ zIndex: 1000 }}>
                 <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
                 <DialogContent dividers>
-                    {isEdit && (
+                    {/* {isEdit && (
                         <TextField
                             size="small"
                             margin="dense"
@@ -313,7 +335,84 @@ export default function ProjectListPage() {
                             value={formData.project_id}
                             disabled
                         />
-                    )}
+                    )} */}
+
+                    <Box mb={1}>
+                        <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
+                            บริษัท
+                        </label>
+                        <Select menuPlacement="auto"
+                            options={companys.map(p => ({
+                                value: p.company_id,
+                                label: p.company_name_th,
+                            }))}
+                            value={
+                                companys
+                                    .map(p => ({
+                                        value: p.company_id,
+                                        label: p.company_name_th,
+                                    }))
+                                    .find(opt => opt.value === formData.company_id) || null
+                            }
+
+                            onChange={(selected: any) => {
+                                setFormData((prev: any) => ({
+                                    ...prev,
+                                    company_id: selected?.value ?? ""
+                                }));
+                            }}
+
+                            placeholder="-- เลือกบริษัท --"
+                            isClearable
+                            menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                            styles={{
+                                control: (base, state) => ({
+                                    ...base,
+                                    backgroundColor: "#fff",
+                                    borderColor:
+                                        error && !formData.company_id
+                                            ? "#d32f2f" // ❌ สีแดงเมื่อ error
+                                            : state.isFocused
+                                                ? "#3b82f6"
+                                                : "#d1d5db",
+                                    boxShadow: "none",
+                                    "&:hover": {
+                                        borderColor:
+                                            error && !formData.company_id ? "#d32f2f" : "#9ca3af",
+                                    },
+                                }),
+                                menu: (base) => ({
+                                    ...base,
+                                    backgroundColor: "#fff",
+                                    boxShadow: "0 8px 24px rgba(0,0,0,.2)",
+                                    border: "1px solid #e5e7eb",
+                                }),
+                                menuPortal: (base) => ({
+                                    ...base,
+                                    zIndex: 2100,
+                                }),
+                                option: (base, state) => ({
+                                    ...base,
+                                    backgroundColor: state.isSelected
+                                        ? "#e5f2ff"
+                                        : state.isFocused
+                                            ? "#f3f4f6"
+                                            : "#fff",
+                                    color: "#111827",
+                                }),
+                                menuList: (base) => ({
+                                    ...base,
+                                    backgroundColor: "#fff",
+                                    paddingTop: 0,
+                                    paddingBottom: 0,
+                                }),
+                                singleValue: (base) => ({
+                                    ...base,
+                                    color: "#111827",
+                                }),
+                            }}
+                        />
+                    </Box>
 
                     <TextField
                         size="small"

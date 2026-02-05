@@ -33,7 +33,6 @@ import {
     JobsRow,
     TeamRow,
     ProjectRow,
-    JobStatusRow,
     CustomerBranchRow,
     EquipmentRow,
     EquipmentBranchRow
@@ -53,7 +52,6 @@ export default function JobPage() {
     const [teams, setTeams] = React.useState<TeamRow[]>([]);
     const [branchs, setBranchs] = React.useState<CustomerBranchRow[]>([]);
     const [projects, setProjects] = React.useState<ProjectRow[]>([]);
-    const [status, setStatus] = React.useState<JobStatusRow[]>([]);
     const [searchText, setSearchText] = React.useState("");
     const [open, setOpen] = React.useState(false);
     const [isEdit, setIsEdit] = React.useState(false);
@@ -89,8 +87,8 @@ export default function JobPage() {
         branch_name: "",
         team_id: "",
         team_name: "",
-        status_id: "",
-        status_name: "",
+        // status_id: "",
+        // status_name: "",
         is_active: 1,
         created_by: "",
         updated_by: "",
@@ -188,15 +186,6 @@ export default function JobPage() {
         }
     };
 
-    const fetchStatus = async () => {
-        try {
-            const res = await fetch("/api/auth/status/get?active=true");
-            const data = await res.json();
-            if (data.success) setStatus(data.data || []);
-        } catch (err) {
-        }
-    };
-
     React.useEffect(() => {
         (async () => {
             showLoading(true);
@@ -205,7 +194,6 @@ export default function JobPage() {
                 await fetchEquipment();
                 await fetchCustomerBranchAll();
                 await fetchTeam();
-                await fetchStatus();
                 await fetchJobs();
             } finally {
                 showLoading(false);
@@ -230,8 +218,8 @@ export default function JobPage() {
             branch_name: "",
             team_id: "",
             team_name: "",
-            status_id: "",
-            status_name: "",
+            // status_id: "",
+            // status_name: "",
             is_active: 1,
             created_by: "",
             updated_by: "",
@@ -271,8 +259,8 @@ export default function JobPage() {
 
             branch_name: row.branch_name ?? "",
 
-            status_id: row.status_id ?? "",
-            status_name: row.status_name ?? "",
+            // status_id: row.status_id ?? "",
+            // status_name: row.status_name ?? "",
 
             is_active: row.is_active ?? 1,
             created_by: row.created_by ?? username,
@@ -317,7 +305,7 @@ export default function JobPage() {
                     job_start_time: formData.job_start_time,
                     job_end_time: formData.job_end_time,
                     team_id: formData.team_id,
-                    status_id: formData.status_id,
+                    // status_id: formData.status_id,
                     customer_id: formData.customer_id,
                     is_active: formData.is_active ?? 1,
                     created_by: formData.created_by || username,
@@ -409,12 +397,12 @@ export default function JobPage() {
         },
 
         // เล็กลง
-        {
-            field: "status_name",
-            headerName: "สถานะ",
-            width: 110, headerAlign: "center", align: "center", resizable: false,
-            renderCell: ({ value }) => (value && String(value).trim() ? value : "-"),
-        },
+        // {
+        //     field: "status_name",
+        //     headerName: "สถานะ",
+        //     width: 110, headerAlign: "center", align: "center", resizable: false,
+        //     renderCell: ({ value }) => (value && String(value).trim() ? value : "-"),
+        // },
         {
             field: "actions",
             headerName: "Action",
@@ -696,7 +684,7 @@ export default function JobPage() {
             <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xl" sx={{ zIndex: 1000 }}>
                 <DialogTitle>{isEdit ? "แก้ไขข้อมูล" : "เพิ่มข้อมูล"}</DialogTitle>
                 <DialogContent dividers>
-                    {isEdit && (
+                    {/* {isEdit && (
                         <Box
                             sx={{
                                 mt: 2,
@@ -788,7 +776,7 @@ export default function JobPage() {
                                 />
                             </Box>
                         </Box>
-                    )}
+                    )} */}
                     <Box
                         sx={{
                             mt: 2,

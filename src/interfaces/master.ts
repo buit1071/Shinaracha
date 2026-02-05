@@ -12,6 +12,7 @@ export interface CurrentUser {
     role?: string;        // ใส่เพิ่มเผื่อ JWT role
 }
 export interface ProjectRow {
+    company_id: string;
     project_id: string;
     project_name: string;
     project_description: string;
