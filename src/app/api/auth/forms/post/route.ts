@@ -17,77 +17,65 @@ export async function POST(req: Request) {
 
         // ✅ FORM 1_3
         if (entity === "form1_3") {
-
-            // ✅ รับค่า form_code จาก frontend ถ้ามี (ใช้ตอน update)
-            const form_code = data.form_code || generateId("FORM");
-            const form_data = JSON.stringify(data);
+            const form_data = JSON.stringify(data); // เก็บข้อมูลทั้งหมดลง JSON
 
             // ✅ ดึงค่าหลักจาก frontend
             const job_id = data.job_id || "";
-            const form_status = data.form_status || "IN_PROGRESS";
             const equipment_id = data.equipment_id || "";
-            const createdBy = data.created_by || "unknown";
-            const updatedBy = data.updated_by || createdBy;
+            const form_status = data.form_status || "IN_PROGRESS";
+            const updatedBy = data.updated_by || data.created_by || "unknown"; // ใช้คนแก้ไข หรือคนสร้าง ถ้าไม่มี use unknown
             const isActive = data.is_active ?? 1;
 
-            // ✅ เช็คว่ามี form_code นี้ในฐานข้อมูลหรือยัง
-            const checkSql = `SELECT id FROM formdata_sign_forms WHERE form_code = ? LIMIT 1`;
-            const existing = await query(checkSql, [form_code]);
+            // ตรวจสอบข้อมูลจำเป็น
+            if (!job_id || !equipment_id) {
+                return NextResponse.json(
+                    { success: false, message: "job_id หรือ equipment_id หายไป" },
+                    { status: 400 }
+                );
+            }
 
-            if (existing.length > 0) {
-                // 🔄 UPDATE (มีอยู่แล้ว)
+            try {
+                // ✅ 🔄 UPDATE (หาจาก job_id และ equipment_id)
                 const updateSql = `
-            UPDATE formdata_sign_forms
-            SET 
-                form_data = ?,
-                updated_by = ?,
-                updated_date = NOW(),
-                form_status = ?,
-                is_active = ?,
-                job_id = ?,
-                equipment_id = ?
-            WHERE form_code = ?
-        `;
-                await query(updateSql, [
+                    UPDATE formdata_sign_forms
+                    SET 
+                        form_data = ?,
+                        updated_by = ?,
+                        updated_date = NOW(),
+                        form_status = ?,
+                        is_active = ?
+                    WHERE job_id = ? AND equipment_id = ?
+                `;
+
+                const result = await query(updateSql, [
                     form_data,
                     updatedBy,
                     form_status,
                     isActive,
                     job_id,
-                    equipment_id,
-                    form_code,
+                    equipment_id
                 ]);
+
+                // ตรวจสอบว่ามีแถวถูกอัปเดตไหม (ถ้า 0 แปลว่าไม่พบข้อมูล)
+                if ((result as any).affectedRows === 0) {
+                    return NextResponse.json({
+                        success: false,
+                        message: "ไม่พบข้อมูลฟอร์มที่ต้องการอัปเดต (อาจยังไม่ได้ Check In)",
+                    });
+                }
 
                 return NextResponse.json({
                     success: true,
                     message: "อัปเดตข้อมูลสำเร็จ",
-                    form_code,
                     mode: "update",
                 });
-            } else {
-                // 🆕 INSERT (ยังไม่มี)
-                const insertSql = `
-            INSERT INTO formdata_sign_forms 
-                (form_code, form_data, is_active, created_by, created_date, updated_by, updated_date, form_status, job_id, equipment_id)
-            VALUES (?, ?, ?, ?, NOW(), ?, NOW(), ?, ?, ?)
-        `;
-                await query(insertSql, [
-                    form_code,
-                    form_data,
-                    isActive,
-                    createdBy,
-                    updatedBy,
-                    form_status,
-                    job_id,
-                    equipment_id,
-                ]);
 
-                return NextResponse.json({
-                    success: true,
-                    message: "สร้างข้อมูลใหม่สำเร็จ",
-                    form_code,
-                    mode: "create",
-                });
+            } catch (error: any) {
+                console.error("Database Error (form1_3):", error);
+                return NextResponse.json(
+                    { success: false, message: "เกิดข้อผิดพลาดในการอัปเดต", error: error.message },
+                    { status: 500 }
+                );
             }
         }
 
@@ -340,6 +328,73 @@ export async function POST(req: Request) {
                 );
             }
         }
+
+        if (entity === "SaveCheckOut") {
+            const {
+                job_id,
+                equipment_id,
+                check_out_by,
+                check_out_lat,
+                check_out_long,
+                check_out_image
+            } = body.data;
+
+            // ตรวจสอบข้อมูลจำเป็น
+            if (!job_id || !equipment_id) {
+                return NextResponse.json(
+                    { success: false, message: "ข้อมูลไม่ครบถ้วน (job_id หรือ equipment_id หายไป)" },
+                    { status: 400 }
+                );
+            }
+
+            try {
+                // อัปเดตข้อมูล Check Out ลง data_job_checkins
+                // โดยหาแถวที่ตรงกับ job_id + equipment_id และยังไม่มีการ Check Out (check_out_date IS NULL)
+                const result = await query(
+                    `UPDATE data_job_checkins 
+                     SET 
+                        check_out_by = ?, 
+                        check_out_date = NOW(), 
+                        check_out_lat = ?, 
+                        check_out_long = ?, 
+                        check_out_image = ?, 
+                        updated_at = NOW()
+                     WHERE job_id = ? 
+                       AND equipment_id = ? 
+                       AND check_out_date IS NULL`,
+                    [
+                        check_out_by,
+                        check_out_lat,
+                        check_out_long,
+                        check_out_image,
+                        job_id,
+                        equipment_id
+                    ]
+                );
+
+                // ตรวจสอบว่ามีการอัปเดตจริงไหม (ถ้า result.affectedRows = 0 แสดงว่าอาจจะ Check Out ไปแล้ว หรือไม่พบข้อมูล Check In)
+                if ((result as any).affectedRows === 0) {
+                    return NextResponse.json({
+                        success: false,
+                        message: "ไม่พบข้อมูล Check In หรืออาจมีการ Check Out ไปแล้ว",
+                    });
+                }
+
+                return NextResponse.json({
+                    success: true,
+                    message: "บันทึกเวลาออกงานเรียบร้อยแล้ว",
+                    data: result
+                });
+
+            } catch (error: any) {
+                console.error("Database Error (SaveCheckOut):", error);
+                return NextResponse.json(
+                    { success: false, message: "เกิดข้อผิดพลาดในการบันทึกข้อมูล", error: error.message },
+                    { status: 500 }
+                );
+            }
+        }
+
         // entity ไม่ตรง
         return NextResponse.json(
             { success: false, message: "entity ไม่ถูกต้อง" },

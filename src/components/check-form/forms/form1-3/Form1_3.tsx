@@ -141,6 +141,156 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
     const streamRef = React.useRef<MediaStream | null>(null);
 
+    // --- State สำหรับ Check Out Modal ---
+    const [isCheckOutModalOpen, setIsCheckOutModalOpen] = React.useState(false); // เปิด/ปิด Popup
+    const [checkoutImage, setCheckoutImage] = React.useState<string | null>(null); // รูป Preview
+    const [checkoutFile, setCheckoutFile] = React.useState<File | null>(null); // ไฟล์สำหรับ Upload
+    const [isCheckOutSubmitting, setIsCheckOutSubmitting] = React.useState(false); // สถานะกำลังส่ง
+
+    // Refs สำหรับกล้องใน Modal
+    const checkoutVideoRef = React.useRef<HTMLVideoElement>(null);
+    const checkoutStreamRef = React.useRef<MediaStream | null>(null);
+    const checkoutCanvasRef = React.useRef<HTMLCanvasElement>(null);
+
+    const openCheckOutModal = async () => {
+        setIsCheckOutModalOpen(true);
+        setCheckoutImage(null);
+        setCheckoutFile(null);
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "environment" } // กล้องหลัง
+            });
+            checkoutStreamRef.current = stream;
+            // รอให้ Modal Render เสร็จนิดนึงค่อยแปะ Stream
+            setTimeout(() => {
+                if (checkoutVideoRef.current) {
+                    checkoutVideoRef.current.srcObject = stream;
+                }
+            }, 100);
+        } catch (err) {
+            console.error("Camera Error:", err);
+            await showAlert("error", "ไม่สามารถเปิดกล้องได้");
+            setIsCheckOutModalOpen(false);
+        }
+    };
+
+    // 2. ฟังก์ชันปิด Modal และหยุดกล้อง
+    const closeCheckOutModal = () => {
+        if (checkoutStreamRef.current) {
+            checkoutStreamRef.current.getTracks().forEach(t => t.stop());
+            checkoutStreamRef.current = null;
+        }
+        setIsCheckOutModalOpen(false);
+    };
+
+    // 3. ฟังก์ชันถ่ายรูป (Capture)
+    const takeCheckOutPhoto = () => {
+        if (checkoutVideoRef.current && checkoutCanvasRef.current) {
+            const video = checkoutVideoRef.current;
+            const canvas = checkoutCanvasRef.current;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.drawImage(video, 0, 0);
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        const fileName = `CHECKOUT_${new Date().getTime()}.jpg`; // ตั้งชื่อไฟล์ชั่วคราว
+                        const file = new File([blob], fileName, { type: "image/jpeg" });
+                        setCheckoutFile(file);
+                        setCheckoutImage(URL.createObjectURL(blob));
+                        if (checkoutStreamRef.current) {
+                            checkoutStreamRef.current.getTracks().forEach(t => t.stop());
+                        }
+                    }
+                }, 'image/jpeg', 0.8);
+            }
+        }
+    };
+
+    // 4. ฟังก์ชันถ่ายใหม่ (Retake)
+    const retakeCheckOutPhoto = async () => {
+        setCheckoutImage(null);
+        setCheckoutFile(null);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            checkoutStreamRef.current = stream;
+            if (checkoutVideoRef.current) {
+                checkoutVideoRef.current.srcObject = stream;
+            }
+        } catch (err) {
+            console.error("Retake Error:", err);
+        }
+    };
+
+    // 5. ฟังก์ชันยืนยันการ Check Out (Submit)
+    const handleConfirmCheckOut = async () => {
+        if (!checkoutFile || !jobId || !equipment_id) return;
+        setIsCheckOutSubmitting(true);
+        showLoading(true);
+
+        try {
+            // 5.1 หาพิกัด GPS
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true, timeout: 10000, maximumAge: 0
+                });
+            });
+
+            // 5.2 สร้างชื่อไฟล์จริงตาม Format
+            const d = new Date();
+            const timestamp = `${String(d.getDate()).padStart(2, '0')}${String(d.getMonth() + 1).padStart(2, '0')}${d.getFullYear()}_${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}${String(d.getSeconds()).padStart(2, '0')}`;
+            const realFileName = `CHECKOUT_${timestamp}.jpg`;
+            const realFile = new File([checkoutFile], realFileName, { type: checkoutFile.type });
+
+            // 5.3 Upload รูปภาพ
+            const uploadFd = new FormData();
+            uploadFd.append("file", realFile);
+            uploadFd.append("filename", realFileName);
+
+            const uploadRes = await fetch("/api/auth/upload-file", { method: "POST", body: uploadFd });
+            const uploadData = await uploadRes.json();
+
+            if (!uploadRes.ok || !uploadData.success) throw new Error("Upload failed");
+
+            // 5.4 เรียก API SaveCheckOut
+            const res = await fetch("/api/auth/forms/post", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    entity: "SaveCheckOut",
+                    data: {
+                        job_id: jobId,
+                        equipment_id: equipment_id,
+                        check_out_by: username, // ตัวแปร username จาก context/props
+                        check_out_lat: position.coords.latitude.toString(),
+                        check_out_long: position.coords.longitude.toString(),
+                        check_out_image: realFileName
+                    }
+                }),
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                showLoading(false);
+                await showAlert("success", "Check Out เรียบร้อยแล้ว");
+                closeCheckOutModal();
+                fetchCheckInStatus();
+            } else {
+                showLoading(false);
+                throw new Error(data.message);
+            }
+
+        } catch (err: any) {
+            console.error(err);
+            await showAlert("error", "เกิดข้อผิดพลาด: " + err.message);
+        } finally {
+            setIsCheckOutSubmitting(false);
+        }
+    };
+
     const startCamera = async () => {
         setIsCameraOpen(true);
         setCapturedImage(null); // เคลียร์รูปเก่า
@@ -1571,28 +1721,45 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     </section>
 
                     <div className="flex gap-2 justify-end">
-                        {isApprovable && (
+                        {/* ✅ เพิ่มเงื่อนไข: ถ้ายังไม่มีเวลา Check Out ถึงจะแสดงปุ่ม */}
+                        {!checkInData?.check_out_date && (
                             <button
                                 type="button"
-                                onClick={handleApprove}
-                                // เอา ml-auto ออก เพราะเราจัดที่ div แม่แล้ว
-                                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white shadow-sm transition-colors hover:bg-emerald-500 active:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
+                                onClick={openCheckOutModal}
+                                className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 font-medium text-white shadow-sm transition-colors hover:bg-orange-500 active:bg-orange-700 focus:outline-none cursor-pointer"
                             >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                    className="h-5 w-5"
-                                    aria-hidden="true"
-                                >
-                                    <path
-                                        fillRule="evenodd"
-                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                        clipRule="evenodd"
-                                    />
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                    <polyline points="16 17 21 12 16 7"></polyline>
+                                    <line x1="21" y1="12" x2="9" y2="12"></line>
                                 </svg>
-                                ส่งงาน
+                                Check Out
                             </button>
+                        )}
+
+                        {isApprovable && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={handleApprove}
+                                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white shadow-sm transition-colors hover:bg-emerald-500 active:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                        className="h-5 w-5"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            fillRule="evenodd"
+                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                            clipRule="evenodd"
+                                        />
+                                    </svg>
+                                    ส่งงาน
+                                </button>
+                            </>
                         )}
 
                         {isSaveable && (
@@ -1698,6 +1865,73 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
 
                     {/* Canvas ซ่อนไว้ใช้วาดรูป */}
                     <canvas ref={canvasRef} className="hidden" />
+                </div>
+            )}
+
+            {isCheckOutModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+
+                        {/* Header */}
+                        <div className="flex justify-between items-center p-4 border-b">
+                            <h3 className="text-lg font-bold text-gray-800">📸 Check Out (ลงเวลาออก)</h3>
+                            <button onClick={closeCheckOutModal} className="text-gray-500 hover:text-red-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                        </div>
+
+                        {/* Body: Camera / Preview */}
+                        <div className="flex-1 p-4 bg-black flex items-center justify-center relative min-h-[300px]">
+                            {!checkoutImage ? (
+                                /* โหมดกล้อง */
+                                <video
+                                    ref={checkoutVideoRef}
+                                    autoPlay playsInline
+                                    className="w-full h-full object-cover rounded-lg"
+                                />
+                            ) : (
+                                /* โหมดดูรูป */
+                                <img src={checkoutImage} alt="Preview" className="w-full h-auto rounded-lg" />
+                            )}
+
+                            <canvas ref={checkoutCanvasRef} className="hidden" />
+                        </div>
+
+                        {/* Footer: Buttons */}
+                        <div className="p-4 bg-gray-50 border-t flex justify-between gap-3">
+                            {!checkoutImage ? (
+                                /* ปุ่มกดถ่าย */
+                                <button
+                                    onClick={takeCheckOutPhoto}
+                                    className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold flex justify-center items-center gap-2"
+                                >
+                                    ◉ ถ่ายรูป
+                                </button>
+                            ) : (
+                                /* ปุ่ม Confirm / Retake */
+                                <>
+                                    <button
+                                        onClick={retakeCheckOutPhoto}
+                                        disabled={isCheckOutSubmitting}
+                                        className="flex-1 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium"
+                                    >
+                                        ถ่ายใหม่
+                                    </button>
+                                    <button
+                                        onClick={handleConfirmCheckOut}
+                                        disabled={isCheckOutSubmitting}
+                                        className="flex-1 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex justify-center items-center gap-2"
+                                    >
+                                        {isCheckOutSubmitting ? (
+                                            <>⏳ กำลังบันทึก...</>
+                                        ) : (
+                                            <>ยืนยัน Check Out</>
+                                        )}
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
         </>

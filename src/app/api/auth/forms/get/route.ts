@@ -5,6 +5,7 @@ type GetBody =
     | { function: "form1_3"; job_id: string; equipment_id: string }
     | { function: "viewEq"; equipment_id: string }
     | { function: "RCheckIn"; job_id: string; equipment_id: string }
+    | { function: "RCheckOut"; job_id: string; equipment_id: string }
     ;
 
 export async function POST(req: Request) {
@@ -93,6 +94,33 @@ export async function POST(req: Request) {
                 return NextResponse.json({
                     success: true,
                     exists: false,
+                    data: null
+                });
+            }
+        }
+
+        if (fn === "RCheckOut") {
+            const rows = await query(
+                `SELECT * FROM data_job_checkins 
+                 WHERE job_id = ? 
+                 AND equipment_id = ? 
+                 AND check_out_date IS NOT NULL 
+                 LIMIT 1`,
+                [body.job_id, body.equipment_id]
+            );
+
+            if (rows.length > 0) {
+                // ถ้าเจอข้อมูล แปลว่า Check Out แล้ว
+                return NextResponse.json({
+                    success: true,
+                    checked_out: true,
+                    data: rows[0]
+                });
+            } else {
+                // ถ้าไม่เจอ (อาจจะยังไม่ Check Out หรือยังไม่ Check In)
+                return NextResponse.json({
+                    success: true,
+                    checked_out: false,
                     data: null
                 });
             }
