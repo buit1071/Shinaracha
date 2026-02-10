@@ -21,9 +21,6 @@ type Props = {
     onBack: () => void;
 };
 
-// ---------- Shared types ----------
-type Option = { value: string; label: string };
-
 export default function CheckForm({ jobId, onBack }: Props) {
     const backToList = () => setView(null);
     const [jobName, setjobName] = React.useState<string>("");

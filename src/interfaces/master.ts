@@ -543,3 +543,23 @@ export interface ViewDefectProblem {
     zone_id: string;
     illegal_suggestion?: string;
 }
+export interface Checkins {
+    id: number;
+    job_id: string;
+    equipment_id: string;
+
+    check_in_by?: string | null;
+    check_in_date?: string | null;
+    check_in_lat?: string | null;
+    check_in_long?: string | null;
+    check_in_image?: string | null;
+
+    check_out_by?: string | null;
+    check_out_date?: string | null;
+    check_out_lat?: string | null;
+    check_out_long?: string | null;
+    check_out_image?: string | null;
+
+    created_at?: string;
+    updated_at?: string;
+}

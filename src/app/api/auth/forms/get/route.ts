@@ -4,6 +4,7 @@ import { query } from "@/lib-server/db";
 type GetBody =
     | { function: "form1_3"; job_id: string; equipment_id: string }
     | { function: "viewEq"; equipment_id: string }
+    | { function: "RCheckIn"; job_id: string; equipment_id: string }
     ;
 
 export async function POST(req: Request) {
@@ -71,6 +72,30 @@ export async function POST(req: Request) {
             const rows = await query(sql, [body.equipment_id]);
 
             return NextResponse.json({ success: true, data: rows[0] || null });
+        }
+
+        if (fn === "RCheckIn") {
+
+            const rows = await query(
+                `SELECT * FROM data_job_checkins WHERE job_id = ? AND equipment_id = ? LIMIT 1`,
+                [body.job_id, body.equipment_id]
+            );
+
+            if (rows.length > 0) {
+                // ถ้ามีข้อมูล -> return true พร้อม data
+                return NextResponse.json({
+                    success: true,
+                    exists: true,
+                    data: rows[0]
+                });
+            } else {
+                // ถ้าไม่มีข้อมูล -> return false
+                return NextResponse.json({
+                    success: true,
+                    exists: false,
+                    data: null
+                });
+            }
         }
 
         return NextResponse.json({ success: false, message: "ไม่รู้จัก function ที่ส่งมา" }, { status: 400 });

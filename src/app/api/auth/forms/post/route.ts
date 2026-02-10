@@ -247,6 +247,99 @@ export async function POST(req: Request) {
                 });
             }
         }
+
+        if (entity === "SaveCheckIn") {
+            const {
+                job_id,
+                equipment_id,
+                check_in_by,
+                check_in_lat,
+                check_in_long,
+                check_in_image
+            } = body.data;
+
+            // ตรวจสอบข้อมูลจำเป็น
+            if (!job_id || !equipment_id) {
+                return NextResponse.json(
+                    { success: false, message: "ข้อมูลไม่ครบถ้วน (job_id หรือ equipment_id หายไป)" },
+                    { status: 400 }
+                );
+            }
+
+            try {
+                // 1. บันทึกข้อมูล Check In ลง data_job_checkins
+                await query(
+                    `INSERT INTO data_job_checkins 
+                    (
+                        job_id, equipment_id, check_in_by, check_in_date, 
+                        check_in_lat, check_in_long, check_in_image, 
+                        created_at, updated_at
+                    )
+                    VALUES (?, ?, ?, NOW(), ?, ?, ?, NOW(), NOW())`,
+                    [
+                        job_id, equipment_id, check_in_by,
+                        check_in_lat, check_in_long, check_in_image
+                    ]
+                );
+
+                // 2. ✅ เพิ่มข้อมูลลงตาราง formdata_sign_forms (สร้าง Form ใหม่)
+                // เช็คก่อนว่ามี Form นี้อยู่แล้วหรือยัง (กัน Duplicate)
+                const existingForm = await query(
+                    `SELECT id FROM formdata_sign_forms WHERE job_id = ? AND equipment_id = ? LIMIT 1`,
+                    [job_id, equipment_id]
+                );
+
+                if (existingForm.length === 0) {
+                    const newFormCode = generateId("FORM"); // สร้าง ID ใหม่
+
+                    await query(
+                        `INSERT INTO formdata_sign_forms 
+                        (
+                            form_code, 
+                            form_data, 
+                            is_active, 
+                            created_by, 
+                            created_date, 
+                            updated_by, 
+                            updated_date, 
+                            form_status, 
+                            job_id, 
+                            equipment_id
+                        )
+                        VALUES (?, ?, ?, ?, NOW(), ?, NOW(), ?, ?, ?)`,
+                        [
+                            newFormCode,
+                            JSON.stringify({}), // form_data เป็น JSON ว่าง
+                            1, // is_active
+                            check_in_by, // created_by
+                            check_in_by, // updated_by
+                            "ACCEPTED", // form_status
+                            job_id,
+                            equipment_id
+                        ]
+                    );
+                } else {
+                    // (Optional) ถ้ามีอยู่แล้ว อาจจะ Update สถานะเป็น ACCEPTED ก็ได้ ถ้าต้องการ
+                    await query(
+                        `UPDATE formdata_sign_forms SET form_status = 'ACCEPTED', updated_by = ?, updated_date = NOW() 
+                         WHERE job_id = ? AND equipment_id = ?`,
+                        [check_in_by, job_id, equipment_id]
+                    );
+                }
+
+                return NextResponse.json({
+                    success: true,
+                    message: "บันทึกเวลาเข้างานและสร้างเอกสารเรียบร้อยแล้ว",
+                });
+
+            } catch (error: any) {
+                console.error("Database Error (SaveCheckIn):", error);
+                return NextResponse.json(
+                    { success: false, message: "เกิดข้อผิดพลาดในการบันทึกข้อมูล", error: error.message },
+                    { status: 500 }
+                );
+            }
+        }
         // entity ไม่ตรง
         return NextResponse.json(
             { success: false, message: "entity ไม่ถูกต้อง" },
