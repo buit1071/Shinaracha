@@ -175,7 +175,6 @@ export default function Section2_6Details({ eq_id, value, onChange }: Props) {
                 const zoneId = resData.data;
                 const rounds = getRoundCount(zoneId);
                 setRoundCount(rounds);
-                console.log(`Section2_6: Zone ID: ${zoneId}, Rounds: ${rounds}`);
                 // setRoundCount(1); // ไม่ต้อง fallback เป็น 1 แล้ว เพราะ getRoundCount จัดการแล้ว หรือถ้าจะ fallback ควรเช็คดีๆ
             } else {
                 setRoundCount(1); // Fallback กรณี Error ให้แสดงอย่างน้อย 1 รอบ

@@ -572,6 +572,38 @@ export default function SectionThreeDetails({ value,
         [emit9]
     );
 
+    // ✅ แก้ไข useEffect: ให้เติมค่า Default ลงไปใน State (items) อัตโนมัติ
+    React.useEffect(() => {
+        // วนลูปเช็ค ITEMS_1_7 ทุกตัว
+        ITEMS_1_7.forEach((cfg, idx) => {
+            const no = idx + 1;
+            const id = `s3-${no}`;
+            const existingRow = items[id];
+
+            // ข้อความ Default
+            const defaultTextPart1 = "หากมีการต่อเติม ดัดแปลง ปรับปรุงขนาด ให้แจ้งผู้ตรวจสอบป้าย";
+            const defaultTextPart2 = "และต้องจัดหาวิศวกรที่รับรองความมั่นคงแข็งแรงโครงป้าย เพื่อตรวจสอบความปลอดภัยในการรับน้ำหนักของโครงป้าย";
+
+            // เช็คสถานะปัจจุบัน (ถ้าไม่มีให้ถือว่าเป็น True ตาม Default UI)
+            const isChecked = existingRow?.otherChecked ?? true;
+
+            // เช็คว่าต้องเติมข้อมูลไหม? 
+            // 1. ยังไม่มี row นี้ใน state เลย
+            // 2. หรือ มีแล้ว และต้องติ๊กถูก แต่ข้อความยังว่างเปล่า
+            const needUpdate = !existingRow || (isChecked && !existingRow.other1);
+
+            if (needUpdate) {
+                // สั่งบันทึกค่า Default ลงไปใน State จริงๆ
+                emit(id, {
+                    ...(existingRow || {}), // คงค่าเดิมอื่นๆ ไว้ (ถ้ามี)
+                    otherChecked: isChecked,
+                    other1: existingRow?.other1 || defaultTextPart1,
+                    other2: existingRow?.other2 || defaultTextPart2,
+                });
+            }
+        });
+    }, [items]); // 👈 สำคัญ: ใส่ items ใน dependency เพื่อให้ทำงานซ้ำเมื่อโหลดข้อมูลเสร็จ
+
     return (
         <section className="space-y-4 p-2 text-gray-900">
             {/* ข้อความด้านบน */}
@@ -709,14 +741,14 @@ export default function SectionThreeDetails({ value,
                                     <input
                                         type="checkbox"
                                         className="h-4 w-4"
-                                        checked={!!row.otherChecked} // Defaulted to true above
+                                        checked={!!row.otherChecked}
                                         onChange={(e) => {
                                             const v = e.target.checked;
+                                            // ✅ แก้ไข onChange: บังคับยัด Text Default ลงไปทันทีที่กดติ๊ก
                                             emit(id, {
                                                 otherChecked: v,
-                                                // Keep existing text if unchecking/checking, or reset to empty if you prefer
-                                                other1: v ? (row.other1 || defaultTextPart1) : "",
-                                                other2: v ? (row.other2 || defaultTextPart2) : "",
+                                                other1: v ? defaultTextPart1 : "", // ถ้าติ๊ก -> ใส่ค่า Default เลย
+                                                other2: v ? defaultTextPart2 : "",
                                             });
                                         }}
                                     />
@@ -725,8 +757,8 @@ export default function SectionThreeDetails({ value,
 
                                 <TwoLines
                                     disabled={!row.otherChecked}
-                                    v1={row.other1 ?? ""}
-                                    v2={row.other2 ?? ""}
+                                    v1={existingRow?.other1 ?? defaultTextPart1}
+                                    v2={existingRow?.other2 ?? defaultTextPart2}
                                     on1={(v) => emit(id, { other1: v })}
                                     on2={(v) => emit(id, { other2: v })}
                                 />

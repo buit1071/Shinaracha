@@ -87,7 +87,6 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                 const zoneId = resData.data;
                 const rounds = getRoundCount(zoneId);
                 setRoundCount(rounds);
-                console.log(`Section2_6: Zone ID: ${zoneId}, Rounds: ${rounds}`);
                 // setRoundCount(1); // ไม่ต้อง fallback เป็น 1 แล้ว เพราะ getRoundCount จัดการแล้ว หรือถ้าจะ fallback ควรเช็คดีๆ
             } else {
                 setRoundCount(1); // Fallback กรณี Error ให้แสดงอย่างน้อย 1 รอบ
@@ -1375,7 +1374,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                                     clipRule="evenodd"
                                 />
                             </svg>
-                            Approve
+                            ส่งงาน
                         </button>
                     )}
 
@@ -1388,13 +1387,13 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" className="h-5 w-5" fill="currentColor" aria-hidden="true">
                                 <path d="M3 4a2 2 0 0 1 2-2h7.586a2 2 0 0 1 1.414.586l2.414 2.414A2 2 0 0 1 17 6.414V17a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4Zm3 0h6v4H6V4Zm0 7a1 1 0 0 0-1 1v4h8v-4a1 1 0 0 0-1-1H6Z" />
                             </svg>
-                            Save
+                            บันทึก
                         </button>
                     )}
                 </div>
-                {/* <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
+                <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
                     {JSON.stringify(formData.sectionTwo, null, 2)}
-                </pre> */}
+                </pre>
             </div>
         </>
     )

@@ -652,8 +652,6 @@ export default function EquipmentPage() {
                 created_by: formData.created_by || username,
                 updated_by: username,
             };
-            console.log(payload);
-            return;
 
             const res = await fetch("/api/auth/equipment", {
                 method: "POST",

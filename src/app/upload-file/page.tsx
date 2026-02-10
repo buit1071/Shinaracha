@@ -17,7 +17,6 @@ export default function UploadPage() {
         });
 
         const data = await res.json();
-        console.log(data);
         const firstFile = data.data?.files?.[0];
         if (data.success) {
             setMessage(

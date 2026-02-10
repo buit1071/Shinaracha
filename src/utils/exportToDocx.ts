@@ -749,24 +749,90 @@ export type FormDataLite = {
     coverAddress?: string;
 };
 
+export const fetchEquipmentData = async (equipmentId: string) => {
+    if (!equipmentId) return null;
+    try {
+        const res = await fetch("/api/auth/forms/get", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                function: "viewEq",
+                equipment_id: equipmentId,
+            }),
+        });
+
+        const data = await res.json();
+        if (data.success && data.data) {
+            return data.data; // ส่งค่ากลับไป
+        }
+    } catch (err) {
+        console.error("Error fetching equipment data:", err);
+        return null;
+    }
+    return null;
+};
 /* ===================== EXPORT ===================== */
 export async function exportToDocx(roundCount: number, isShinaracha: boolean, formData: FormDataLite) {
     showLoading(true);
 
     try {
-        const docNo = formData.docNo ?? "DTT-01";
-        const reportYearBE = formData.reportYearBE ?? 2568;
+        const apiData = await fetchEquipmentData(formData.equipment_id!);
+        const api = apiData ?? {};
+        const s2 = formData.sectionTwo ?? {};
+        const s3 = formData.sectionThree ?? { items: {} };
+        const section8: Record<string, Section8Row> = s3.section8 ?? {};
+        const section9: Record<string, Section9Row> = s3.section9 ?? {};
+        const s4 = formData.sectionFour || {};
+        const s2_5 = formData.section2_5 || {};
+        const s2_6 = formData.section2_6 || {};
+
+        let selectedType = "-";
+        if (s2.typeGround) selectedType = "ป้ายที่ติดตั้งบนพื้นดิน";
+        else if (s2.typeRooftop) selectedType = "ป้ายบนดาดฟ้าอาคาร";
+        else if (s2.typeOnRoof) selectedType = "ป้ายบนหลังคา";
+        else if (s2.typeOnBuilding) selectedType = "ป้ายบนส่วนหนึ่งส่วนใดของอาคาร";
+        else if (s2.typeOtherChecked) selectedType = s2.typeOther || "อื่นๆ";
+
+        const docNo = formData.docNo ?? "XXX-XX";
+        const reportYearBE = formData.reportYearBE ?? (new Date().getFullYear() + 543);
 
         const lawLine1 =
             "ตามกฎกระทรวงว่าด้วยการควบคุมป้ายหรือสิ่งที่สร้างขึ้น สำหรับติดหรือตั้งป้าย";
         const lawLine2 = "ตามกฎหมายว่าด้วยการควบคุมอาคาร พ.ศ. 2558";
 
-        const coverType = formData.coverType ?? "ป้ายโฆษณาบนหลังคา";
-        const coverName = formData.coverName ?? "ป้ายดันลอป (DUNLOP)";
-        const coverCompany = formData.coverCompany ?? "บริษัท อ่างทอง ออโตโมทีฟ จำกัด";
-        const coverAddress =
-            formData.coverAddress ??
-            "82 หมู่ 3 ตำบลบ้านอิฐ อำเภอเมืองอ่างทอง จังหวัดอ่างทอง 14000";
+        const coverType = formData.coverType ?? selectedType;
+        const coverName = formData.coverName ?? s2.productText ?? "-";
+
+        const getVal = (s2Val: string | undefined | null, apiVal: string | undefined | null) => {
+            const v = s2Val || apiVal; // ถ้า s2 มีค่าใช้ s2, ถ้าไม่มีใช้ api
+            if (!v || v.trim() === "" || v === "-") return ""; // ถ้าเป็นค่าว่างหรือ "-" ให้ส่งกลับเป็น empty string
+            return v;
+        };
+
+        const addrNo = getVal(s2.ownerNo, api.owner_address_no);
+        const addrMoo = getVal(s2.ownerMoo, api.owner_moo);
+        const addrAlley = getVal(s2.ownerAlley, api.owner_alley); // ระวัง: api field ชื่อ owner_alley (เช็คจาก json)
+        const addrRoad = getVal(s2.ownerRoad, api.owner_road);
+        const addrSub = getVal(s2.ownerSub, api.owner_sub_district_name);
+        const addrDist = getVal(s2.ownerDist, api.owner_district_name);
+        const addrProv = getVal(s2.ownerProv, api.owner_province_name);
+        const addrZip = getVal(s2.ownerZip, api.owner_zipcode);
+
+        const joinAddr = (...parts: (string | undefined | null)[]) => {
+            return parts.filter(p => p && p.trim() !== "" && p !== "-").join(" ");
+        };
+
+        const generatedAddress = joinAddr(
+            addrNo,
+            addrMoo ? `หมู่ ${addrMoo}` : "",
+            addrAlley ? `ซอย ${addrAlley}` : "",
+            addrRoad ? `ถนน ${addrRoad}` : "",
+            addrSub ? `ตำบล/แขวง ${addrSub}` : "",
+            addrDist ? `อำเภอ/เขต ${addrDist}` : "",
+            addrProv ? `จังหวัด ${addrProv}` : "",
+            addrZip
+        );
+        const coverAddress = formData.coverAddress ?? (generatedAddress || "-");
 
         // --- cover image ---
         let coverImage: { bytes: Uint8Array; width: number; height: number } | null = null;
@@ -806,7 +872,7 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
             // ข้อความใต้รูป
             pCenterBold(coverType, SIZE_22, AFTER_0),
             pCenterBold(coverName, SIZE_22, AFTER_0),
-            pCenterBold(coverCompany, SIZE_22, AFTER_0),
+            // pCenterBold(coverCompany, SIZE_22, AFTER_0),
             pCenterBold(coverAddress, SIZE_22, AFTER_0),
         ];
 
@@ -825,14 +891,6 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
             val && val.trim() !== ""
                 ? val
                 : ".................................................................";
-
-        const s2 = formData.sectionTwo;
-        const s3 = formData.sectionThree ?? { items: {} };
-        const section8: Record<string, Section8Row> = s3.section8 ?? {};
-        const section9: Record<string, Section9Row> = s3.section9 ?? {};
-        const s4 = formData.sectionFour || {};
-        const s2_5 = formData.section2_5 || {};
-        const s2_6 = formData.section2_6 || {};
 
         const summary: any = s4.summary || {};
         const opinion = s4.opinion || {};
@@ -903,69 +961,6 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
             ],
         });
 
-        const signatureBlock = (roleLabel: string, name: string, dateLine?: string) => {
-            return new Table({
-                width: { size: 100, type: WidthType.PERCENTAGE },
-                borders: {
-                    top: { style: BorderStyle.NONE },
-                    bottom: { style: BorderStyle.NONE },
-                    left: { style: BorderStyle.NONE },
-                    right: { style: BorderStyle.NONE },
-                    insideHorizontal: { style: BorderStyle.NONE },
-                    insideVertical: { style: BorderStyle.NONE },
-                },
-                rows: [
-                    new TableRow({
-                        children: [
-                            // คอลัมน์ซ้ายว่างไว้ (เพื่อให้บล็อกเซ็นชื่อไปอยู่ขวา)
-                            new TableCell({
-                                width: { size: 40, type: WidthType.PERCENTAGE },
-                                children: [new Paragraph({})],
-                            }),
-                            // คอลัมน์ขวา สำหรับลงชื่อ
-                            new TableCell({
-                                width: { size: 60, type: WidthType.PERCENTAGE },
-                                children: [
-                                    new Paragraph({
-                                        alignment: AlignmentType.CENTER,
-                                        children: [
-                                            new TextRun({ text: `ลงชื่อ .............................................................. ${roleLabel}`, size: 32 }),
-                                        ],
-                                    }),
-                                    new Paragraph({
-                                        alignment: AlignmentType.CENTER,
-                                        spacing: { before: 100 },
-                                        children: [
-                                            new TextRun({ text: `( ${name} )`, size: 32 }),
-                                        ],
-                                    }),
-                                    // ถ้ามีวันที่ให้ใส่ด้วย
-                                    ...(dateLine ? [
-                                        new Paragraph({
-                                            alignment: AlignmentType.CENTER,
-                                            spacing: { before: 100 },
-                                            children: [
-                                                new TextRun({ text: `วันที่ ${dateLine}`, size: 32 }),
-                                            ],
-                                        })
-                                    ] : [
-                                        // ถ้าไม่มีวันที่ (เช่นของเจ้าของป้าย) ให้ใส่บรรทัดตำแหน่ง
-                                        new Paragraph({
-                                            alignment: AlignmentType.CENTER,
-                                            spacing: { before: 100 },
-                                            children: [
-                                                new TextRun({ text: "ผู้ครอบครองป้าย หรือผู้รับมอบอำนาจ", size: 32 }),
-                                            ],
-                                        })
-                                    ]),
-                                ],
-                            }),
-                        ],
-                    }),
-                ],
-            });
-        };
-
         const HEADER_FROM_TOP = Math.round(MARGIN.top * 0.55);
         // ✅ เพิ่ม = header ลงมา / ลด = header ขึ้นไป
         const coverHeader = buildCoverHeader(docNo);
@@ -986,7 +981,13 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
             imageBuffer5,
             imageBuffer6,
             imageBuffer7,
-            imageBuffer8
+            imageBuffer8,
+            imageBuffer9,
+            imageBuffer10,
+            imageBuffer11,
+            imageBuffer12,
+            imageBuffer13,
+            imageBuffer14
         ] = await Promise.all([
             getImageBuffer(s2?.mapSketch as string),
             getImageBuffer(s2?.shapeSketch1 as string),
@@ -997,6 +998,12 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
             getImageBuffer(s2?.photosFront1 as string),
             getImageBuffer(s2?.photosSide1 as string),
             getImageBuffer(s2?.photosBase1 as string),
+            getImageBuffer(s2?.photosFront2 as string),
+            getImageBuffer(s2?.photosSide2 as string),
+            getImageBuffer(s2?.photosBase2 as string),
+            getImageBuffer(s2?.photosFront3 as string),
+            getImageBuffer(s2?.photosSide3 as string),
+            getImageBuffer(s2?.photosBase3 as string),
         ]);
 
         const CHECK_ITEMS = [
@@ -1184,6 +1191,12 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                     }),
                 ],
             });
+
+        const isBuildingSign = s2?.typeRooftop ||
+            s2?.typeOnRoof ||
+            s2?.typeOnBuilding ||
+            s2?.typeOtherChecked ||
+            (s2?.typeOther && s2.typeOther.trim() !== "");
 
         /* ---------- Section 1 ---------- */
         const section1 = [
@@ -2379,6 +2392,50 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                 pageBreakBefore: true,
             }),
 
+            new Table({
+                width: {
+                    size: 100,
+                    type: WidthType.PERCENTAGE,
+                },
+                borders: {
+                    top: { style: BorderStyle.NONE },
+                    bottom: { style: BorderStyle.NONE },
+                    left: { style: BorderStyle.NONE },
+                    right: { style: BorderStyle.NONE },
+                    insideHorizontal: { style: BorderStyle.NONE },
+                    insideVertical: { style: BorderStyle.NONE },
+                },
+                rows: [
+                    // ===== แถวที่ 1 =====
+                    new TableRow({
+                        children: [
+                            imageCell(imageBuffer9),
+                            imageCell(imageBuffer10),
+                        ],
+                    }),
+
+                    // ===== แถวที่ 2 =====
+                    new TableRow({
+                        children: [
+                            imageCell(imageBuffer11),
+                            imageCell(imageBuffer12),
+                        ],
+                    }),
+
+                    // ===== แถวที่ 3 =====
+                    new TableRow({
+                        children: [
+                            imageCell(imageBuffer13),
+                            imageCell(imageBuffer14),
+                        ],
+                    }),
+                ],
+            }),
+
+            new Paragraph({
+                pageBreakBefore: true,
+            }),
+
             new Paragraph({
                 children: [
                     new TextRun({
@@ -2504,7 +2561,7 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                                         spacing: { after: 80 },
                                         children: [
                                             new TextRun({
-                                                text: "3.1  ชื่อผลิตภัณฑ์โฆษณาหรือข้อความในป้าย",
+                                                text: "3.1  ชื่อผลิตภัณฑ์โฆษณาหรือข้อความในป้าย",
                                             }),
                                         ],
                                     }),
@@ -2512,7 +2569,8 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                                         indent: INDENT_1,
                                         children: [
                                             new TextRun({
-                                                text: vr(s2?.productText) || "....................................................................................................................",
+                                                // ✅ แก้ไข: เช็ค typeGround ก่อน ถ้าจริงค่อยดึงข้อมูล ถ้าไม่จริงให้เป็นค่าว่าง
+                                                text: (s2?.typeGround ? vr(s2?.productText) : "") || "....................................................................................................................",
                                             }),
                                         ],
                                     }),
@@ -2521,16 +2579,17 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                                     new Paragraph({
                                         spacing: { before: 120, after: 80 },
                                         children: [
-                                            new TextRun({ text: "3.2  เจ้าของหรือผู้ครอบครองป้าย" }),
+                                            new TextRun({ text: "3.2  เจ้าของหรือผู้ครอบครองป้าย" }),
                                         ],
                                     }),
 
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "ชื่อ  " }),
+                                            new TextRun({ text: "ชื่อ  " }),
                                             new TextRun({
-                                                text: vr(s2?.ownerName) || "................................................................................................",
+                                                // ✅ แก้ไข
+                                                text: (s2?.typeGround ? vr(s2?.ownerName) : "") || "................................................................................................",
                                             }),
                                         ],
                                     }),
@@ -2538,50 +2597,50 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "สถานที่ติดต่อ  " }),
-                                            new TextRun({ text: vr(s2?.ownerNo) || "........................." }),
-                                            new TextRun({ text: "  หมู่ที่  " }),
-                                            new TextRun({ text: vr(s2?.ownerMoo) || "........" }),
-                                            new TextRun({ text: "  ตรอก/ซอย  " }),
-                                            new TextRun({ text: vr(s2?.ownerAlley) || "........................." }),
+                                            new TextRun({ text: "สถานที่ติดต่อ  " }),
+                                            new TextRun({ text: (s2?.typeGround ? vr(s2?.ownerNo) : "") || "........................." }), // ✅ แก้ไข
+                                            new TextRun({ text: "  หมู่ที่  " }),
+                                            new TextRun({ text: (s2?.typeGround ? vr(s2?.ownerMoo) : "") || "........" }), // ✅ แก้ไข
+                                            new TextRun({ text: "  ตรอก/ซอย  " }),
+                                            new TextRun({ text: (s2?.typeGround ? vr(s2?.ownerAlley) : "") || "........................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "ถนน  " }),
-                                            new TextRun({ text: vr(s2?.ownerRoad) || "........................." }),
-                                            new TextRun({ text: "  ตำบล/แขวง  " }),
-                                            new TextRun({ text: vr(s2?.ownerSub) || "........................." }),
+                                            new TextRun({ text: "ถนน  " }),
+                                            new TextRun({ text: (s2?.typeGround ? vr(s2?.ownerRoad) : "") || "........................." }), // ✅ แก้ไข
+                                            new TextRun({ text: "  ตำบล/แขวง  " }),
+                                            new TextRun({ text: (s2?.typeGround ? vr(s2?.ownerSub) : "") || "........................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "อำเภอ/เขต  " }),
-                                            new TextRun({ text: vr(s2?.ownerDist) || "........................." }),
-                                            new TextRun({ text: "  จังหวัด  " }),
-                                            new TextRun({ text: vr(s2?.ownerProv) || "........................." }),
+                                            new TextRun({ text: "อำเภอ/เขต  " }),
+                                            new TextRun({ text: (s2?.typeGround ? vr(s2?.ownerDist) : "") || "........................." }), // ✅ แก้ไข
+                                            new TextRun({ text: "  จังหวัด  " }),
+                                            new TextRun({ text: (s2?.typeGround ? vr(s2?.ownerProv) : "") || "........................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "รหัสไปรษณีย์  " }),
-                                            new TextRun({ text: vr(s2?.ownerZip) || "........................." }),
+                                            new TextRun({ text: "รหัสไปรษณีย์  " }),
+                                            new TextRun({ text: (s2?.typeGround ? vr(s2?.ownerZip) : "") || "........................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "โทรศัพท์  " }),
-                                            new TextRun({ text: vr(s2?.ownerTel) || "........................." }),
-                                            new TextRun({ text: "  โทรสาร  " }),
-                                            new TextRun({ text: vr(s2?.ownerFax) || "........................." }),
+                                            new TextRun({ text: "โทรศัพท์  " }),
+                                            new TextRun({ text: (s2?.typeGround ? vr(s2?.ownerTel) : "") || "........................." }), // ✅ แก้ไข
+                                            new TextRun({ text: "  โทรสาร  " }),
+                                            new TextRun({ text: (s2?.typeGround ? vr(s2?.ownerFax) : "") || "........................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
@@ -2589,8 +2648,8 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                                         indent: INDENT_1,
                                         spacing: { after: 120 },
                                         children: [
-                                            new TextRun({ text: "อีเมล  " }),
-                                            new TextRun({ text: vr(s2?.ownerEmail) || ".........................................................." }),
+                                            new TextRun({ text: "อีเมล  " }),
+                                            new TextRun({ text: (s2?.typeGround ? vr(s2?.ownerEmail) : "") || ".........................................................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
@@ -2598,17 +2657,17 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                                     new Paragraph({
                                         spacing: { after: 80 },
                                         children: [
-                                            new TextRun({ text: "3.3  ผู้ออกแบบด้านวิศวกรรมโครงสร้าง" }),
+                                            new TextRun({ text: "3.3  ผู้ออกแบบด้านวิศวกรรมโครงสร้าง" }),
                                         ],
                                     }),
 
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "ชื่อ  " }),
-                                            new TextRun({ text: vr(s2?.designerName) || ".........................................................." }),
-                                            new TextRun({ text: "  ใบอนุญาตทะเบียนเลขที่  " }),
-                                            new TextRun({ text: vr(s2?.designerLicense) || ".............................." }),
+                                            new TextRun({ text: "ชื่อ  " }),
+                                            new TextRun({ text: (s2?.typeGround ? vr(s2?.designerName) : "") || ".........................................................." }), // ✅ แก้ไข
+                                            new TextRun({ text: "  ใบอนุญาตทะเบียนเลขที่  " }),
+                                            new TextRun({ text: (s2?.typeGround ? vr(s2?.designerLicense) : "") || ".............................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
@@ -2687,7 +2746,7 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                                         spacing: { after: 80 },
                                         children: [
                                             new TextRun({
-                                                text: "3.1  ชื่อผลิตภัณฑ์โฆษณาหรือข้อความในป้าย",
+                                                text: "3.1  ชื่อผลิตภัณฑ์โฆษณาหรือข้อความในป้าย",
                                             }),
                                         ],
                                     }),
@@ -2695,7 +2754,8 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                                         indent: INDENT_1,
                                         children: [
                                             new TextRun({
-                                                text: vr(s2?.productText) || "....................................................................................................................",
+                                                // ✅ แก้ไข: เช็ค isBuildingSign
+                                                text: (isBuildingSign ? vr(s2?.productText) : "") || "....................................................................................................................",
                                             }),
                                         ],
                                     }),
@@ -2704,16 +2764,17 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                                     new Paragraph({
                                         spacing: { before: 120, after: 80 },
                                         children: [
-                                            new TextRun({ text: "3.2  เจ้าของหรือผู้ครอบครองป้าย" }),
+                                            new TextRun({ text: "3.2  เจ้าของหรือผู้ครอบครองป้าย" }),
                                         ],
                                     }),
 
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "ชื่อ  " }),
+                                            new TextRun({ text: "ชื่อ  " }),
                                             new TextRun({
-                                                text: vr(s2?.ownerName) || "................................................................................................",
+                                                // ✅ แก้ไข
+                                                text: (isBuildingSign ? vr(s2?.ownerName) : "") || "................................................................................................",
                                             }),
                                         ],
                                     }),
@@ -2721,50 +2782,50 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "สถานที่ติดต่อ  " }),
-                                            new TextRun({ text: vr(s2?.ownerNo) || "........................." }),
-                                            new TextRun({ text: "  หมู่ที่  " }),
-                                            new TextRun({ text: vr(s2?.ownerMoo) || "........" }),
-                                            new TextRun({ text: "  ตรอก/ซอย  " }),
-                                            new TextRun({ text: vr(s2?.ownerAlley) || "........................." }),
+                                            new TextRun({ text: "สถานที่ติดต่อ  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.ownerNo) : "") || "........................." }), // ✅ แก้ไข
+                                            new TextRun({ text: "  หมู่ที่  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.ownerMoo) : "") || "........" }), // ✅ แก้ไข
+                                            new TextRun({ text: "  ตรอก/ซอย  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.ownerAlley) : "") || "........................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "ถนน  " }),
-                                            new TextRun({ text: vr(s2?.ownerRoad) || "........................." }),
-                                            new TextRun({ text: "  ตำบล/แขวง  " }),
-                                            new TextRun({ text: vr(s2?.ownerSub) || "........................." }),
+                                            new TextRun({ text: "ถนน  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.ownerRoad) : "") || "........................." }), // ✅ แก้ไข
+                                            new TextRun({ text: "  ตำบล/แขวง  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.ownerSub) : "") || "........................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "อำเภอ/เขต  " }),
-                                            new TextRun({ text: vr(s2?.ownerDist) || "........................." }),
-                                            new TextRun({ text: "  จังหวัด  " }),
-                                            new TextRun({ text: vr(s2?.ownerProv) || "........................." }),
+                                            new TextRun({ text: "อำเภอ/เขต  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.ownerDist) : "") || "........................." }), // ✅ แก้ไข
+                                            new TextRun({ text: "  จังหวัด  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.ownerProv) : "") || "........................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "รหัสไปรษณีย์  " }),
-                                            new TextRun({ text: vr(s2?.ownerZip) || "........................." }),
+                                            new TextRun({ text: "รหัสไปรษณีย์  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.ownerZip) : "") || "........................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "โทรศัพท์  " }),
-                                            new TextRun({ text: vr(s2?.ownerTel) || "........................." }),
-                                            new TextRun({ text: "  โทรสาร  " }),
-                                            new TextRun({ text: vr(s2?.ownerFax) || "........................." }),
+                                            new TextRun({ text: "โทรศัพท์  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.ownerTel) : "") || "........................." }), // ✅ แก้ไข
+                                            new TextRun({ text: "  โทรสาร  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.ownerFax) : "") || "........................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
@@ -2772,8 +2833,8 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                                         indent: INDENT_1,
                                         spacing: { after: 120 },
                                         children: [
-                                            new TextRun({ text: "อีเมล  " }),
-                                            new TextRun({ text: vr(s2?.ownerEmail) || ".........................................................." }),
+                                            new TextRun({ text: "อีเมล  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.ownerEmail) : "") || ".........................................................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
@@ -2781,16 +2842,17 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                                     new Paragraph({
                                         spacing: { after: 80 },
                                         children: [
-                                            new TextRun({ text: "3.3  เจ้าของหรือผู้ครอบครองอาคารที่ป้ายตั้งอยู่" }),
+                                            new TextRun({ text: "3.3  เจ้าของหรือผู้ครอบครองอาคารที่ป้ายตั้งอยู่" }),
                                         ],
                                     }),
 
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "ชื่อ  " }),
+                                            new TextRun({ text: "ชื่อ  " }),
                                             new TextRun({
-                                                text: vr(s2?.ownerName) || "................................................................................................",
+                                                // ✅ แก้ไข
+                                                text: (isBuildingSign ? vr(s2?.buildingOwnerName) : "") || "................................................................................................",
                                             }),
                                         ],
                                     }),
@@ -2798,50 +2860,50 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "สถานที่ติดต่อ  " }),
-                                            new TextRun({ text: vr(s2?.ownerNo) || "........................." }),
-                                            new TextRun({ text: "  หมู่ที่  " }),
-                                            new TextRun({ text: vr(s2?.ownerMoo) || "........" }),
-                                            new TextRun({ text: "  ตรอก/ซอย  " }),
-                                            new TextRun({ text: vr(s2?.ownerAlley) || "........................." }),
+                                            new TextRun({ text: "สถานที่ติดต่อ  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.buildingOwnerNo) : "") || "........................." }), // ✅ แก้ไข
+                                            new TextRun({ text: "  หมู่ที่  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.buildingOwnerMoo) : "") || "........" }), // ✅ แก้ไข
+                                            new TextRun({ text: "  ตรอก/ซอย  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.buildingOwnerAlley) : "") || "........................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "ถนน  " }),
-                                            new TextRun({ text: vr(s2?.ownerRoad) || "........................." }),
-                                            new TextRun({ text: "  ตำบล/แขวง  " }),
-                                            new TextRun({ text: vr(s2?.ownerSub) || "........................." }),
+                                            new TextRun({ text: "ถนน  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.buildingOwnerRoad) : "") || "........................." }), // ✅ แก้ไข
+                                            new TextRun({ text: "  ตำบล/แขวง  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.buildingOwnerSub) : "") || "........................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "อำเภอ/เขต  " }),
-                                            new TextRun({ text: vr(s2?.ownerDist) || "........................." }),
-                                            new TextRun({ text: "  จังหวัด  " }),
-                                            new TextRun({ text: vr(s2?.ownerProv) || "........................." }),
+                                            new TextRun({ text: "อำเภอ/เขต  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.buildingOwnerDist) : "") || "........................." }), // ✅ แก้ไข
+                                            new TextRun({ text: "  จังหวัด  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.buildingOwnerProv) : "") || "........................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "รหัสไปรษณีย์  " }),
-                                            new TextRun({ text: vr(s2?.ownerZip) || "........................." }),
+                                            new TextRun({ text: "รหัสไปรษณีย์  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.buildingOwnerZip) : "") || "........................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "โทรศัพท์  " }),
-                                            new TextRun({ text: vr(s2?.ownerTel) || "........................." }),
-                                            new TextRun({ text: "  โทรสาร  " }),
-                                            new TextRun({ text: vr(s2?.ownerFax) || "........................." }),
+                                            new TextRun({ text: "โทรศัพท์  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.buildingOwnerTel) : "") || "........................." }), // ✅ แก้ไข
+                                            new TextRun({ text: "  โทรสาร  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.buildingOwnerFax) : "") || "........................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
@@ -2849,8 +2911,8 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                                         indent: INDENT_1,
                                         spacing: { after: 120 },
                                         children: [
-                                            new TextRun({ text: "อีเมล  " }),
-                                            new TextRun({ text: vr(s2?.ownerEmail) || ".........................................................." }),
+                                            new TextRun({ text: "อีเมล  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.buildingOwnerEmail) : "") || ".........................................................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
@@ -2858,17 +2920,17 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                                     new Paragraph({
                                         spacing: { after: 80 },
                                         children: [
-                                            new TextRun({ text: "3.4  ผู้ออกแบบด้านวิศวกรรมโครงสร้าง" }),
+                                            new TextRun({ text: "3.4  ผู้ออกแบบด้านวิศวกรรมโครงสร้าง" }),
                                         ],
                                     }),
 
                                     new Paragraph({
                                         indent: INDENT_1,
                                         children: [
-                                            new TextRun({ text: "ชื่อ  " }),
-                                            new TextRun({ text: vr(s2?.designerName) || ".........................................................." }),
-                                            new TextRun({ text: "  ใบอนุญาตทะเบียนเลขที่  " }),
-                                            new TextRun({ text: vr(s2?.designerLicense) || ".............................." }),
+                                            new TextRun({ text: "ชื่อ  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.designerName) : "") || ".........................................................." }), // ✅ แก้ไข
+                                            new TextRun({ text: "  ใบอนุญาตทะเบียนเลขที่  " }),
+                                            new TextRun({ text: (isBuildingSign ? vr(s2?.designerLicense) : "") || ".............................." }), // ✅ แก้ไข
                                         ],
                                     }),
 
@@ -3625,7 +3687,7 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
 
         const txtType = coverType || "-";
         const txtName = coverName || "-";
-        const txtCompany = coverCompany || "-";
+        // const txtCompany = coverCompany || "-";
         const txtAddress = coverAddress || "-";
 
         const table1Data: any = s2_5.table1 || {};
@@ -4127,18 +4189,18 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                     }),
                 ],
             }),
-            new Paragraph({
-                alignment: AlignmentType.CENTER,
-                spacing: { before: 120 },
-                children: [
-                    new TextRun({
-                        text: txtCompany,
-                        font: FONT_TH,
-                        bold: true,
-                        size: 60,
-                    }),
-                ],
-            }),
+            // new Paragraph({
+            //     alignment: AlignmentType.CENTER,
+            //     spacing: { before: 120 },
+            //     children: [
+            //         new TextRun({
+            //             text: txtCompany,
+            //             font: FONT_TH,
+            //             bold: true,
+            //             size: 60,
+            //         }),
+            //     ],
+            // }),
             new Paragraph({
                 alignment: AlignmentType.CENTER,
                 spacing: { before: 120 },

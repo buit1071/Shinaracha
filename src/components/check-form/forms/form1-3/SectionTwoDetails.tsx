@@ -315,6 +315,22 @@ export type SectionTwoForm = {
     ownerTel?: string;
     ownerFax?: string;
     ownerEmail?: string;
+
+    // -------- เจ้าของหรือผู้ครอบครองอาคารที่ป้ายตั้งอยู่ (เจ้าของตึก/สถานที่) --------
+    buildingProductText?: string;
+    buildingOwnerName?: string;
+    buildingOwnerNo?: string;
+    buildingOwnerMoo?: string;
+    buildingOwnerAlley?: string;
+    buildingOwnerRoad?: string;
+    buildingOwnerSub?: string;
+    buildingOwnerDist?: string;
+    buildingOwnerProv?: string;
+    buildingOwnerZip?: string;
+    buildingOwnerTel?: string;
+    buildingOwnerFax?: string;
+    buildingOwnerEmail?: string;
+
     designerName?: string;
     designerLicense?: string;
 
@@ -379,11 +395,35 @@ export const getRoundCount = (zoneId: string | number | null): number => {
 };
 
 export default function SectionTwoDetails({ eq_id, data, value, onChange }: Props) {
+    const [apiData, setApiData] = React.useState<any>(null);
+    const api = apiData ?? {};
     const v = value ?? {};
+
     const patch = React.useCallback(
         (p: Partial<SectionTwoForm>) => onChange?.(p),
         [onChange]
     );
+
+    const fetchEquipmentData = async () => {
+        if (!eq_id) return;
+        try {
+            const res = await fetch("/api/auth/forms/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    function: "viewEq",
+                    equipment_id: eq_id,
+                }),
+            });
+
+            const data = await res.json();
+            if (data.success && data.data) {
+                setApiData(data.data);
+            }
+        } catch (err) {
+            console.error("Error fetching equipment data:", err);
+        }
+    };
 
     const buildRemoteImgUrl = React.useCallback(
         (name: string) =>
@@ -413,7 +453,6 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                 const rounds = getRoundCount(zoneId);
                 setRoundCount(rounds);
 
-                console.log(`Zone ID: ${zoneId}, Rounds: ${rounds}`);
             } else {
                 console.warn("API Error:", resData.message);
             }
@@ -424,7 +463,10 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
     };
 
     React.useEffect(() => {
-        CheckFormType();
+        if (eq_id) {
+            CheckFormType();
+            fetchEquipmentData();
+        }
     }, [eq_id]);
 
     // ====== เติมค่าเริ่มต้นจาก data เข้า formData.sectionTwo (เติมเฉพาะช่องที่ยังว่าง) ======
@@ -465,6 +507,20 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
             "ownerTel",
             "ownerFax",
             "ownerEmail",
+            // 4) เจ้าของหรือผู้ครอบครองอาคารที่ป้ายตั้งอยู่
+            "buildingProductText",
+            "buildingOwnerName",
+            "buildingOwnerNo",
+            "buildingOwnerMoo",
+            "buildingOwnerAlley",
+            "buildingOwnerRoad",
+            "buildingOwnerSub",
+            "buildingOwnerDist",
+            "buildingOwnerProv",
+            "buildingOwnerZip",
+            "buildingOwnerTel",
+            "buildingOwnerFax",
+            "buildingOwnerEmail",
             "designerName",
             "designerLicense",
         ].forEach((k) => seed(k as keyof SectionTwoForm));
@@ -570,6 +626,43 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
         setP6(toRemoteUrlIfString(v.photosBase1));
     }, [v.photosBase1, buildRemoteImgUrl]);
 
+    /** ---------------- photos 7-12 ---------------- */
+    React.useEffect(() => {
+        if (isBlobUrl(p7)) return;
+        if (v.photosFront2 instanceof File) return;
+        setP7(toRemoteUrlIfString(v.photosFront2));
+    }, [v.photosFront2, buildRemoteImgUrl]);
+
+    React.useEffect(() => {
+        if (isBlobUrl(p8)) return;
+        if (v.photosSide2 instanceof File) return;
+        setP8(toRemoteUrlIfString(v.photosSide2));
+    }, [v.photosSide2, buildRemoteImgUrl]);
+
+    React.useEffect(() => {
+        if (isBlobUrl(p9)) return;
+        if (v.photosBase2 instanceof File) return;
+        setP9(toRemoteUrlIfString(v.photosBase2));
+    }, [v.photosBase2, buildRemoteImgUrl]);
+
+    React.useEffect(() => {
+        if (isBlobUrl(p10)) return;
+        if (v.photosFront3 instanceof File) return;
+        setP10(toRemoteUrlIfString(v.photosFront3));
+    }, [v.photosFront3, buildRemoteImgUrl]);
+
+    React.useEffect(() => {
+        if (isBlobUrl(p11)) return;
+        if (v.photosSide3 instanceof File) return;
+        setP11(toRemoteUrlIfString(v.photosSide3));
+    }, [v.photosSide3, buildRemoteImgUrl]);
+
+    React.useEffect(() => {
+        if (isBlobUrl(p12)) return;
+        if (v.photosBase3 instanceof File) return;
+        setP12(toRemoteUrlIfString(v.photosBase3));
+    }, [v.photosBase3, buildRemoteImgUrl]);
+
     const extFromFile = (f: File) => {
         const byName = f.name.split(".").pop()?.toLowerCase();
         if (byName) return byName;
@@ -625,6 +718,72 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
         patch({ [fieldKey]: renamed } as any);
     };
 
+
+    // ✅ เพิ่ม useEffect ตัวนี้: เพื่อยัดข้อมูล API ลง State ทันทีที่โหลดเสร็จ
+    React.useEffect(() => {
+        if (!apiData) return; // ถ้าข้อมูลยังไม่มา ไม่ต้องทำ
+
+        // สร้าง object สำหรับ update (Partial State)
+        const autoFillData: Partial<SectionTwoForm> = {};
+        const v = value ?? {}; // ค่าปัจจุบันใน Form
+
+        // ฟังก์ชันช่วยเช็ค: "ถ้าใน Form ว่าง และ ใน API มีค่า -> ให้ใช้ค่าจาก API"
+        const shouldFill = (currentVal: any, apiVal: any) => {
+            return (!currentVal || currentVal === "") && (apiVal && apiVal !== "" && apiVal !== "-");
+        };
+
+        // --- 1. ข้อมูลป้าย ---
+        if (shouldFill(v.signName, apiData.equipment_name)) autoFillData.signName = apiData.equipment_name;
+        if (shouldFill(v.addrNo, apiData.address_no)) autoFillData.addrNo = apiData.address_no;
+        if (shouldFill(v.addrAlley, apiData.alley)) autoFillData.addrAlley = apiData.alley;
+        if (shouldFill(v.addrRoad, apiData.road)) autoFillData.addrRoad = apiData.road;
+        if (shouldFill(v.subDistrict, apiData.sub_district_name)) autoFillData.subDistrict = apiData.sub_district_name;
+        if (shouldFill(v.district, apiData.district_name)) autoFillData.district = apiData.district_name;
+        if (shouldFill(v.province, apiData.province_name)) autoFillData.province = apiData.province_name;
+        if (shouldFill(v.zip, apiData.zipcode)) autoFillData.zip = apiData.zipcode;
+        if (shouldFill(v.tel, apiData.phone)) autoFillData.tel = apiData.phone;
+        if (shouldFill(v.fax, apiData.fax)) autoFillData.fax = apiData.fax;
+
+        // --- 2. เจ้าของป้าย ---
+        if (shouldFill(v.ownerName, apiData.owner_name)) autoFillData.ownerName = apiData.owner_name;
+        if (shouldFill(v.ownerNo, apiData.owner_address_no)) autoFillData.ownerNo = apiData.owner_address_no;
+        if (shouldFill(v.ownerMoo, apiData.owner_moo)) autoFillData.ownerMoo = apiData.owner_moo;
+        if (shouldFill(v.ownerAlley, apiData.owner_alley)) autoFillData.ownerAlley = apiData.owner_alley;
+        if (shouldFill(v.ownerRoad, apiData.owner_road)) autoFillData.ownerRoad = apiData.owner_road;
+        if (shouldFill(v.ownerSub, apiData.owner_sub_district_name)) autoFillData.ownerSub = apiData.owner_sub_district_name;
+        if (shouldFill(v.ownerDist, apiData.owner_district_name)) autoFillData.ownerDist = apiData.owner_district_name;
+        if (shouldFill(v.ownerProv, apiData.owner_province_name)) autoFillData.ownerProv = apiData.owner_province_name;
+        if (shouldFill(v.ownerZip, apiData.owner_zipcode)) autoFillData.ownerZip = apiData.owner_zipcode;
+        if (shouldFill(v.ownerTel, apiData.owner_phone)) autoFillData.ownerTel = apiData.owner_phone;
+        if (shouldFill(v.ownerFax, apiData.owner_fax)) autoFillData.ownerFax = apiData.owner_fax;
+        if (shouldFill(v.ownerEmail, apiData.owner_email)) autoFillData.ownerEmail = apiData.owner_email;
+
+        // --- 3. เจ้าของอาคาร ---
+        if (shouldFill(v.buildingOwnerName, apiData.building_owner_name)) autoFillData.buildingOwnerName = apiData.building_owner_name;
+        if (shouldFill(v.buildingOwnerNo, apiData.building_owner_address_no)) autoFillData.buildingOwnerNo = apiData.building_owner_address_no;
+        if (shouldFill(v.buildingOwnerMoo, apiData.building_owner_moo)) autoFillData.buildingOwnerMoo = apiData.building_owner_moo;
+        if (shouldFill(v.buildingOwnerAlley, apiData.building_owner_alley)) autoFillData.buildingOwnerAlley = apiData.building_owner_alley;
+        if (shouldFill(v.buildingOwnerRoad, apiData.building_owner_road)) autoFillData.buildingOwnerRoad = apiData.building_owner_road;
+        if (shouldFill(v.buildingOwnerSub, apiData.building_owner_sub_district_name)) autoFillData.buildingOwnerSub = apiData.building_owner_sub_district_name;
+        if (shouldFill(v.buildingOwnerDist, apiData.building_owner_district_name)) autoFillData.buildingOwnerDist = apiData.building_owner_district_name;
+        if (shouldFill(v.buildingOwnerProv, apiData.building_owner_province_name)) autoFillData.buildingOwnerProv = apiData.building_owner_province_name;
+        if (shouldFill(v.buildingOwnerZip, apiData.building_owner_zipcode)) autoFillData.buildingOwnerZip = apiData.building_owner_zipcode;
+        if (shouldFill(v.buildingOwnerTel, apiData.building_owner_phone)) autoFillData.buildingOwnerTel = apiData.building_owner_phone;
+        if (shouldFill(v.buildingOwnerFax, apiData.building_owner_fax)) autoFillData.buildingOwnerFax = apiData.building_owner_fax;
+        if (shouldFill(v.buildingOwnerEmail, apiData.building_owner_email)) autoFillData.buildingOwnerEmail = apiData.building_owner_email;
+
+        // --- 4. ผู้ออกแบบ ---
+        if (shouldFill(v.designerName, apiData.designer_name)) autoFillData.designerName = apiData.designer_name;
+        if (shouldFill(v.designerLicense, apiData.designer_license_no)) autoFillData.designerLicense = apiData.designer_license_no;
+
+        // ✅ ถ้ามีข้อมูลให้อัปเดต สั่ง onChange ทันที
+        if (Object.keys(autoFillData).length > 0) {
+            onChange?.(autoFillData);
+        }
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [apiData]); // รันเมื่อ apiData มาเท่านั้น (ไม่ใส่ value เพื่อกัน loop)
+    
     return (
         <div className="text-black leading-7 space-y-8 p-2">
             <p className="text-sm text-gray-700">
@@ -640,7 +799,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                         <label className="block text-sm text-gray-600 mb-1">ชื่อป้าย (ถ้ามี)</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={v.signName ?? ""}
+                            value={v.signName ?? api.equipment_name ?? ""}
                             onChange={(e) => patch({ signName: e.target.value })}
                         />
                     </div>
@@ -648,7 +807,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                         <label className="block text-sm text-gray-600 mb-1">เลขที่</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={v.addrNo ?? ""}
+                            value={v.addrNo ?? api.address_no ?? ""}
                             onChange={(e) => patch({ addrNo: e.target.value })}
                         />
                     </div>
@@ -656,7 +815,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                         <label className="block text-sm text-gray-600 mb-1">ตรอก/ซอย</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={v.addrAlley ?? ""}
+                            value={v.addrAlley ?? api.alley ?? ""}
                             onChange={(e) => patch({ addrAlley: e.target.value })}
                         />
                     </div>
@@ -664,7 +823,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                         <label className="block text-sm text-gray-600 mb-1">ถนน</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={v.addrRoad ?? ""}
+                            value={v.addrRoad ?? api.road ?? ""}
                             onChange={(e) => patch({ addrRoad: e.target.value })}
                         />
                     </div>
@@ -673,7 +832,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                         <label className="block text-sm text-gray-600 mb-1">ตำบล/แขวง</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={v.subDistrict ?? ""}
+                            value={v.subDistrict ?? api.sub_district_name ?? ""}
                             onChange={(e) => patch({ subDistrict: e.target.value })}
                         />
                     </div>
@@ -681,7 +840,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                         <label className="block text-sm text-gray-600 mb-1">อำเภอ/เขต</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={v.district ?? ""}
+                            value={v.district ?? api.district_name ?? ""}
                             onChange={(e) => patch({ district: e.target.value })}
                         />
                     </div>
@@ -689,7 +848,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                         <label className="block text-sm text-gray-600 mb-1">จังหวัด</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={v.province ?? ""}
+                            value={v.province ?? api.province_name ?? ""}
                             onChange={(e) => patch({ province: e.target.value })}
                         />
                     </div>
@@ -697,7 +856,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                         <label className="block text-sm text-gray-600 mb-1">รหัสไปรษณีย์</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={v.zip ?? ""}
+                            value={v.zip ?? api.zipcode ?? ""}
                             onChange={(e) => patch({ zip: e.target.value })}
                         />
                     </div>
@@ -706,7 +865,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                         <label className="block text-sm text-gray-600 mb-1">โทรศัพท์</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={v.tel ?? ""}
+                            value={v.tel ?? api.phone ?? ""}
                             onChange={(e) => patch({ tel: e.target.value })}
                         />
                     </div>
@@ -714,7 +873,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                         <label className="block text-sm text-gray-600 mb-1">โทรสาร</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={v.fax ?? ""}
+                            value={v.fax ?? api.fax ?? ""}
                             onChange={(e) => patch({ fax: e.target.value })}
                         />
                     </div>
@@ -1411,7 +1570,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                             <label className="block text-sm text-gray-600 mb-1">ชื่อ</label>
                             <input
                                 className="w-full border rounded-md px-3 py-2"
-                                value={v.ownerName ?? ""}
+                                value={v.ownerName ?? api.owner_name ?? ""}
                                 onChange={(e) => patch({ ownerName: e.target.value })}
                             />
                         </div>
@@ -1421,7 +1580,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                                 <label className="block text-sm text-gray-600 mb-1">เลขที่</label>
                                 <input
                                     className="w-full border rounded-md px-3 py-2"
-                                    value={v.ownerNo ?? ""}
+                                    value={v.ownerNo ?? api.owner_address_no ?? ""}
                                     onChange={(e) => patch({ ownerNo: e.target.value })}
                                 />
                             </div>
@@ -1429,7 +1588,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                                 <label className="block text-sm text-gray-600 mb-1">หมู่ที่</label>
                                 <input
                                     className="w-full border rounded-md px-3 py-2"
-                                    value={v.ownerMoo ?? ""}
+                                    value={v.ownerMoo ?? api.owner_moo ?? ""}
                                     onChange={(e) => patch({ ownerMoo: e.target.value })}
                                 />
                             </div>
@@ -1437,7 +1596,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                                 <label className="block text-sm text-gray-600 mb-1">ตรอก/ซอย</label>
                                 <input
                                     className="w-full border rounded-md px-3 py-2"
-                                    value={v.ownerAlley ?? ""}
+                                    value={v.ownerAlley ?? api.owner_alley ?? ""}
                                     onChange={(e) => patch({ ownerAlley: e.target.value })}
                                 />
                             </div>
@@ -1447,7 +1606,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                             <label className="block text-sm text-gray-600 mb-1">ถนน</label>
                             <input
                                 className="w-full border rounded-md px-3 py-2"
-                                value={v.ownerRoad ?? ""}
+                                value={v.ownerRoad ?? api.owner_road ?? ""}
                                 onChange={(e) => patch({ ownerRoad: e.target.value })}
                             />
                         </div>
@@ -1457,7 +1616,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                                 <label className="block text-sm text-gray-600 mb-1">ตำบล/แขวง</label>
                                 <input
                                     className="w-full border rounded-md px-3 py-2"
-                                    value={v.ownerSub ?? ""}
+                                    value={v.ownerSub ?? api.owner_sub_district_name ?? ""}
                                     onChange={(e) => patch({ ownerSub: e.target.value })}
                                 />
                             </div>
@@ -1465,7 +1624,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                                 <label className="block text-sm text-gray-600 mb-1">อำเภอ/เขต</label>
                                 <input
                                     className="w-full border rounded-md px-3 py-2"
-                                    value={v.ownerDist ?? ""}
+                                    value={v.ownerDist ?? api.owner_district_name ?? ""}
                                     onChange={(e) => patch({ ownerDist: e.target.value })}
                                 />
                             </div>
@@ -1473,7 +1632,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                                 <label className="block text-sm text-gray-600 mb-1">จังหวัด</label>
                                 <input
                                     className="w-full border rounded-md px-3 py-2"
-                                    value={v.ownerProv ?? ""}
+                                    value={v.ownerProv ?? api.owner_province_name ?? ""}
                                     onChange={(e) => patch({ ownerProv: e.target.value })}
                                 />
                             </div>
@@ -1484,7 +1643,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                                 <label className="block text-sm text-gray-600 mb-1">รหัสไปรษณีย์</label>
                                 <input
                                     className="w-full border rounded-md px-3 py-2"
-                                    value={v.ownerZip ?? ""}
+                                    value={v.ownerZip ?? api.owner_zipcode ?? ""}
                                     onChange={(e) => patch({ ownerZip: e.target.value })}
                                 />
                             </div>
@@ -1492,7 +1651,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                                 <label className="block text-sm text-gray-600 mb-1">โทรศัพท์</label>
                                 <input
                                     className="w-full border rounded-md px-3 py-2"
-                                    value={v.ownerTel ?? ""}
+                                    value={v.ownerTel ?? api.owner_phone ?? ""}
                                     onChange={(e) => patch({ ownerTel: e.target.value })}
                                 />
                             </div>
@@ -1500,7 +1659,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                                 <label className="block text-sm text-gray-600 mb-1">โทรสาร</label>
                                 <input
                                     className="w-full border rounded-md px-3 py-2"
-                                    value={v.ownerFax ?? ""}
+                                    value={v.ownerFax ?? api.owner_fax ?? ""}
                                     onChange={(e) => patch({ ownerFax: e.target.value })}
                                 />
                             </div>
@@ -1510,8 +1669,132 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                             <label className="block text-sm text-gray-600 mb-1">อีเมล</label>
                             <input
                                 className="w-full border rounded-md px-3 py-2"
-                                value={v.ownerEmail ?? ""}
+                                value={v.ownerEmail ?? api.owner_email ?? ""}
                                 onChange={(e) => patch({ ownerEmail: e.target.value })}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="mt-2 text-sm font-medium text-gray-800">5.3.3 เจ้าของหรือผู้ครอบครองอาคารที่ป้ายตั้งอยู่</div>
+
+                    <div>
+                        <label className="block text-sm text-gray-600 mb-1">
+                            เจ้าของหรือผู้ครอบครองอาคารที่ป้ายตั้งอยู่
+                        </label>
+                        <textarea
+                            rows={3}
+                            className="w-full border rounded-md px-3 py-2"
+                            value={v.buildingProductText ?? ""}
+                            onChange={(e) => patch({ buildingProductText: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-sm text-gray-600 mb-1">ชื่อ</label>
+                            <input
+                                className="w-full border rounded-md px-3 py-2"
+                                value={v.buildingOwnerName ?? api.building_owner_name ?? ""}
+                                onChange={(e) => patch({ buildingOwnerName: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2">
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1">เลขที่</label>
+                                <input
+                                    className="w-full border rounded-md px-3 py-2"
+                                    value={v.buildingOwnerNo ?? api.building_owner_address_no ?? ""}
+                                    onChange={(e) => patch({ buildingOwnerNo: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1">หมู่ที่</label>
+                                <input
+                                    className="w-full border rounded-md px-3 py-2"
+                                    value={v.buildingOwnerMoo ?? api.building_owner_moo ?? ""}
+                                    onChange={(e) => patch({ buildingOwnerMoo: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1">ตรอก/ซอย</label>
+                                <input
+                                    className="w-full border rounded-md px-3 py-2"
+                                    value={v.buildingOwnerAlley ?? api.building_owner_alley ?? ""}
+                                    onChange={(e) => patch({ buildingOwnerAlley: e.target.value })}
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm text-gray-600 mb-1">ถนน</label>
+                            <input
+                                className="w-full border rounded-md px-3 py-2"
+                                value={v.buildingOwnerRoad ?? api.building_owner_road ?? ""}
+                                onChange={(e) => patch({ buildingOwnerRoad: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-2">
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1">ตำบล/แขวง</label>
+                                <input
+                                    className="w-full border rounded-md px-3 py-2"
+                                    value={v.buildingOwnerSub ?? api.building_owner_sub_district_name ?? ""}
+                                    onChange={(e) => patch({ buildingOwnerSub: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1">อำเภอ/เขต</label>
+                                <input
+                                    className="w-full border rounded-md px-3 py-2"
+                                    value={v.buildingOwnerDist ?? api.building_owner_district_name ?? ""}
+                                    onChange={(e) => patch({ buildingOwnerDist: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1">จังหวัด</label>
+                                <input
+                                    className="w-full border rounded-md px-3 py-2"
+                                    value={v.buildingOwnerProv ?? api.building_owner_province_name ?? ""}
+                                    onChange={(e) => patch({ buildingOwnerProv: e.target.value })}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-2">
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1">รหัสไปรษณีย์</label>
+                                <input
+                                    className="w-full border rounded-md px-3 py-2"
+                                    value={v.buildingOwnerZip ?? api.building_owner_zipcode ?? ""}
+                                    onChange={(e) => patch({ buildingOwnerZip: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1">โทรศัพท์</label>
+                                <input
+                                    className="w-full border rounded-md px-3 py-2"
+                                    value={v.buildingOwnerTel ?? api.building_owner_phone ?? ""}
+                                    onChange={(e) => patch({ buildingOwnerTel: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1">โทรสาร</label>
+                                <input
+                                    className="w-full border rounded-md px-3 py-2"
+                                    value={v.buildingOwnerFax ?? api.building_owner_fax ?? ""}
+                                    onChange={(e) => patch({ buildingOwnerFax: e.target.value })}
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm text-gray-600 mb-1">อีเมล</label>
+                            <input
+                                className="w-full border rounded-md px-3 py-2"
+                                value={v.buildingOwnerEmail ?? api.building_owner_email ?? ""}
+                                onChange={(e) => patch({ buildingOwnerEmail: e.target.value })}
                             />
                         </div>
                     </div>
@@ -1520,11 +1803,11 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                 <div className="grid md:grid-cols-2 gap-3">
                     <div>
                         <label className="block text-sm text-gray-600 mb-1">
-                            5.3.3 ผู้ออกแบบด้านวิศวกรรมโครงสร้าง (ชื่อ)
+                            5.3.4 ผู้ออกแบบด้านวิศวกรรมโครงสร้าง (ชื่อ)
                         </label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={v.designerName ?? ""}
+                            value={v.designerName ?? api.designer_name ?? ""}
                             onChange={(e) => patch({ designerName: e.target.value })}
                         />
                     </div>
@@ -1532,7 +1815,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
                         <label className="block text-sm text-gray-600 mb-1">ใบอนุญาตทะเบียนเลขที่</label>
                         <input
                             className="w-full border rounded-md px-3 py-2"
-                            value={v.designerLicense ?? ""}
+                            value={v.designerLicense ?? api.designer_license_no ?? ""}
                             onChange={(e) => patch({ designerLicense: e.target.value })}
                         />
                     </div>
