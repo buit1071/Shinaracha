@@ -164,7 +164,7 @@ export default function SectionFourDetails({ value, onChange }: Props) {
     ];
 
     const currentThaiYear = new Date().getFullYear() + 543;
-    const YEAR_START = 2500;
+    const YEAR_START = 2400;
     const YEAR_END = currentThaiYear + 20;
     const YEARS = Array.from(
         { length: YEAR_END - YEAR_START + 1 },

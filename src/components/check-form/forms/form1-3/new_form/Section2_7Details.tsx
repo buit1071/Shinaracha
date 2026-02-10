@@ -83,7 +83,7 @@ export const THAI_MONTHS = [
 export type ThaiMonth = (typeof THAI_MONTHS)[number];
 
 const currentThaiYear = new Date().getFullYear() + 543;
-const YEAR_START = 2500;
+const YEAR_START = 2400;
 const YEAR_END = currentThaiYear + 20;
 export const YEARS = Array.from({ length: YEAR_END - YEAR_START + 1 }, (_, i) => String(YEAR_START + i));
 
