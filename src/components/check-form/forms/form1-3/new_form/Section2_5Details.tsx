@@ -116,39 +116,6 @@ export default function Section2_5Details({ value, onChange }: Props) {
     const [table1, setTable1] = React.useState<Record<string, Section2_5Row>>({});
     const [table2, setTable2] = React.useState<Record<string, Section2_5Row>>({});
 
-    // sync จาก value (พร้อม default)
-    React.useEffect(() => {
-        // ===== table1 init (ไม่ตั้ง default) =====
-        const init1: Record<string, Section2_5Row> = {};
-        TABLE1_ROWS.forEach((r) => {
-            const v = value?.table1?.[r.id];
-            init1[r.id] = {
-                freq: (v?.freq ?? "") as FreqKey,     // ✅ ไม่มีค่า = ว่าง
-                note: v?.note ?? "",
-            };
-        });
-        Object.entries(value?.table1 ?? {}).forEach(([k, v]) => {
-            init1[k] = { ...(init1[k] ?? {}), ...(v ?? {}) };
-        });
-        setTable1(init1);
-
-        // ===== table2 init (ไม่ตั้ง default) =====
-        const init2: Record<string, Section2_5Row> = {};
-        TABLE2_ROWS.forEach((r) => {
-            if (r.type === "section") return;
-            const v = value?.table2?.[r.id];
-            init2[r.id] = {
-                freq: (v?.freq ?? "") as FreqKey,     // ✅ ไม่มีค่า = ว่าง
-                note: v?.note ?? "",
-                customLabel: v?.customLabel ?? "",
-            };
-        });
-        Object.entries(value?.table2 ?? {}).forEach(([k, v]) => {
-            init2[k] = { ...(init2[k] ?? {}), ...(v ?? {}) };
-        });
-        setTable2(init2);
-    }, [value?.table1, value?.table2]);
-
     const emit = React.useCallback(
         (which: "table1" | "table2", rowId: string, delta: Partial<Section2_5Row>) => {
             if (which === "table1") {
@@ -168,6 +135,46 @@ export default function Section2_5Details({ value, onChange }: Props) {
         const cur = (which === "table1" ? table1[rowId]?.freq : table2[rowId]?.freq) ?? "";
         emit(which, rowId, { freq: cur === k ? "" : k });
     };
+
+    React.useEffect(() => {
+        // ===== table1 init =====
+        const init1: Record<string, Section2_5Row> = {};
+        TABLE1_ROWS.forEach((r) => {
+            const v = value?.table1?.[r.id];
+            init1[r.id] = {
+                // ✅ Default เป็น "6m"
+                freq: (v?.freq ?? "6m") as FreqKey,
+                note: v?.note ?? "",
+            };
+        });
+
+        // Merge ค่าอื่นๆ (ถ้ามี)
+        Object.entries(value?.table1 ?? {}).forEach(([k, v]) => {
+            init1[k] = { ...(init1[k] ?? {}), ...(v ?? {}) };
+        });
+
+        setTable1(init1);
+
+        // ===== table2 init =====
+        const init2: Record<string, Section2_5Row> = {};
+        TABLE2_ROWS.forEach((r) => {
+            if (r.type === "section") return;
+            const v = value?.table2?.[r.id];
+            init2[r.id] = {
+                // ✅ Default เป็น "6m"
+                freq: (v?.freq ?? "6m") as FreqKey,
+                note: v?.note ?? "",
+                customLabel: v?.customLabel ?? "",
+            };
+        });
+
+        Object.entries(value?.table2 ?? {}).forEach(([k, v]) => {
+            init2[k] = { ...(init2[k] ?? {}), ...(v ?? {}) };
+        });
+
+        setTable2(init2);
+
+    }, [value?.table1, value?.table2]);
 
     return (
         <section className="p-2 text-gray-900 space-y-6">

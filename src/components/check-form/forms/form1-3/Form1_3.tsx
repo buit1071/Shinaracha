@@ -1609,8 +1609,8 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         )}
                     </div>
                     {/* <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
-                    {JSON.stringify(formData.sectionTwo, null, 2)}
-                </pre> */}
+                        {JSON.stringify(formData.section2_5, null, 2)}
+                    </pre> */}
                 </div>
             ) : (
                 <div className="flex flex-col items-center gap-4">

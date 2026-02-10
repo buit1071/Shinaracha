@@ -3744,29 +3744,30 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
         // Helper: สร้างแถวข้อมูลสำหรับตาราง 1 (ปรับปรุง spacing และ alignment)
         const createFreqRowV2 = (index: string, text: string, rowKey: string) => {
             const rowData = table1Data[rowKey] || {};
-            const freq = rowData.freq || "";
+            const freq = rowData.freq || "6m";
             const note = rowData.note || "";
 
             return new TableRow({
                 children: [
-                    // 1. ลำดับ (จัดกลาง)
+                    // ... (rest of the code remains the same)
+                    // 1. ลำดับ
                     new TableCell({
                         verticalAlign: VerticalAlign.CENTER,
                         children: [
                             new Paragraph({
                                 alignment: AlignmentType.CENTER,
-                                spacing: { before: 120, after: 120 }, // ✅ spacing
+                                spacing: { before: 120, after: 120 },
                                 children: [new TextRun({ text: index, size: 32, font: FONT_TH })]
                             })
                         ],
                     }),
-                    // 2. รายการ (ชิดซ้าย)
+                    // 2. รายการ
                     new TableCell({
                         verticalAlign: VerticalAlign.CENTER,
                         children: [
                             new Paragraph({
                                 alignment: AlignmentType.LEFT,
-                                spacing: { before: 120, after: 120 }, // ✅ spacing
+                                spacing: { before: 120, after: 120 },
                                 children: [new TextRun({ text: text, size: 32, font: FONT_TH })]
                             })
                         ],
@@ -3777,13 +3778,13 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
                     checkFreqCellV2("6m", freq),
                     checkFreqCellV2("1y", freq),
                     checkFreqCellV2("3y", freq),
-                    // 4. หมายเหตุ (จัดกลาง)
+                    // 4. หมายเหตุ
                     new TableCell({
                         verticalAlign: VerticalAlign.CENTER,
                         children: [
                             new Paragraph({
                                 alignment: AlignmentType.CENTER,
-                                spacing: { before: 120, after: 120 }, // ✅ spacing
+                                spacing: { before: 120, after: 120 },
                                 children: [new TextRun({ text: note, size: 32, font: FONT_TH })]
                             })
                         ],
@@ -3816,7 +3817,7 @@ export async function exportToDocx(roundCount: number, isShinaracha: boolean, fo
         // Helper: สร้างแถวข้อย่อย (เช่น (1) สภาพสายไฟฟ้า)
         const createSubRow = (text: string, rowKey: string, isOther: boolean = false) => {
             const rowData = table2Data[rowKey] || {};
-            const freq = rowData.freq || "";
+            const freq = rowData.freq || "6m";
             const note = rowData.note || "";
 
             // กรณีเป็นช่อง "อื่นๆ" ให้เอา text จาก customLabel มาต่อท้าย หรือใช้จุดไข่ปลา
