@@ -23,6 +23,7 @@ export default function LoginForm() {
 
       const data = await r.json();
       if (!r.ok || !data.ok) {
+        showLoading(false);
         throw new Error(data.message || "Login failed");
       }
 
@@ -37,6 +38,7 @@ export default function LoginForm() {
       }
 
     } catch (e: any) {
+      showLoading(false);
       setErr(e.message);
     } finally {
       // showLoading(false);
