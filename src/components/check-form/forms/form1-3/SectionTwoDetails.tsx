@@ -1679,7 +1679,7 @@ export default function SectionTwoDetails({ eq_id, data, value, onChange }: Prop
 
                     <div>
                         <label className="block text-sm text-gray-600 mb-1">
-                            เจ้าของหรือผู้ครอบครองอาคารที่ป้ายตั้งอยู่
+                            ชื่อผลิตภัณฑ์โฆษณาหรือข้อความในป้าย
                         </label>
                         <textarea
                             rows={3}
