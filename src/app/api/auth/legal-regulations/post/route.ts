@@ -21,6 +21,7 @@ export async function POST(req: Request) {
                 id,
                 defect,
                 // illegal_suggestion,
+                type,
                 zone_id,
                 is_active,
                 created_by,
@@ -33,6 +34,7 @@ export async function POST(req: Request) {
         UPDATE master_defect
         SET
           defect         = ?,
+          type         = ?,
           zone_id         = ?,
           is_active    = ?,
           updated_by   = ?,
@@ -42,6 +44,7 @@ export async function POST(req: Request) {
                 [
                     defect.trim(),
                     // illegal_suggestion.trim(),
+                    type?.trim() ?? null,
                     zone_id.trim(),
                     is_active ?? 1,
                     updated_by ?? "system",
@@ -67,14 +70,15 @@ export async function POST(req: Request) {
                 const ins: any = await query(
                     `
     INSERT INTO master_defect
-      (defect, 
+      (defect, type,
      zone_id, is_active, created_by, created_date, updated_by, updated_date)
     VALUES
-      (?, ?, ?, ?, NOW(), ?, NOW())
+      (?, ?, ?, ?, ?, NOW(), ?, NOW())
     `,
                     [
                         defect.trim(),
                         // illegal_suggestion?.trim() ?? null,
+                        type?.trim() ?? null,
                         zone_id?.trim() ?? null,
                         is_active ?? 1,
                         created_by ?? "system",

@@ -512,6 +512,7 @@ export interface DefectRow {
     id: number | null;
     defect: string;
     zone_name?: string;
+    type?: string;
     // illegal_suggestion?: string;
     zone_id: string;
     is_active: number;

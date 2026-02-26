@@ -42,6 +42,7 @@ export default function LegalRegulationPage() {
         defect: "",
         zone_id: "",
         zone_name: "",
+        type: "",
         // illegal_suggestion: "",
         is_active: 1,
         created_by: "",
@@ -101,6 +102,7 @@ export default function LegalRegulationPage() {
             defect: "",
             zone_id: "",
             zone_name: "",
+            type: "",
             // illegal_suggestion: "",
             is_active: 1,
             created_by: "",
@@ -135,6 +137,7 @@ export default function LegalRegulationPage() {
                     id: formData.id || null,
                     defect: formData.defect.trim() || undefined,
                     // illegal_suggestion: formData.illegal_suggestion,
+                    type: formData.type,
                     zone_id: formData.zone_id,
                     is_active: formData.is_active ?? 1,
                     created_by: formData.created_by || username,
@@ -209,8 +212,8 @@ export default function LegalRegulationPage() {
         },
         {
             field: "defect",
-            headerName: "ข้อกฎหมาย",
-            width: 350,
+            headerName: "ข้อกำหนดและมาตรฐาน",
+            width: 500,
             headerAlign: "center",
             align: "left",
             resizable: false,
@@ -225,18 +228,13 @@ export default function LegalRegulationPage() {
         //     resizable: false,
         // },
         {
-            field: "zone_name",
-            headerName: "แบบฟอร์ม",
+            field: "type",
+            headerName: "ประเภท",
             flex: 2,
-            width: 350,
+            width: 150,
             headerAlign: "center",
             align: "center",
             resizable: false,
-            renderCell: (params) => {
-                return params.row.zone_name
-                    ?? forms.find(f => f.zone_id === params.row.zone_id)?.zone_name
-                    ?? "";
-            }
         },
         {
             field: "actions",
@@ -326,31 +324,27 @@ export default function LegalRegulationPage() {
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                         <Box mt={1}>
                             <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
-                                แบบฟอร์ม
+                                ประเภท
                             </label>
 
                             <Select menuPlacement="auto"
-                                options={forms.filter(p => p.is_active === 1)
-                                    .map(p => ({
-                                        value: p.zone_id,
-                                        label: p.zone_name || p.zone_id,
-                                    }))}
+                                options={[
+                                    { value: "กฎกระทรวง", label: "กฎกระทรวง" },
+                                    { value: "วสท.", label: "วสท." },
+                                ]}
                                 value={
-                                    forms
-                                        .map(p => ({
-                                            value: p.zone_id,
-                                            label: p.zone_name || p.zone_id,
-                                        }))
-                                        .find(opt => opt.value === formData.zone_id) || null
+                                    [
+                                        { value: "กฎกระทรวง", label: "กฎกระทรวง" },
+                                        { value: "วสท.", label: "วสท." },
+                                    ].find((opt) => opt.value === formData.type) || null
                                 }
                                 onChange={(selected) =>
                                     setFormData({
                                         ...formData,
-                                        zone_id: selected?.value || "",
-                                        zone_name: selected?.label || undefined,
+                                        type: selected?.value || "", // ✅ เก็บค่าเข้า formData.type
                                     })
                                 }
-                                placeholder="-- เลือกแบบฟอร์ม --"
+                                placeholder="-- เลือกประเภท --"
                                 isClearable
                                 menuPortalTarget={typeof window !== "undefined" ? document.body : null}
                                 styles={{
@@ -358,14 +352,14 @@ export default function LegalRegulationPage() {
                                         ...base,
                                         backgroundColor: "#fff",
                                         borderColor:
-                                            error && !formData.zone_id
+                                            error && !formData.type
                                                 ? "#d32f2f" // 🔴 สีแดงเมื่อ error
                                                 : state.isFocused
                                                     ? "#3b82f6"
                                                     : "#d1d5db",
                                         boxShadow: "none",
                                         "&:hover": {
-                                            borderColor: error && !formData.zone_id ? "#d32f2f" : "#9ca3af",
+                                            borderColor: error && !formData.type ? "#d32f2f" : "#9ca3af",
                                         },
                                     }),
                                     menu: (base) => ({
@@ -405,7 +399,7 @@ export default function LegalRegulationPage() {
                         <Box sx={{ display: "flex", gap: 2 }}>
                             <TextField
                                 size="small"
-                                label="ข้อกฎหมาย"
+                                label="กฎกระทรวงหรือ วสท."
                                 fullWidth
                                 required
                                 value={formData.defect}

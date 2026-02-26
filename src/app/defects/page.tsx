@@ -213,7 +213,7 @@ export default function DefectsPage() {
         },
         {
             field: "defect_name",
-            headerName: "มาตรา",
+            headerName: "ข้อกำหนดและมาตรฐาน",
             flex: 2,
             minWidth: 400,
             headerAlign: "center",
@@ -333,7 +333,7 @@ export default function DefectsPage() {
 
                         <Box mt={1}>
                             <label style={{ fontSize: 14, marginBottom: 4, display: "block" }}>
-                                ข้อกฎหมาย
+                                ข้อกำหนดและมาตรฐาน
                             </label>
 
                             <Select menuPlacement="auto"
@@ -356,7 +356,7 @@ export default function DefectsPage() {
                                         defect_name: selected?.label || undefined,
                                     })
                                 }
-                                placeholder="-- เลือกข้อกฎหมาย --"
+                                placeholder="-- เลือกข้อกำหนดและมาตรฐาน --"
                                 isClearable
                                 menuPortalTarget={typeof window !== "undefined" ? document.body : null}
                                 styles={{
