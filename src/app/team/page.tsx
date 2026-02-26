@@ -141,13 +141,18 @@ export default function ProjectListPage() {
 
     const handleOpenAdd = () => {
         setIsEdit(false);
+
+        // ✅ สุ่มเลข 8 หลัก (ตั้งแต่ 10000000 ถึง 99999999)
+        const random8Digits = Math.floor(10000000 + Math.random() * 90000000);
+        const generatedUuid = `UUID${random8Digits}`;
+
         setFormData({
             team_id: "",
             team_name: "",
             username: "",
             password: "",
             confirm_password: "",
-            uuid: "",
+            uuid: generatedUuid, // ✅ ใส่ค่าที่ Gen ได้ลงไปตรงนี้เลย
             zone_id: "",
             is_active: 1,
             created_by: "",
@@ -401,7 +406,6 @@ export default function ProjectListPage() {
 
         fetchMembers();
     }, [formData.team_id, employees]);
-
 
     const handleChangeMember = (id: string, patch: Partial<MemberRow>) => {
         setMembers((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
@@ -678,6 +682,7 @@ export default function ProjectListPage() {
                         label="UUID"
                         fullWidth
                         required
+                        disabled
                         value={formData.uuid}
                         onChange={(e) => {
                             setFormData({ ...formData, uuid: e.target.value });
