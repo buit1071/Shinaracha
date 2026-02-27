@@ -126,14 +126,24 @@ const table2Groups: { title: string; rows: RowItem[] }[] = [
 type PhotoItem = { src?: string; filename: string };
 
 export type Defect = {
+    main_topic?: string;
     problem_id?: string;
     problem_name: string;
     photos?: PhotoItem[];
     isOther?: boolean;
     note?: string;
     illegal_suggestion?: string;
+
+    // สำหรับ "กฎกระทรวง" (ของเดิม)
     defect?: string | number | null;
     defect_name?: string;
+
+    // ======== เพิ่มเก็บข้อมูลส่วนใหม่ ========
+    standard_id?: string | number | null; // เก็บ ID ของ Standard (วสท.)
+    standard_name?: string;               // เก็บชื่อ Standard (วสท.)
+    problem_location?: string;            // บริเวณที่พบปัญหา
+    risk_level?: string;                  // ลำดับความเสี่ยง (A, B, C)
+    standard_suggestion?: string;         // ข้อเสนอแนะทั่วไปของ Standard
 };
 
 export type SectionSixRow = {
@@ -226,6 +236,7 @@ export default function Section2_6Details({ eq_id, value, onChange }: Props) {
     const [error, setError] = React.useState(false);
     const [problems, setProblems] = React.useState<ProblemRow[]>([]);
     const [defects, setDefects] = React.useState<DefectRow[]>([]);
+    const [standards, setStandards] = React.useState<DefectRow[]>([]);
     const [selectedProblems, setSelectedProblems] = React.useState<Defect[]>([]);
     const otherProblem = selectedProblems.find((p) => p.isOther);
     const otherHasError = error && !!otherProblem && !otherProblem.problem_name?.trim();
@@ -235,6 +246,25 @@ export default function Section2_6Details({ eq_id, value, onChange }: Props) {
         id: string;
         visit: VisitKey;
     } | null>(null);
+
+    const currentMainTopic = React.useMemo(() => {
+        if (!photoPopup || !photoPopup.id) return "";
+        const { group, id } = photoPopup;
+
+        // แกะตัวเลขออกจาก id (เช่น "0", "row-0", "g1-r2")
+        const nums = String(id).match(/\d+/g);
+
+        if (group === "table1" && nums && nums.length > 0) {
+            const idx = parseInt(nums[0], 10);
+            const rowData = table1Rows[idx];
+            return typeof rowData === "string" ? rowData : (rowData as any)?.label || "";
+        } else if (group === "table2" && nums && nums.length > 0) {
+            // ดึง title ของกลุ่มใน table2Groups
+            const groupIdx = parseInt(nums[0], 10);
+            return table2Groups[groupIdx]?.title || "";
+        }
+        return "";
+    }, [photoPopup]);
 
     const [camOpen, setCamOpen] = React.useState(false);
     const [overlayMode, setOverlayMode] = React.useState<"camera" | "view">("camera");
@@ -325,32 +355,6 @@ export default function Section2_6Details({ eq_id, value, onChange }: Props) {
         emit(noteTarget.group, noteTarget.id, { note: noteDraft });
         closeNote();
     };
-
-    const VisitHeader = () => (
-        <>
-            <th rowSpan={2} className={`${th} w-28 text-center`}>ลำดับที่</th>
-            <th rowSpan={2} className={`${th} text-left`}>รายการตรวจสอบ</th>
-
-            {visitsToShow.map((v) => (
-                <th key={v.key} colSpan={3} className={`${th} text-center`}>{v.label}</th>
-            ))}
-
-            <th rowSpan={2} className={`${th} w-56 text-center`}>หมายเหตุ</th>
-        </>
-    );
-
-    const SubHeader = () => (
-        <>
-            {visitsToShow.map((v) => (
-                <React.Fragment key={`sub-${v.key}`}>
-                    {/* ✅ ปรับ Class: px-0 text-[10px] */}
-                    <th className={`${th} text-center px-0 text-[12px] bg-white`}>ใช้ได้</th>
-                    <th className={`${th} text-center px-0 text-[12px] bg-white`}>ใช้ไม่ได้</th>
-                    <th className={`${th} text-center px-0 text-[12px] bg-white`}>Defect</th>
-                </React.Fragment>
-            ))}
-        </>
-    );
 
     const RoundCells: React.FC<{ group: "table1" | "table2"; id: string; visit: VisitKey }> = ({
         group, id, visit,
@@ -647,9 +651,25 @@ export default function Section2_6Details({ eq_id, value, onChange }: Props) {
         }
     };
 
+    const fecthStandards = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/legal-regulations/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "standards" }),
+            });
+            const data = await res.json();
+            if (data.success) setStandards(data.data);
+        } finally {
+            showLoading(false);
+        }
+    };
+
     React.useEffect(() => {
         fecthProblem();
         fecthDefect();
+        fecthStandards();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -963,7 +983,9 @@ export default function Section2_6Details({ eq_id, value, onChange }: Props) {
             {photoPopup && (
                 <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded-lg w-[1000px] shadow-lg max-h-[90vh] overflow-y-auto">
-                        <h3 className="text-lg font-bold mb-4">Defect ({VISIT_LABEL[photoPopup.visit]})</h3>
+                        <h3 className="text-lg font-bold mb-4">
+                            Defect ({currentMainTopic} - {VISIT_LABEL[photoPopup.visit]})
+                        </h3>
 
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-1">เลือกปัญหา</label>
@@ -1113,6 +1135,92 @@ export default function Section2_6Details({ eq_id, value, onChange }: Props) {
                                         </button>
                                     )}
                                 </div>
+                                <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* 1. บริเวณที่พบปัญหา */}
+                                    <div>
+                                        <label className="block text-xs font-medium mb-1 text-gray-700">บริเวณที่พบปัญหา</label>
+                                        <input
+                                            type="text"
+                                            className={"w-full border rounded p-2 text-sm " + (error && !d.problem_location ? "border-red-500" : "border-gray-300")}
+                                            placeholder="ระบุบริเวณที่พบปัญหา"
+                                            value={d.problem_location || ""}
+                                            onChange={(e) =>
+                                                setSelectedProblems((prev) =>
+                                                    prev.map((p, idx) => (idx === defectIndex ? { ...p, problem_location: e.target.value } : p))
+                                                )
+                                            }
+                                        />
+                                    </div>
+
+                                    {/* 2. ลำดับความเสี่ยง */}
+                                    <div>
+                                        <label className="block text-xs font-medium mb-1 text-gray-700">ลำดับความเสี่ยง</label>
+                                        <select
+                                            className={"w-full border rounded p-2 text-sm bg-white " + (error && !d.risk_level ? "border-red-500" : "border-gray-300")}
+                                            value={d.risk_level || ""}
+                                            onChange={(e) =>
+                                                setSelectedProblems((prev) =>
+                                                    prev.map((p, idx) => (idx === defectIndex ? { ...p, risk_level: e.target.value } : p))
+                                                )
+                                            }
+                                        >
+                                            <option value="">-- เลือกลำดับความเสี่ยง --</option>
+                                            <option value="A">A - ปัญหาเร่งด่วนต้องรีบแก้ไข</option>
+                                            <option value="B">B - ปัญหาต้องอยู่ในแผนดำเนินการปรับปรุง</option>
+                                            <option value="C">C - ปัญหาต้องติดตามเฝ้าระวัง</option>
+                                        </select>
+                                    </div>
+
+                                    {/* 3. Standard */}
+                                    <div>
+                                        <label className="block text-xs font-medium mb-1 text-gray-700">Standard</label>
+                                        <Select
+                                            menuPlacement="auto"
+                                            options={standards.map((p) => ({
+                                                value: p.id ?? "",
+                                                label: p.defect
+                                            }))}
+                                            value={
+                                                d.standard_id
+                                                    ? { value: d.standard_id, label: d.standard_name || "Standard Selected" }
+                                                    : null
+                                            }
+                                            onChange={(selected) =>
+                                                setSelectedProblems((prev) =>
+                                                    prev.map((p, idx) =>
+                                                        idx === defectIndex
+                                                            ? {
+                                                                ...p,
+                                                                standard_id: selected?.value ?? null,
+                                                                standard_name: selected?.label ?? undefined,
+                                                            }
+                                                            : p
+                                                    )
+                                                )
+                                            }
+                                            placeholder="-- เลือก Standard --"
+                                            isClearable
+                                            menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                            styles={selectStyles as any}
+                                        />
+                                    </div>
+
+                                    {/* 4. ข้อเสนอแนะทั่วไป */}
+                                    <div>
+                                        <label className="block text-xs font-medium mb-1 text-gray-700">ข้อเสนอแนะ</label>
+                                        <textarea
+                                            className="w-full border border-gray-300 rounded p-2 text-sm"
+                                            rows={2}
+                                            placeholder="กรอกข้อเสนอแนะ"
+                                            value={d.standard_suggestion || ""}
+                                            onChange={(e) =>
+                                                setSelectedProblems((prev) =>
+                                                    prev.map((p, idx) => (idx === defectIndex ? { ...p, standard_suggestion: e.target.value } : p))
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         ))}
 
@@ -1126,20 +1234,40 @@ export default function Section2_6Details({ eq_id, value, onChange }: Props) {
                                 onClick={() => {
                                     if (!photoPopup) return;
 
+                                    // ✅ 1. เช็ค Validation ของปัญหาอื่นๆ (ของเดิม)
                                     const other = selectedProblems.find((p) => p.isOther);
                                     if (other) {
-                                        const isMissing = !other.problem_name?.trim() || !other.illegal_suggestion?.trim();
-                                        if (isMissing) {
+                                        const isMissingOther = !other.problem_name?.trim() || !other.illegal_suggestion?.trim();
+                                        if (isMissingOther) {
                                             setError(true);
                                             return;
                                         }
                                     }
 
+                                    // ✅ 2. เช็ค Validation ใหม่: สถานที่ และ ระดับความเสี่ยง (ต้องกรอกทุกรายการที่เลือก)
+                                    const isMissingRequired = selectedProblems.some(
+                                        (p) => !p.problem_location?.trim() || !p.risk_level
+                                    );
+
+                                    if (isMissingRequired) {
+                                        setError(true); // สั่งให้ขึ้นขอบแดง
+                                        return; // หยุดการทำงาน ไม่เซฟ
+                                    }
+
                                     const { group, id, visit } = photoPopup;
+
+                                    // 🔥 ท่าไม้ตาย: ยัด main_topic ให้ทุก Defect
+                                    const finalDefects = selectedProblems.map((p) => ({
+                                        ...p,
+                                        main_topic: currentMainTopic || p.main_topic,
+                                    }));
+
                                     const row = group === "table1" ? v1[id] : v2[id];
+
+                                    // บันทึกแยกตาม Visit โดยเอา finalDefects ที่เตรียมไว้ใส่ลงไป
                                     const nextMap: Partial<Record<VisitKey, Defect[]>> = {
                                         ...(row?.defect_by_visit ?? {}),
-                                        [visit]: [...selectedProblems],
+                                        [visit]: finalDefects, // ✅ ยัดของใหม่ที่เติม main_topic แล้ว
                                     };
 
                                     emit(group, id, { defect_by_visit: nextMap });
