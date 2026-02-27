@@ -3,6 +3,8 @@ import { query } from "@/lib-server/db";
 
 type GetBody =
     | { function: "defect"; }
+    | { function: "defects"; }
+    | { function: "standards"; }
     | { function: "problem"; }
     | { function: "view"; }
     ;
@@ -24,7 +26,29 @@ export async function POST(req: Request) {
                 `
         SELECT *
         FROM master_defect
-        `,
+        `
+            );
+            return NextResponse.json({ success: true, data: rows });
+        }
+
+        if (fn === "defects") {
+            const rows = await query(
+                `
+        SELECT *
+        FROM master_defect
+        WHERE type = 'กฎกระทรวง'
+        `
+            );
+            return NextResponse.json({ success: true, data: rows });
+        }
+
+        if (fn === "standards") {
+            const rows = await query(
+                `
+        SELECT *
+        FROM master_defect
+        WHERE type = 'วสท.' 
+        `
             );
             return NextResponse.json({ success: true, data: rows });
         }

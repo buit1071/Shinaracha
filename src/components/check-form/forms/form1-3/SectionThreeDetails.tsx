@@ -11,14 +11,24 @@ export type UseStatus = "ok" | "ng" | ""; // ใช้ได้ / ใช้ไ�
 
 type PhotoItem = { src?: string; filename: string };
 export type Defect = {
+    main_topic?: string;
     problem_id?: string;
     problem_name: string;
     photos?: PhotoItem[];
     isOther?: boolean;
     note?: string;
     illegal_suggestion?: string;
+
+    // สำหรับ "กฎกระทรวง" (ของเดิม)
     defect?: string | number | null;
     defect_name?: string;
+
+    // ======== เพิ่มเก็บข้อมูลส่วนใหม่ ========
+    standard_id?: string | number | null; // เก็บ ID ของ Standard (วสท.)
+    standard_name?: string;               // เก็บชื่อ Standard (วสท.)
+    problem_location?: string;            // บริเวณที่พบปัญหา
+    risk_level?: string;                  // ลำดับความเสี่ยง (A, B, C)
+    standard_suggestion?: string;         // ข้อเสนอแนะทั่วไปของ Standard
 };
 
 export type SectionThreeRow = {
@@ -236,6 +246,7 @@ export default function SectionThreeDetails({ value,
     const [camTarget, setCamTarget] = React.useState<{ defectIndex: number } | null>(null);
     const [problems, setProblems] = React.useState<ProblemRow[]>([]);
     const [defects, setDefects] = React.useState<DefectRow[]>([]);
+    const [standards, setStandards] = React.useState<DefectRow[]>([]);
 
     // Popup State
     const [photoPopup, setPhotoPopup] = React.useState<{
@@ -245,6 +256,18 @@ export default function SectionThreeDetails({ value,
         defectType?: "wear" | "damage"; // เฉพาะ 8-9 บอกว่าเป็น defect ของช่องไหน
     } | null>(null);
     const [selectedProblems, setSelectedProblems] = React.useState<Defect[]>([]);
+    const currentMainTopic = React.useMemo(() => {
+        if (!photoPopup || !photoPopup.id) return "";
+
+        // สมมติว่า id หน้าตาเป็น "s3-1", "s3-2"
+        const match = photoPopup.id.match(/s3-(\d+)/);
+        if (match) {
+            const itemIndex = parseInt(match[1], 10) - 1;
+            const title = ITEMS_1_7[itemIndex]?.title || "";
+            return title;
+        }
+        return "";
+    }, [photoPopup]);
     const [error, setError] = React.useState(false);
 
     // Camera/Overlay State
@@ -329,22 +352,28 @@ export default function SectionThreeDetails({ value,
 
         const { id, visit, section, defectType } = photoPopup;
 
-        // บันทึกตาม Section
+        // 🔥 ท่าไม้ตาย: สร้าง array ใหม่ ยัด main_topic ใส่เข้าไปในทุก Defect ก่อนเซฟ
+        const finalDefects = selectedProblems.map((p) => ({
+            ...p,
+            main_topic: currentMainTopic || p.main_topic, // ยัด title ลงไป (ถ้าไม่มีก็ใช้ของเดิม)
+        }));
+
+        // บันทึกตาม Section (เปลี่ยนจาก [...selectedProblems] เป็น finalDefects)
         if (section === "items") {
             // Save 1-7
             const row = items[id] ?? {};
-            const nextMap = { ...(row.defect_by_visit ?? {}), [visit]: [...selectedProblems] };
+            const nextMap = { ...(row.defect_by_visit ?? {}), [visit]: finalDefects }; // ✅ ใช้ finalDefects
             emit(id, { defect_by_visit: nextMap });
 
         } else if (section === "section8" && defectType) {
             // Save 8
-            if (defectType === "wear") emit8(id, { wear_defects: [...selectedProblems] });
-            else if (defectType === "damage") emit8(id, { damage_defects: [...selectedProblems] });
+            if (defectType === "wear") emit8(id, { wear_defects: finalDefects }); // ✅ ใช้ finalDefects
+            else if (defectType === "damage") emit8(id, { damage_defects: finalDefects }); // ✅ ใช้ finalDefects
 
         } else if (section === "section9" && defectType) {
             // Save 9
-            if (defectType === "wear") emit9(id, { wear_defects: [...selectedProblems] });
-            else if (defectType === "damage") emit9(id, { damage_defects: [...selectedProblems] });
+            if (defectType === "wear") emit9(id, { wear_defects: finalDefects }); // ✅ ใช้ finalDefects
+            else if (defectType === "damage") emit9(id, { damage_defects: finalDefects }); // ✅ ใช้ finalDefects
         }
 
         setPhotoPopup(null);
@@ -464,7 +493,7 @@ export default function SectionThreeDetails({ value,
             const res = await fetch("/api/auth/legal-regulations/get", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ function: "defect" }),
+                body: JSON.stringify({ function: "defects" }),
             });
             const data = await res.json();
             if (data.success) setDefects(data.data);
@@ -473,9 +502,25 @@ export default function SectionThreeDetails({ value,
         }
     };
 
+    const fecthStandards = async () => {
+        showLoading(true);
+        try {
+            const res = await fetch("/api/auth/legal-regulations/get", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ function: "standards" }),
+            });
+            const data = await res.json();
+            if (data.success) setStandards(data.data);
+        } finally {
+            showLoading(false);
+        }
+    };
+
     React.useEffect(() => {
         fecthProblem();
         fecthDefect();
+        fecthStandards();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -1146,7 +1191,7 @@ export default function SectionThreeDetails({ value,
             {photoPopup && (
                 <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded-lg w-[1000px] shadow-lg max-h-[90vh] overflow-y-auto">
-                        <h3 className="text-lg font-bold mb-4">Defect ({VISIT_LABEL[photoPopup.visit]})</h3>
+                        <h3 className="text-lg font-bold mb-4">Defect ({currentMainTopic})</h3>
 
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-1">เลือกปัญหา</label>
@@ -1161,20 +1206,28 @@ export default function SectionThreeDetails({ value,
                                         const existing = selectedProblems.find(
                                             (p) => p.problem_id === s.value && !p.isOther
                                         );
-                                        if (existing) return existing;
 
+                                        // ✅ 1. ถ้ามีข้อมูลเดิมอยู่แล้ว ให้เอาของเดิมมา ... แล้วยัด main_topic อัปเดตเข้าไปด้วย
+                                        if (existing) {
+                                            return { ...existing, main_topic: currentMainTopic };
+                                        }
+
+                                        // ✅ 2. ถ้าเป็นปัญหาที่เพิ่งเลือกใหม่จาก Dropdown ก็ยัด main_topic เข้าไป
                                         const fromMaster = problems.find((p) => p.problem_id === s.value);
                                         return {
                                             problem_id: s.value,
                                             problem_name: s.label,
                                             photos: [],
                                             illegal_suggestion: fromMaster?.illegal_suggestion ?? "",
+                                            main_topic: currentMainTopic,
                                         };
                                     });
 
-                                    // คง "Other" ที่ user เพิ่มเองไว้
+                                    // ✅ 3. คง "Other" ที่ user เพิ่มเองไว้ และอย่าลืมยัด main_topic ให้มันด้วย
                                     const otherDefect = selectedProblems.find((p) => p.isOther);
-                                    if (otherDefect) newDefects.push(otherDefect);
+                                    if (otherDefect) {
+                                        newDefects.push({ ...otherDefect, main_topic: currentMainTopic });
+                                    }
 
                                     setSelectedProblems(newDefects);
                                 }}
@@ -1201,6 +1254,7 @@ export default function SectionThreeDetails({ value,
                                                     defect: null,
                                                     defect_name: undefined,
                                                     illegal_suggestion: "",
+                                                    main_topic: currentMainTopic, // ✅ 4. ยัดตอนกดติ๊กเพิ่มปัญหาอื่น
                                                 },
                                             ]);
                                         } else {
@@ -1296,6 +1350,94 @@ export default function SectionThreeDetails({ value,
                                             <PhotoCameraIcon className="w-6 h-6" />
                                         </button>
                                     )}
+                                </div>
+                                <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                    {/* 1. บริเวณที่พบปัญหา */}
+                                    <div>
+                                        <label className="block text-xs font-medium mb-1 text-gray-700">บริเวณที่พบปัญหา</label>
+                                        <input
+                                            type="text"
+                                            className="w-full border border-gray-300 rounded p-2 text-sm"
+                                            placeholder="ระบุบริเวณที่พบปัญหา"
+                                            value={d.problem_location || ""}
+                                            onChange={(e) =>
+                                                setSelectedProblems((prev) =>
+                                                    prev.map((p, idx) => (idx === defectIndex ? { ...p, problem_location: e.target.value } : p))
+                                                )
+                                            }
+                                        />
+                                    </div>
+
+                                    {/* 2. ลำดับความเสี่ยง (A, B, C) */}
+                                    <div>
+                                        <label className="block text-xs font-medium mb-1 text-gray-700">ลำดับความเสี่ยง</label>
+                                        <select
+                                            className="w-full border border-gray-300 rounded p-2 text-sm bg-white"
+                                            value={d.risk_level || ""}
+                                            onChange={(e) =>
+                                                setSelectedProblems((prev) =>
+                                                    prev.map((p, idx) => (idx === defectIndex ? { ...p, risk_level: e.target.value } : p))
+                                                )
+                                            }
+                                        >
+                                            <option value="">-- เลือกลำดับความเสี่ยง --</option>
+                                            <option value="A">A - ปัญหาเร่งด่วนต้องรีบแก้ไข</option>
+                                            <option value="B">B - ปัญหาต้องอยู่ในแผนดำเนินการปรับปรุง</option>
+                                            <option value="C">C - ปัญหาต้องติดตามเฝ้าระวัง</option>
+                                        </select>
+                                    </div>
+
+                                    {/* 3. Dropdown Standard (ข้อมูล Options ว่างไว้ก่อน) */}
+                                    <div>
+                                        <label className="block text-xs font-medium mb-1 text-gray-700">Standard</label>
+                                        <Select
+                                            menuPlacement="auto"
+                                            options={standards.map((p) => ({
+                                                value: p.id ?? "", // ✅ ถ้า p.id เป็น null ให้ส่งค่า "" แทน
+                                                label: p.defect
+                                            }))}
+                                            value={
+                                                d.standard_id
+                                                    ? { value: d.standard_id, label: d.standard_name || "Standard Selected" }
+                                                    : null
+                                            }
+                                            onChange={(selected) =>
+                                                setSelectedProblems((prev) =>
+                                                    prev.map((p, idx) =>
+                                                        idx === defectIndex
+                                                            ? {
+                                                                ...p,
+                                                                standard_id: selected?.value ?? null,       // ✅ บันทึกลง standard_id
+                                                                standard_name: selected?.label ?? undefined, // ✅ บันทึกลง standard_name
+                                                            }
+                                                            : p
+                                                    )
+                                                )
+                                            }
+                                            placeholder="-- เลือก Standard --"
+                                            isClearable
+                                            menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+                                            styles={selectStyles as any}
+                                        />
+                                    </div>
+
+                                    {/* 4. ข้อเสนอแนะทั่วไปของ Standard */}
+                                    <div>
+                                        <label className="block text-xs font-medium mb-1 text-gray-700">ข้อเสนอแนะ</label>
+                                        <textarea
+                                            className="w-full border border-gray-300 rounded p-2 text-sm"
+                                            rows={2}
+                                            placeholder="กรอกข้อเสนอแนะ"
+                                            value={d.standard_suggestion || ""}
+                                            onChange={(e) =>
+                                                setSelectedProblems((prev) =>
+                                                    prev.map((p, idx) => (idx === defectIndex ? { ...p, standard_suggestion: e.target.value } : p))
+                                                )
+                                            }
+                                        />
+                                    </div>
+
                                 </div>
                             </div>
                         ))}
