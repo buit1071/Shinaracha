@@ -1161,14 +1161,19 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
             {checkInData ? (
                 <div className="p-2 relative">
                     <div className="absolute right-2.5">
-                        {/* <button
-                        type="button"
-                        onClick={() => exportToExcel(formData.sectionFour ?? null, jobId ?? "")}
-                        className="mr-2 w-[100px] h-10 bg-green-600 hover:bg-green-700 active:bg-green-700 text-white rounded-[5px] inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
-                    >
-                        <img src="/images/IconExcel.webp" alt="Excel" className="h-5 w-5 object-contain" />
-                        <span className="leading-none">Defect</span>
-                    </button> */}
+                        <button
+                            type="button"
+                            onClick={() => exportToExcel(
+                                formData.sectionThree ?? null,
+                                formData.section2_6 ?? null,
+                                jobId ?? "",
+                                isShinaracha
+                            )}
+                            className="mr-2 w-[100px] h-10 bg-green-600 hover:bg-green-700 active:bg-green-700 text-white rounded-[5px] inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                        >
+                            <img src="/images/IconExcel.webp" alt="Excel" className="h-5 w-5 object-contain" />
+                            <span className="leading-none">Defect</span>
+                        </button>
                         <button
                             type="button"
                             onClick={() => exportToDocx(roundCount, isShinaracha, formData)}
@@ -1776,7 +1781,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                         )}
                     </div>
                     {/* <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto text-black">
-                        {JSON.stringify(formData.section2_5, null, 2)}
+                        {JSON.stringify(formData.sectionThree, null, 2)}
                     </pre> */}
                 </div>
             ) : (

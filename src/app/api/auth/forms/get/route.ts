@@ -6,6 +6,7 @@ type GetBody =
     | { function: "viewEq"; equipment_id: string }
     | { function: "RCheckIn"; job_id: string; equipment_id: string }
     | { function: "RCheckOut"; job_id: string; equipment_id: string }
+    | { function: "export_defect"; job_id: string; }
     ;
 
 export async function POST(req: Request) {
@@ -124,6 +125,101 @@ export async function POST(req: Request) {
                     data: null
                 });
             }
+        }
+
+        if (fn === "export_defect") {
+            const { job_id } = body;
+
+            if (!job_id) {
+                return NextResponse.json({ success: false, message: "Missing job_id" }, { status: 400 });
+            }
+
+            // ==========================================
+            // 1. Query JOIN ข้อมูลตามที่ต้องการ
+            // ==========================================
+            const rows = await query(
+                `SELECT 
+                    dp.project_name,
+                    dj.job_start_date,
+                    de.first_name_th,
+                    de.last_name_th,
+                    me.address_no, me.moo, me.alley, me.road, me.zipcode, me.phone, me.fax,
+                    ms.name_th AS sub_district_name,
+                    md.name_th AS district_name,
+                    mp.name_th AS province_name
+                FROM data_jobs dj
+                -- 1. หาชื่อโครงการ
+                LEFT JOIN data_projects dp ON dj.project_id = dp.project_id
+                -- 3, 5. หาวิศวกรผู้รับผิดชอบ/ตรวจสอบ (STA-001)
+                LEFT JOIN data_team_employee dte ON dj.team_id = dte.team_id AND dte.status_id = 'STA-001'
+                LEFT JOIN data_employees de ON dte.emp_id = de.emp_id
+                -- 4. หาที่ตั้ง (อุปกรณ์)
+                LEFT JOIN data_job_equipments dje ON dj.job_id = dje.job_id
+                LEFT JOIN master_equipments me ON dje.equipment_id = me.equipment_id
+                -- 4. หาที่ตั้ง (ตำบล, อำเภอ, จังหวัด)
+                LEFT JOIN master_subdistricts ms ON me.sub_district_id = ms.sub_district_id
+                LEFT JOIN master_districts md ON me.district_id = md.district_id
+                LEFT JOIN master_provinces mp ON me.province_id = mp.province_id
+                WHERE dj.job_id = ?
+                LIMIT 1`,
+                [job_id]
+            );
+
+            if (rows.length === 0) {
+                return NextResponse.json({ success: false, message: "ไม่พบข้อมูล job_id นี้" }, { status: 404 });
+            }
+
+            const data = rows[0];
+
+            // ==========================================
+            // 2. Format ข้อมูลให้ออกมาพร้อมใช้งาน
+            // ==========================================
+
+            // 2.1 แปลงวันที่ (1 กุมภาพันธ์ 2569)
+            let formattedDate = "-";
+            if (data.job_start_date) {
+                const thaiMonths = [
+                    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+                    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+                ];
+                const d = new Date(data.job_start_date);
+                if (!isNaN(d.getTime())) {
+                    formattedDate = `${d.getDate()} ${thaiMonths[d.getMonth()]} ${d.getFullYear() + 543}`;
+                }
+            }
+
+            // 2.2 ชื่อวิศวกร
+            const engineerName = (data.first_name_th || data.last_name_th)
+                ? `${data.first_name_th || ""} ${data.last_name_th || ""}`.trim()
+                : "-";
+
+            // 2.3 ประกอบร่างที่ตั้ง (Address)
+            let addressParts = [];
+            if (data.address_no) addressParts.push(`เลขที่ ${data.address_no}`);
+            if (data.moo) addressParts.push(`หมู่ ${data.moo}`);
+            if (data.alley) addressParts.push(`ซอย ${data.alley}`);
+            if (data.road) addressParts.push(`ถนน ${data.road}`);
+            if (data.sub_district_name) addressParts.push(`ตำบล/แขวง ${data.sub_district_name}`);
+            if (data.district_name) addressParts.push(`อำเภอ/เขต ${data.district_name}`);
+            if (data.province_name) addressParts.push(`จังหวัด${data.province_name}`);
+            if (data.zipcode) addressParts.push(`${data.zipcode}`);
+
+            const fullAddress = addressParts.length > 0 ? addressParts.join(" ") : "-";
+
+            // ==========================================
+            // 3. ส่งข้อมูลกลับไปให้ Postman / Frontend
+            // ==========================================
+            return NextResponse.json({
+                success: true,
+                data: {
+                    project_name: data.project_name || "-",
+                    inspection_date: formattedDate,
+                    engineer_name: engineerName,
+                    address: fullAddress,
+                    phone: data.phone || "-",
+                    fax: data.fax || "-"
+                }
+            });
         }
 
         return NextResponse.json({ success: false, message: "ไม่รู้จัก function ที่ส่งมา" }, { status: 400 });
