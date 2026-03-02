@@ -256,18 +256,6 @@ export default function SectionThreeDetails({ value,
         defectType?: "wear" | "damage"; // เฉพาะ 8-9 บอกว่าเป็น defect ของช่องไหน
     } | null>(null);
     const [selectedProblems, setSelectedProblems] = React.useState<Defect[]>([]);
-    const currentMainTopic = React.useMemo(() => {
-        if (!photoPopup || !photoPopup.id) return "";
-
-        // สมมติว่า id หน้าตาเป็น "s3-1", "s3-2"
-        const match = photoPopup.id.match(/s3-(\d+)/);
-        if (match) {
-            const itemIndex = parseInt(match[1], 10) - 1;
-            const title = ITEMS_1_7[itemIndex]?.title || "";
-            return title;
-        }
-        return "";
-    }, [photoPopup]);
     const [error, setError] = React.useState(false);
 
     // Camera/Overlay State
@@ -281,6 +269,8 @@ export default function SectionThreeDetails({ value,
     const videoRef = React.useRef<HTMLVideoElement>(null);
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
     const streamRef = React.useRef<MediaStream | null>(null);
+    const [section8State, setSection8State] = React.useState<Record<string, Section8Row>>({});
+    const [section9State, setSection9State] = React.useState<Record<string, Section9Row>>({});
 
     const openViewer = (defectIndex: number, photoIndex: number) => {
         const photo = selectedProblems[defectIndex]?.photos?.[photoIndex];
@@ -339,6 +329,91 @@ export default function SectionThreeDetails({ value,
         setPhotoPopup({ id, visit: VISIT_KEY, section, defectType });
         setError(false);
     };
+
+    // 💡 โค้ดสำหรับหา Title หัวข้อใหญ่ตอนเปิด Popup (รวมทุก Section)
+    const currentMainTopic = React.useMemo(() => {
+        if (!photoPopup || !photoPopup.id) return "";
+
+        const { id, section, defectType } = photoPopup;
+
+        // ==========================================
+        // 1. ดึงชื่อหัวข้อสำหรับ Section 8
+        // ==========================================
+        if (section === "section8") {
+            const S8_LABELS: Record<string, string> = {
+                "s8-1-foundation": "ฐานราก",
+                "s8-1-anchor": "การเชื่อมยึดกับฐานราก/อาคาร",
+                "s8-1-part": "ชิ้นส่วน",
+                "s8-1-bolt": "รอยต่อ - สลักเกลียว",
+                "s8-1-weld": "รอยต่อ - การเชื่อม",
+                "s8-1-joint-other": "รอยต่อ - อื่น ๆ",
+                "s8-1-sling": "สลิง หรือสายยึด",
+                "s8-1-ladder": "บันไดขึ้นลง",
+                "s8-1-rail": "ราวจับ หรือราวกันตก",
+                "s8-1-catwalk": "CATWALK",
+                "s8-1-other": "สิ่งที่สร้างขึ้น - อื่น ๆ",
+                "s8-2-panel": "สภาพของแผ่นป้าย",
+                "s8-2-fix": "สภาพการยึดติดกับโครงสร้าง",
+                "s8-2-other": "แผ่นป้าย - อื่น ๆ",
+            };
+            let baseLabel = S8_LABELS[id] || id;
+
+            // ถ้าเป็นหัวข้อ "อื่นๆ" ให้ดึงข้อความที่ผู้ใช้พิมพ์ใน input มาต่อท้ายด้วย
+            if (baseLabel.includes("อื่น ๆ")) {
+                const extra = section8State?.[id]?.labelExtra;
+                if (extra) baseLabel += ` (${extra})`;
+            }
+
+            // แปะ Prefix ว่าเป็นการชำรุดหรือความเสียหาย
+            // const prefix = defectType === "wear" ? "" : "";
+            return `${baseLabel}`;
+        }
+
+        // ==========================================
+        // 2. ดึงชื่อหัวข้อสำหรับ Section 9
+        // ==========================================
+        if (section === "section9") {
+            const S9_LABELS: Record<string, string> = {
+                "s9-1-lamp": "โคมไฟฟ้า หรือหลอดไฟ",
+                "s9-1-conduit": "ท่อร้อยสาย",
+                "s9-1-control": "อุปกรณ์ควบคุม",
+                "s9-1-ground": "การต่อลงดิน",
+                "s9-1-maint": "ตรวจบันทึกการบำรุงรักษาระบบไฟฟ้า",
+                "s9-1-other": "ระบบไฟฟ้า - อื่น ๆ",
+                "s9-2-air": "ตัวนำล่อฟ้า",
+                "s9-2-down": "ตัวนำต่อลงดิน",
+                "s9-2-earth": "รากสายดิน",
+                "s9-2-bond": "จุดต่อประสานศักย์",
+                "s9-2-maint": "ตรวจบันทึกการบำรุงรักษา (ฟ้าผ่า)",
+                "s9-2-other": "ระบบป้องกันฟ้าผ่า - อื่น ๆ",
+                "s9-3-sling": "สลิง หรือสายยึด",
+                "s9-3-ladder": "บันไดขึ้นลง",
+                "s9-3-rail": "ราวจับ หรือราวกันตก",
+                "s9-3-catwalk": "CATWALK",
+                "s9-3-other": "อุปกรณ์ประกอบ - อื่น ๆ",
+            };
+            let baseLabel = S9_LABELS[id] || id;
+
+            if (baseLabel.includes("อื่น ๆ")) {
+                const extra = section9State?.[id]?.labelExtra;
+                if (extra) baseLabel += ` (${extra})`;
+            }
+
+            // const prefix = defectType === "wear" ? "" : "";
+            return `${baseLabel}`;
+        }
+
+        // ==========================================
+        // 3. ดึงชื่อหัวข้อสำหรับ Section 3 (โค้ดเดิมที่คุณเคยมี)
+        // ==========================================
+        const match = id.match(/s3-(\d+)/);
+        if (match && typeof ITEMS_1_7 !== "undefined") {
+            const itemIndex = parseInt(match[1], 10) - 1;
+            return ITEMS_1_7[itemIndex]?.title || "";
+        }
+
+        return "";
+    }, [photoPopup, section8State, section9State]);
 
     const saveDefectPopup = () => {
         if (!photoPopup) return;
@@ -557,7 +632,6 @@ export default function SectionThreeDetails({ value,
     };
 
     /* -------------------- 8 -------------------- */
-    const [section8State, setSection8State] = React.useState<Record<string, Section8Row>>({});
 
     const emit8 = React.useCallback(
         (rowId: string, delta: Partial<Section8Row>) => {
@@ -583,7 +657,6 @@ export default function SectionThreeDetails({ value,
     );
 
     /* -------------------- 9 -------------------- */
-    const [section9State, setSection9State] = React.useState<Record<string, Section9Row>>({});
     const [section9Extra1, setSection9Extra1] = React.useState(value?.section9Extra1 ?? "");
     const [section9Extra2, setSection9Extra2] = React.useState(value?.section9Extra2 ?? "");
 
