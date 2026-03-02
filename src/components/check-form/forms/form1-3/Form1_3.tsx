@@ -1202,7 +1202,7 @@ export default function Form1_3({ jobId, equipment_id, name, onBack }: Props) {
                     {/* กล่องรูปปก */}
                     <div className="border rounded-md p-2 bg-gray-50 flex flex-col items-center justify-center">
                         <div
-                            className="w-[800px] h-[500px] rounded-sm bg-gray-300/80 grid place-items-center overflow-hidden"
+                            className="w-full max-w-[800px] h-[300px] md:h-[500px] rounded-sm bg-gray-300/80 flex items-center justify-center overflow-hidden"
                             style={{ outline: "1px solid rgba(0,0,0,0.08)" }}
                         >
                             {coverSrc ? (
